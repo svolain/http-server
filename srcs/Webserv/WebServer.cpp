@@ -1,6 +1,8 @@
 
 #include "WebServer.hpp"
 #include <sstream>
+#include <fstream>
+#include <string>
 
 
 
@@ -45,15 +47,34 @@ void WebServer::onMessageRecieved(int clientSocket, const char *msg, int length)
 	//Write the document back to the client
 	(void)length;
 	(void)msg;
-	std::ostringstream oss;
-	oss << "HTTP/1.1 200 OK\r\n";
-	oss << "Cache-Control: no-cache, private\r\n";
-	oss << "Content-Type: text/plain\r\n";
-	oss << "Content-Length: 5\r\n";
-	oss << "\r\n";
-	oss << "hello wwww";
 
-	if(sendToClient(clientSocket, oss.str().c_str(), oss.str().size() + 1) < 0)
+	std::ifstream f("./pages/index.html");
+	if (!f.is_open())
+		std::cerr << "Failed to open index.html\n";
+	std::string content = "<h1>404 Not Found</h1>";
+	int errorCode = 404;
+
+	if (f.good())
+	{
+		while (std::getline(f, content, '\0'))
+			;
+		errorCode = 200;
+	}
+
+	f.close(); 
+
+	std::ostringstream oss;
+	oss << "HTTP/1.1 " << errorCode << " OK\r\n";
+	oss << "Cache-Control: no-cache, private\r\n";
+	oss << "Content-Type: text/html\r\n";
+	oss << "Content-Length: " << content.size()  << "\r\n";
+	oss << "\r\n";
+	oss << content;
+
+	std::string output = oss.str();
+	int size = output.size() + 1;
+
+	if(sendToClient(clientSocket, oss.str().c_str(), size) < 0)
 		exit (123);
 
 }

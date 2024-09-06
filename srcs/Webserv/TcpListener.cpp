@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/06 13:19:15 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/06 17:37:23 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,7 @@ int	TcpListener::init()
 		return (1);
 	}
 
-
+	int yes = 1;
 	// loop through all the results and bind to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next) 
 	{
@@ -68,11 +68,11 @@ int	TcpListener::init()
             perror("server: socket");
             continue;
         }
-        // if (setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, &yes,
-        //         sizeof(int)) == -1) {
-        //     perror("setsockopt");
-        //     exit(1);
-        // }
+        if (setsockopt(listening.fd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                sizeof(int)) == -1) {
+            perror("setsockopt");
+            exit(1);
+        }
         if (bind(listening.fd, p->ai_addr, p->ai_addrlen) == -1) {
             close(listening.fd);
             perror("server: bind");
@@ -109,6 +109,21 @@ int	TcpListener::init()
 	return (0);
 }
 
+struct EventFlag {
+    short flag;
+    const char* description;
+};
+
+
+EventFlag eventFlags[] = 
+{
+            {POLLIN, "POLLIN (Data to read)"},
+            {POLLOUT, "POLLOUT (Ready for writing)"},
+            {POLLERR, "POLLERR (Error)"},
+            {POLLHUP, "POLLHUP (Hang-up)"},
+            {POLLNVAL, "POLLNVAL (Invalid FD)"},
+            {POLLPRI, "POLLPRI (Urgent Data)"}
+};
 
 int	TcpListener::run()
 {
@@ -156,16 +171,25 @@ int	TcpListener::run()
 				
 				// onClientConnected();
 			}
-			else if (sock != listening.fd)
+			else if (sock != listening.fd && (copyFDs[i].revents & POLLHUP))
+			{
+				std::cout << "hang up" << sock << " with i = " << i  << std::endl;
+				close(sock);
+				m_pollFDs.erase(m_pollFDs.begin() + i);
+				break ;
+			}
+			else if (sock != listening.fd && (copyFDs[i].revents & POLLIN))
 			{
 				char buf[MAXBYTES];
 				int bytesIn;
 				
 				/* do it in a loop until recv is 0? */
+				std::cout << "trying to recv on fd " << sock << " with i = " << i  << std::endl;
 				while (1)
 				{
 					memset(&buf, 0, MAXBYTES);
 					bytesIn = recv(sock, buf, MAXBYTES, 0);
+					perror("recv:");
 					if (bytesIn < 0)
 					{
 						//drop the client
@@ -177,6 +201,9 @@ int	TcpListener::run()
 					}
 					else if (bytesIn == 0)
 					{
+						std::cout << "Closing a connection" << std::endl;
+						close(sock);
+						m_pollFDs.erase(m_pollFDs.begin() + i);
 						break;
 					}
 					else 
@@ -189,8 +216,18 @@ int	TcpListener::run()
 
 				}
 			}
-		}	
-	}
+			else 
+			{
+				for (const auto& eventFlag : eventFlags) 
+				{
+					if (copyFDs[i].revents & eventFlag.flag) 
+					{
+						std::cout << eventFlag.description << std::endl;
+					}
+				}
+			}
+		}
+	}	
 
 	m_pollFDs.clear();
 	//closing the listening socket
