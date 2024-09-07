@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/06 21:17:10 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/07 12:29:06 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,7 +132,7 @@ int main() {
                         buffer[bytesReceived] = '\0';
                         std::cout << "Message from client: " << buffer << std::endl;
                         //Response to be changed into html 
-                        std::string response = "Server response: Message received!";
+                        std::string response = "";
                         send(pollfds[i].fd, response.c_str(), response.size(), 0);
                     } else if (bytesReceived == 0 || (bytesReceived < 0 && errno != EWOULDBLOCK)) {
                         // If no bytes received or error, close the client socket
@@ -148,7 +148,7 @@ int main() {
         }
 
     }
-    //close still open sockets and free allocated getAdress
+    //close still open sockets and free allocated getAdress struct
     for (size_t i = 1; i < pollfds.size(); ++i) {
         close(pollfds[i].fd);
     }
