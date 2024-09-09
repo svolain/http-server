@@ -6,11 +6,13 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/06 17:37:23 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/09 15:23:40 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "TcpListener.hpp"
+
+#define TODO 123
 
 TcpListener::TcpListener()
 {
@@ -50,7 +52,7 @@ int	TcpListener::init()
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-
+	
 
 	int status = getaddrinfo(m_ipAddress, m_port, &hints, &servinfo);
 	if (status  != 0)
@@ -71,7 +73,7 @@ int	TcpListener::init()
         if (setsockopt(listening.fd, SOL_SOCKET, SO_REUSEADDR, &yes,
                 sizeof(int)) == -1) {
             perror("setsockopt");
-            exit(1);
+            exit(TODO);
         }
         if (bind(listening.fd, p->ai_addr, p->ai_addrlen) == -1) {
             close(listening.fd);
@@ -125,38 +127,45 @@ EventFlag eventFlags[] =
             {POLLPRI, "POLLPRI (Urgent Data)"}
 };
 
+#define TIMEOUT		3000
+	/* will be specified by us*/
+#define MAXBYTES	16000
+
+
 int	TcpListener::run()
 {
-	#define TIMEOUT 1000
-	/* will be specified by the  */
-	#define MAXBYTES 16000
-
+	int 	sock;
+	short	revents;
+	int		socketsReady; 
 
 	while (1)
 	{
-			/* if poll() makes unwanted changes to the main vector */
 		std::vector<pollfd> copyFDs = m_pollFDs;
-		// for (size_t i = 0; i < m_pollFDs.size(); i++)
-		// {
-		// 	std::cout << "revents for " << i << " " << m_pollFDs[i].revents << std::endl;
-		// }
 		/* the socketsReady from poll() 
 			is the number of file descriptors with events that occurred. */
-		int socketsReady = poll(copyFDs.data(), copyFDs.size(), TIMEOUT);
-		std::cout << "There are " << socketsReady << " sockets ready" << std::endl;
-		// std::cout << "after poll" << std::endl;
+		socketsReady = poll(copyFDs.data(), copyFDs.size(), TIMEOUT);
+		if (socketsReady == -1)
+		{
+			perror("poll: ");
+			exit(TODO);
+		}
+		// std::cout << "There are " << socketsReady << " sockets ready" << std::endl;
+		if (!socketsReady)
+		{
+			std::cout << "poll() is waiting..." << std::endl;
+			continue;
+		}
 		for (size_t i = 0; i < copyFDs.size(); i++)
 		{
 			//for readability
-			int sock = copyFDs[i].fd;
-			std::cout << sock << std::endl;
+			sock = copyFDs[i].fd;
+			revents = copyFDs[i].revents;
 			//is it an inbound connection?
-			if (sock == listening.fd && (copyFDs[i].revents & POLLIN))
+			if (sock == listening.fd && (revents & POLLIN))
 			{
 				/* should we store the address of the connnecting client?
 					for now just using nullptr */
 				pollfd newClient;
-				std::cout << "before accept" << std::endl;
 				newClient.fd = accept(listening.fd, nullptr, nullptr);
 				if (newClient.fd != -1)
 				{
@@ -164,44 +173,49 @@ int	TcpListener::run()
 					m_pollFDs.push_back(newClient);
 					std::cout << "Created a new connection" << std::endl;
 				}
-				else 
-					// perror("Accept:");
-				std::cout << "after accept" << std::endl;
-
-				
 				// onClientConnected();
 			}
-			else if (sock != listening.fd && (copyFDs[i].revents & POLLHUP))
+			else if (sock != listening.fd && (revents & POLLHUP))
 			{
 				std::cout << "hang up" << sock << " with i = " << i  << std::endl;
 				close(sock);
 				m_pollFDs.erase(m_pollFDs.begin() + i);
-				break ;
+				continue;
 			}
-			else if (sock != listening.fd && (copyFDs[i].revents & POLLIN))
+			else if (sock != listening.fd && (revents & POLLNVAL))
+			{
+				std::cout << "invalid fd " << sock << " with i = " << i  << std::endl;
+				//try to close anyway?
+				close(sock);
+				m_pollFDs.erase(m_pollFDs.begin() + i);
+				continue;
+			}
+			//there is data to recv
+			else if (sock != listening.fd && (revents & POLLIN))
 			{
 				char buf[MAXBYTES];
 				int bytesIn;
 				
-				/* do it in a loop until recv is 0? */
-				std::cout << "trying to recv on fd " << sock << " with i = " << i  << std::endl;
+				/* do it in a loop until recv is 0? 
+					would it be considered blocking?*/
+				// std::cout << "trying to recv on fd " << sock << " with i = " << i  << std::endl;
 				while (1)
 				{
 					memset(&buf, 0, MAXBYTES);
 					bytesIn = recv(sock, buf, MAXBYTES, 0);
-					perror("recv:");
 					if (bytesIn < 0)
 					{
 						//drop the client
+						//exit for now
 						close(sock);
 						perror("recv:");
-						exit (11);
-						m_pollFDs.erase(m_pollFDs.begin() + i);
-						break ;
+						exit (TODO);
+						// m_pollFDs.erase(m_pollFDs.begin() + i);
+						// break ;
 					}
 					else if (bytesIn == 0)
 					{
-						std::cout << "Closing a connection" << std::endl;
+						std::cout << "bytesIn is 0, closing connection " << sock << std::endl;
 						close(sock);
 						m_pollFDs.erase(m_pollFDs.begin() + i);
 						break;
@@ -211,7 +225,6 @@ int	TcpListener::run()
 						//TODO something with the recieved data chunk
 						std::cout << "recieved message" << std::endl;
 						onMessageRecieved(sock, buf, bytesIn);
-						break ;
 					}
 
 				}

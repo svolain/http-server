@@ -59,12 +59,11 @@ void WebServer::onMessageRecieved(int clientSocket, const char *msg, int length)
 	{	
 		htmlFile = parsed[1];
 		if (htmlFile == "/")
-			htmlFile == "/index.html";
+			htmlFile = "/index.html";
 		
-		std::ifstream f("./pages/" + parsed[1]);
+		std::ifstream f("./pages/" + htmlFile);
 		if (!f.is_open())
 			std::cerr << "Failed to open index.html\n";
-
 		if (f.good())
 		{
 			while (std::getline(f, content, '\0'))
@@ -73,6 +72,7 @@ void WebServer::onMessageRecieved(int clientSocket, const char *msg, int length)
 		}
 		f.close(); 
 	}
+	
 
 	//Write the document back to the client
 	std::ostringstream oss;
@@ -80,6 +80,7 @@ void WebServer::onMessageRecieved(int clientSocket, const char *msg, int length)
 	oss << "Cache-Control: no-cache, private\r\n";
 	oss << "Content-Type: text/html\r\n";
 	oss << "Content-Length: " << content.size()  << "\r\n";
+	oss << "Connection: keep-alive" << "\r\n";
 	oss << "\r\n";
 	oss << content;
 
