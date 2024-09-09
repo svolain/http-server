@@ -1,0 +1,5 @@
+webserv
+objs/
+*.pdf
+.DS_Store
+.vscode
