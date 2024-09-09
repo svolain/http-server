@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <iterator>
 
 
 
@@ -41,28 +42,39 @@ WebServer& WebServer::operator=(const WebServer& other)
 void WebServer::onMessageRecieved(int clientSocket, const char *msg, int length)
 {
 	//GET /index.html HTTP/1.1
+	(void)length;
 
 	//Parse out the document requested
-	//Open the document ini the loacl files system
-	//Write the document back to the client
-	(void)length;
-	(void)msg;
+	std::istringstream iss(msg);
+	std::vector<std::string> parsed
+	((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
+	
 
-	std::ifstream f("./pages/index.html");
-	if (!f.is_open())
-		std::cerr << "Failed to open index.html\n";
+	//Open the document ini the local files system
 	std::string content = "<h1>404 Not Found</h1>";
+	std::string htmlFile = "/index.html";
 	int errorCode = 404;
 
-	if (f.good())
-	{
-		while (std::getline(f, content, '\0'))
-			;
-		errorCode = 200;
+	if (parsed.size() >= 3 && parsed[0] == "GET")
+	{	
+		htmlFile = parsed[1];
+		if (htmlFile == "/")
+			htmlFile == "/index.html";
+		
+		std::ifstream f("./pages/" + parsed[1]);
+		if (!f.is_open())
+			std::cerr << "Failed to open index.html\n";
+
+		if (f.good())
+		{
+			while (std::getline(f, content, '\0'))
+				;
+			errorCode = 200;
+		}
+		f.close(); 
 	}
 
-	f.close(); 
-
+	//Write the document back to the client
 	std::ostringstream oss;
 	oss << "HTTP/1.1 " << errorCode << " OK\r\n";
 	oss << "Cache-Control: no-cache, private\r\n";
