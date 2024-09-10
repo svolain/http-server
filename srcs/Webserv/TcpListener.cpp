@@ -6,53 +6,24 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/09 15:23:40 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/10 12:09:47 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "TcpListener.hpp"
 
-#define TODO 123
-
-TcpListener::TcpListener()
-{
-	std::cout << "Default Constructor for TcpListener called" << std::endl;
-}
-
-TcpListener::TcpListener(const TcpListener &other)
-{
-	std::cout << "Copy constuctor for TcpListener called" << std::endl;
-	*this = other;
-}
-
-TcpListener::~TcpListener()
-{
-	std::cout << "Destructor for TcpListener called" << std::endl;
-}
-
-TcpListener& TcpListener::operator=(const TcpListener& other)
-{
-	std::cout << "Assignment operator for TcpListener called" << std::endl;
-	if (this != &other)
-	{
-		return *this;
-	}
-	return *this;
-}
-
 TcpListener::TcpListener(const char *m_ipAddress, const char *m_port)
 	: m_ipAddress(m_ipAddress), m_port(m_port)
 {
-	std::cout << "Default Constructor for TcpListener called" << std::endl;
+	;
 }
+
 
 int	TcpListener::init()
 {
-	struct addrinfo hints, *servinfo, *p;
-	memset(&hints, 0, sizeof(hints));
+	struct addrinfo hints{}, *servinfo;
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	
 
 	int status = getaddrinfo(m_ipAddress, m_port, &hints, &servinfo);
 	if (status  != 0)
@@ -61,34 +32,25 @@ int	TcpListener::init()
 		return (1);
 	}
 
+	if ((listening.fd = socket(servinfo->ai_family, servinfo->ai_socktype,
+			servinfo->ai_protocol)) == -1) {
+		perror("server: socket");
+		return 1;
+	}
+	/* SO_REUSEADDR for TCP to handle the case when the server shuts down
+		and we can't bind to the same socket if there's data left
+		port goes into a TIME_WAIT state otherwise*/
 	int yes = 1;
-	// loop through all the results and bind to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next) 
-	{
-        if ((listening.fd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("server: socket");
-            continue;
-        }
-        if (setsockopt(listening.fd, SOL_SOCKET, SO_REUSEADDR, &yes,
-                sizeof(int)) == -1) {
-            perror("setsockopt");
-            exit(TODO);
-        }
-        if (bind(listening.fd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(listening.fd);
-            perror("server: bind");
-            continue;
-        }
-        break;
-    };
-
-	if (p == NULL)
-	{
-		std::cerr << "server: failed to bind\n";
+	if (setsockopt(listening.fd, SOL_SOCKET, SO_REUSEADDR, &yes,
+			sizeof(int)) == -1) {
+		perror("setsockopt");
 		return (2);
 	}
-
+	if (bind(listening.fd, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+		close(listening.fd);
+		perror("server: bind" );
+		return (3);
+	}
 	// fcntl(listening.fd, F_SETFL, O_NONBLOCK);
 	
 	freeaddrinfo(servinfo);
@@ -134,16 +96,13 @@ EventFlag eventFlags[] =
 
 int	TcpListener::run()
 {
-	int 	sock;
-	short	revents;
-	int		socketsReady; 
 
 	while (1)
 	{
 		std::vector<pollfd> copyFDs = m_pollFDs;
 		/* the socketsReady from poll() 
 			is the number of file descriptors with events that occurred. */
-		socketsReady = poll(copyFDs.data(), copyFDs.size(), TIMEOUT);
+		int socketsReady = poll(copyFDs.data(), copyFDs.size(), TIMEOUT);
 		if (socketsReady == -1)
 		{
 			perror("poll: ");
@@ -158,8 +117,8 @@ int	TcpListener::run()
 		for (size_t i = 0; i < copyFDs.size(); i++)
 		{
 			//for readability
-			sock = copyFDs[i].fd;
-			revents = copyFDs[i].revents;
+			int sock = copyFDs[i].fd;
+			short revents = copyFDs[i].revents;
 			//is it an inbound connection?
 			if (sock == listening.fd && (revents & POLLIN))
 			{
@@ -193,14 +152,15 @@ int	TcpListener::run()
 			//there is data to recv
 			else if (sock != listening.fd && (revents & POLLIN))
 			{
-				char buf[MAXBYTES];
-				int bytesIn;
+				char  buf[MAXBYTES];
+				int   bytesIn;
 				
 				/* do it in a loop until recv is 0? 
 					would it be considered blocking?*/
 				// std::cout << "trying to recv on fd " << sock << " with i = " << i  << std::endl;
 				while (1)
 				{
+					//TODO: add a Timeout timer for the client connection
 					memset(&buf, 0, MAXBYTES);
 					bytesIn = recv(sock, buf, MAXBYTES, 0);
 					if (bytesIn < 0)
@@ -208,7 +168,7 @@ int	TcpListener::run()
 						//drop the client
 						//exit for now
 						close(sock);
-						perror("recv:");
+						perror("recv -1:");
 						exit (TODO);
 						// m_pollFDs.erase(m_pollFDs.begin() + i);
 						// break ;
@@ -229,14 +189,14 @@ int	TcpListener::run()
 
 				}
 			}
+			/* An unspecified event will trigget this loop 
+				to see which flag is in the revents*/
 			else 
 			{
 				for (const auto& eventFlag : eventFlags) 
 				{
-					if (copyFDs[i].revents & eventFlag.flag) 
-					{
+					if (revents & eventFlag.flag) 
 						std::cout << eventFlag.description << std::endl;
-					}
 				}
 			}
 		}
@@ -251,7 +211,18 @@ int	TcpListener::run()
 	return (0);
 }
 
-int TcpListener::sendToClient(int clientSocket, const char *msg, int length)
+int TcpListener::sendToClient(const int clientSocket, const char *msg, int length)
 {
 	return (send(clientSocket, msg, length, 0));
+}
+
+
+TcpListener::TcpListener()
+{
+	;
+}
+
+TcpListener::~TcpListener()
+{
+	std::cout << "Destructor for TcpListener called" << std::endl;
 }

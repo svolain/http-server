@@ -1,0 +1,6 @@
+webserv
+objs/
+*.pdf
+.DS_Store
+.vscode
+*.mp4

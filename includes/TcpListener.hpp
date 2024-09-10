@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/04 16:11:04 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/06 12:59:08 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/10 11:48:05 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 #include <vector>
 
 #define PORT "8080"
+#define TODO 123
 
 class TcpListener
 {
@@ -39,7 +40,7 @@ class TcpListener
 		virtual void onClientConnected() = 0;
 		virtual void onClientDisconected() = 0;
 
-		virtual void onMessageRecieved(int clientSocket, const char *msg, int length) = 0;
+		virtual void onMessageRecieved(const int clientSocket, const char *msg, int length) = 0;
 
 		int sendToClient(int clientSocket, const char *msg, int length);
 
@@ -49,9 +50,7 @@ class TcpListener
 
 		TcpListener();
 		TcpListener(const char *m_ipAddress, const char *m_port);
-		TcpListener(const TcpListener &other);
 		~TcpListener();
-		TcpListener&	operator=(const TcpListener& other);
 
 		int	init();
 
