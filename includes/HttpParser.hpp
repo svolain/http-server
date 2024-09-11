@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/11 13:06:47 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/11 13:56:45 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,8 @@ class HttpParser {
         std::string getrequestBody() const;
         int         getErrorCode() const;
         std::map<std::string, std::string> getHeaders() const;
+
+        bool checkValidPath(std::string path);
 
 
     private:

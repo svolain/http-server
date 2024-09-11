@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/11 13:07:26 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/11 13:56:47 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,15 @@ bool HttpParser::parseRequest(const std::string request) {
     }
     
     std::istringstream linestream(line);
-    linestream >> method >> resourcePath >> httpVersion;   
+    linestream >> method >> resourcePath >> httpVersion;
 
+    if (method.empty() || resourcePath.empty() || httpVersion.empty()) {
+        std::cerr << "Error: bad request 400" << std::endl;
+        //respond with HTTP 400 Bad Request
+        error_code = 400;
+        return false;
+    }
+    
     std::string allowedMethods[] = {"GET", "POST", "DELETE", "HEAD"};
     if (std::find(std::begin(allowedMethods), std::end(allowedMethods), method) ==
     std::end(allowedMethods)) {
@@ -126,11 +133,18 @@ std::map<std::string, std::string> HttpParser::getHeaders() const {
 }
 
 int HttpParser::getErrorCode() const {
-    
+    return error_code;   
 }
 
-static bool checkValidPath(std::string resourcePath) {
+bool HttpParser::checkValidPath(std::string path) {
     /*for this function the root from confiq file is needed
     in short this searches the asked path either diirectory or file
     within the root directory, if not found rsponse is 404*/ 
+    if (path.at(0) != '/') {
+        std::cerr << "Error: wrong path" << std::endl;
+        error_code = 404; // or 400?
+        return false;
+    }
+
+    return true;
 }
