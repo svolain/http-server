@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 #include <iterator>
-
+#include <optional>
 
 WebServer::WebServer(const char *m_ipAddress, const char *m_port)
 	: TcpListener(m_ipAddress, m_port){
@@ -15,7 +15,7 @@ WebServer::WebServer(const char *m_ipAddress, const char *m_port)
 /* tellg returns position of file pointer, gives the size of the file in bytes
 		  since it was at the end of file */
 
-void WebServer::sendResponse(const int &clientSocket, int errorCode, std::string *content, 
+void WebServer::composeHeader(const int &clientSocket, int errorCode, 
 	const std::string contType){
 
   //TODO do some kind of a table duple lookup for error codes  messages
@@ -37,92 +37,100 @@ void WebServer::sendResponse(const int &clientSocket, int errorCode, std::string
 
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << errorCodeMessage << "\r\n";
-	oss << "Content-Type: " << contType << "\r\n";
-	oss << "Content-Length: " << (*content).size()  << "\r\n";
+  (void)contType;
+	// oss << "Content-Type: " << contType << "\r\n";
+	// oss << "Content-Length: " << (*content).size()  << "\r\n";
+  oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
-	oss << *content;
+	// oss << *content;
 	std::string output = oss.str();
-	int size = output.size() + 1;
-
-	int bytesOut = sendToClient(clientSocket, oss.str().c_str(), size);
-	if (bytesOut < 0)
-		exit (TODO);
-	else
-		std::cout << "sent " << bytesOut << " bytes out" << std::endl;
+	size_t size = output.size() + 1;
+  std::cout << output << std::endl;
+  sendToClient(clientSocket, output.c_str(), size);
 }
 
-static int readHTML(std::string requestFile, int *errorCode, std::string *content)
+std::ifstream WebServer::openFile(std::vector<std::string> &parsed, int *errorCode)
 {
-  if (requestFile == "/")
-      requestFile = "index.html";
-  
-  std::ifstream htmlFile("./pages/" + requestFile);
-  if (!htmlFile.is_open())
-  {
-    *errorCode = 404;
-    return 3;
-  }
+  std::ifstream file;
 
-  content->assign((std::istreambuf_iterator<char>(htmlFile)),
-                std::istreambuf_iterator<char>());
-  if (*errorCode == 404)
-    *errorCode = 200;
-  htmlFile.close(); 
-  return 0;
-}
-
-int WebServer::readRequest(std::string *content, std::vector<std::string> &parsed, int *errorCode)
-{
 	if (parsed.size() < 3 || parsed[0] != "GET"){
     std::cerr << "Unknown request\n";
-    return 1;
+    return file;
   }
 
   std::string requestFile = parsed[1];
-  //naive finding of the html name
-  if (requestFile.find(".html") == std::string::npos && requestFile != "/" && requestFile != "index.html" && 
+  std::cout << "the reqFile is " << requestFile << std::endl;
+  
+  //naive parsing
+  if (requestFile != "/" && requestFile.find(".html") == std::string::npos &&  
     requestFile.find(".ico") == std::string::npos) //read bin file
-  {
-    std::ifstream binFile("." + requestFile, std::ios::binary);
-
-    if (!(binFile).is_open()){
-        std::cerr << "Failed to open bin file " << requestFile << "\n";
-        *errorCode = 500;
-        return (readHTML("500.html", errorCode, content));
-    }
-
-    content->assign((std::istreambuf_iterator<char>(binFile)),
-                    std::istreambuf_iterator<char>());
-    binFile.close();
-    return 0;
-  }
+      file.open("." + requestFile, std::ios::binary);
   else //read html file
-    return (readHTML(requestFile, errorCode, content));
+  {
+    if (requestFile == "/")
+      requestFile = "index.html";
+    file.open("./pages/" + requestFile);
+  }
+  if (!file.is_open())
+    file.open("./pages/404.html");
+  else
+     *errorCode = 200;
+  // Copy elision, c++ 17, not copying the object to get out of function
+  return file;
 }
 
-void WebServer::onMessageRecieved(const int clientSocket, const char *msg, int length){
-	(void)length;
+void  assignContType(std::string *contType, std::vector<std::string> *parsed)
+{
+  if ((*parsed)[1].find(".jpg") != std::string::npos)
+    (*contType).assign("image/jpeg");
+  else if ((*parsed)[1].find(".mp4") != std::string::npos)
+    (*contType).assign("video/mp4");
+}
 
-	//Parse out the document requested
-	std::istringstream iss(msg);
-  // std::cout << msg << std::endl;
-	std::vector<std::string> parsed
-	((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
-
+void WebServer::onMessageRecieved(const int clientSocket, const char *msg, 
+  int length){
+	
+  (void)length;
 	//TODO: check if the header contains "Connection: close"
 	std::string content = "<h1>404 Not Found</h1>";
 	int errorCode = 404;
 
-
-	if (readRequest(&content, parsed, &errorCode))
-    return ;
+  std::istringstream iss(msg);
+  std::vector<std::string> parsed
+	  ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
+	
   std::string contType = "text/html";
-  //TODO: check that the request is html or image or other type of file
-  // if (parsed[1].find(".html") != std::string::npos)
-  //   contType.assign("image/jpeg");
- 
-	sendResponse(clientSocket, errorCode, &content, contType);
-  
+  assignContType(&contType, &parsed);
+
+  std::ifstream file = openFile(parsed, &errorCode);
+  composeHeader(clientSocket, errorCode, contType);
+
+  const size_t chunk_size = 8192; // 8KB chunks
+  char buffer[chunk_size];
+  if (file.is_open()){
+    while (file) {
+     
+      file.read(buffer, chunk_size);
+      std::streamsize bytes_read = file.gcount();
+
+      std::cout << "CHUNKING" << std::endl;
+      std::cout << buffer << std::endl;
+
+      // Send the size of the chunk in hexadecimal
+      std::ostringstream chunk_size_hex;
+      chunk_size_hex << std::hex << bytes_read << "\r\n";
+      sendToClient(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()); 
+      // Send the actual chunk data
+      sendToClient(clientSocket, buffer, bytes_read);
+      // End the chunk with CRLF
+      sendToClient(clientSocket, "\r\n", 2);
+    }
+    // Send the final zero-length chunk to signal the end
+    sendToClient(clientSocket, "0\r\n\r\n", 5);
+  }
+  else
+    sendToClient(clientSocket, "<h1>404 Not Found</h1>", 23);
+  file.close(); 
 }
 
 void WebServer::onClientConnected()

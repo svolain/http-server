@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 12:01:28 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/10 17:51:32 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/11 18:17:22 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,9 @@
 class WebServer : public TcpListener
 {
 	private:
-		int  readRequest(std::string *content, std::vector<std::string> &parsed, int *errorCode);
-		void  sendResponse(const int &clientSocket ,int errorCode, std::string *content, 
-	  const std::string contType);
+		std::ifstream openFile(std::vector<std::string> &parsed, int *errorCode);
+		void  composeHeader(const int &clientSocket, int errorCode, 
+	const std::string contType);
 
 	protected:
 		virtual void onClientConnected() override;

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/11 13:45:16 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/11 14:01:51 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,8 +151,9 @@ int	TcpListener::run(){
 						//drop the client
 						//exit for now
 						close(sock);
+						m_pollFDs.erase(m_pollFDs.begin() + i);
 						perror("recv -1:");
-						exit (TODO);
+						break ;
 						// m_pollFDs.erase(m_pollFDs.begin() + i);
 						// break ;
 					}
