@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/10 16:35:56 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/11 10:50:15 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,16 +29,18 @@ bool HttpParser::parseRequest(const std::string request) {
     
     if (!std::getline(requestStream, line)) {
         std::cerr << "Error: getline failed to read request" << std::endl;
+        //respond with 500 Internal Server Error
         return false;
     }
     
     std::istringstream linestream(line);
     linestream >> method >> resourcePath >> httpVersion;   
 
-    std::string allowedMethods[] = {"GET", "POST", "DELETE"};
+    std::string allowedMethods[] = {"GET", "POST", "DELETE", "HEAD"};
     if (std::find(std::begin(allowedMethods), std::end(allowedMethods), method) ==
     std::end(allowedMethods)) {
         std::cerr << "Error: not supported method requested" << std::endl;
+        //respond with HTTP 405 Method Not Allowed Error
         return false;
     }
 
@@ -53,6 +55,7 @@ bool HttpParser::parseRequest(const std::string request) {
         size_t delim = line.find(":");
         if (delim == std::string::npos) {
             std::cerr << "Error: wrong header line format" << std::endl;
+            //respond with http 400 Bad Request
             return false;
         }
         std::string header = line.substr(0, delim);
@@ -72,6 +75,7 @@ bool HttpParser::parseRequest(const std::string request) {
         
         if (headers.find("Content-Length") == headers.end()) {
             std::cerr << "Error: content-lenght missing for request body" << std::endl;
+            //respoond with http 411 Length Required or general http 400 Bad Request?
             return false;
         }
         std::string contentLengthStr = headers["Content-Length"];
