@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/10 16:35:02 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/11 13:06:47 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ class HttpParser {
         std::string getQueryString() const;
         std::string getHttpVersion() const;
         std::string getrequestBody() const;
+        int         getErrorCode() const;
         std::map<std::string, std::string> getHeaders() const;
 
 
@@ -42,6 +43,7 @@ class HttpParser {
 		std::string							queryString;
 		std::string							httpVersion;
         std::string                         requestBody;
+        int                                 error_code = 0;
 		std::map<std::string, std::string>	headers = {};
 };
 
