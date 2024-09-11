@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/10 17:54:06 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/11 13:45:16 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,7 +118,7 @@ int	TcpListener::run(){
 				if (newClient.fd != -1){
 					newClient.events = POLLIN;
 					m_pollFDs.push_back(newClient);
-					std::cout << "Created a new connection" << std::endl;
+					// std::cout << "Created a new connection" << std::endl;
 				}
 				// onClientConnected();
 			}
@@ -157,14 +157,14 @@ int	TcpListener::run(){
 						// break ;
 					}
 					else if (bytesIn == 0){
-						std::cout << "bytesIn is 0, closing connection " << sock << std::endl;
+						// std::cout << "bytesIn is 0, closing connection " << sock << std::endl;
 						close(sock);
 						m_pollFDs.erase(m_pollFDs.begin() + i);
 						break;
 					}
 					else {
 						//TODO something with the recieved data chunk
-						std::cout << "recieved message" << std::endl;
+						// std::cout << "recieved message" << std::endl;
 						onMessageRecieved(sock, buf, bytesIn);
 					}
 

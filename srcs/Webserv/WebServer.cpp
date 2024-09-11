@@ -79,12 +79,14 @@ int WebServer::readRequest(std::string *content, std::vector<std::string> &parse
   }
 
   std::string requestFile = parsed[1];
-  if (requestFile != "/" && requestFile != "index.html") //read bin file
+  //naive finding of the html name
+  if (requestFile.find(".html") == std::string::npos && requestFile != "/" && requestFile != "index.html" && 
+    requestFile.find(".ico") == std::string::npos) //read bin file
   {
-    std::ifstream binFile(requestFile, std::ios::binary | std::ios::ate);
+    std::ifstream binFile("." + requestFile, std::ios::binary);
 
     if (!(binFile).is_open()){
-        std::cerr << "Failed to open bin file\n";
+        std::cerr << "Failed to open bin file " << requestFile << "\n";
         *errorCode = 500;
         return (readHTML("500.html", errorCode, content));
     }
@@ -103,6 +105,7 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg, int l
 
 	//Parse out the document requested
 	std::istringstream iss(msg);
+  // std::cout << msg << std::endl;
 	std::vector<std::string> parsed
 	((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
 
@@ -114,12 +117,10 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg, int l
 	if (readRequest(&content, parsed, &errorCode))
     return ;
   std::string contType = "text/html";
-  if (parsed[1].find(".html") != std::string::npos)
-  {
-    contType.assign("image/jpeg");
-  }
-
   //TODO: check that the request is html or image or other type of file
+  // if (parsed[1].find(".html") != std::string::npos)
+  //   contType.assign("image/jpeg");
+ 
 	sendResponse(clientSocket, errorCode, &content, contType);
   
 }
