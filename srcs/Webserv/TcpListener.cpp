@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/11 14:01:51 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/12 18:40:02 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,6 +147,7 @@ int	TcpListener::run(){
 					//TODO: add a Timeout timer for the client connection
 					memset(&buf, 0, MAXBYTES);
 					bytesIn = recv(sock, buf, MAXBYTES, 0);
+					std::cout << bytesIn << std::endl;
 					if (bytesIn < 0){
 						//drop the client
 						//exit for now
@@ -179,6 +180,7 @@ int	TcpListener::run(){
 						std::cout << eventFlag.description << std::endl;
 				}
 			}
+			std::cout << "here" << std::endl;
 		}
 	}	
 

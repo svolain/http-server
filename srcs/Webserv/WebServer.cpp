@@ -38,13 +38,13 @@ void WebServer::composeHeader(const int &clientSocket, int errorCode,
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << errorCodeMessage << "\r\n";
   (void)contType;
-	// oss << "Content-Type: " << contType << "\r\n";
+	oss << "Content-Type: " << contType << "\r\n";
 	// oss << "Content-Length: " << (*content).size()  << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	// oss << *content;
 	std::string output = oss.str();
-	size_t size = output.size() + 1;
+	size_t size = output.size();
   std::cout << output << std::endl;
   sendToClient(clientSocket, output.c_str(), size);
 }
@@ -106,30 +106,32 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
   composeHeader(clientSocket, errorCode, contType);
 
   const size_t chunk_size = 8192; // 8KB chunks
-  char buffer[chunk_size];
+  char buffer[chunk_size]{};
   if (file.is_open()){
     while (file) {
      
       file.read(buffer, chunk_size);
-      std::streamsize bytes_read = file.gcount();
-
-      std::cout << "CHUNKING" << std::endl;
-      std::cout << buffer << std::endl;
+      std::streamsize bytes_read = file.gcount(); 
 
       // Send the size of the chunk in hexadecimal
       std::ostringstream chunk_size_hex;
       chunk_size_hex << std::hex << bytes_read << "\r\n";
-      sendToClient(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()); 
+      if (sendToClient(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1)
+        perror("send 1:");
       // Send the actual chunk data
-      sendToClient(clientSocket, buffer, bytes_read);
+      if (sendToClient(clientSocket, buffer, bytes_read) == -1)
+        perror("send 2:");
       // End the chunk with CRLF
-      sendToClient(clientSocket, "\r\n", 2);
+      if (sendToClient(clientSocket, "\r\n", 2) == -1)
+        perror("send 3:");
     }
     // Send the final zero-length chunk to signal the end
-    sendToClient(clientSocket, "0\r\n\r\n", 5);
+    if (sendToClient(clientSocket, "0\r\n\r\n", 5) == -1)
+      perror("send 4:");
   }
   else
-    sendToClient(clientSocket, "<h1>404 Not Found</h1>", 23);
+    if (sendToClient(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)
+      perror("send 5:");
   file.close(); 
 }
 
