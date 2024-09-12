@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/11 13:56:47 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/12 20:42:27 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 HttpParser::HttpParser(void) {}
 
-HttpParser::HttpParser(const std::string request) {
+HttpParser::HttpParser(const std::string request): error_code(0) {
     parseRequest(request);
 }
 
@@ -60,7 +60,7 @@ bool HttpParser::parseRequest(const std::string request) {
         resourcePath = resourcePath.substr(0, queryPosition);       
     }
 
-    //call a function that checks if path exists, if not response 404
+    //call a function that checks if path exists
     if (!checkValidPath(resourcePath)) {
         return false;
     }
@@ -138,11 +138,65 @@ int HttpParser::getErrorCode() const {
 
 bool HttpParser::checkValidPath(std::string path) {
     /*for this function the root from confiq file is needed
-    in short this searches the asked path either diirectory or file
-    within the root directory, if not found rsponse is 404*/ 
+    in short this searches the asked path either directory or file
+    within the root directory, if not found rsponse is 404*/
     if (path.at(0) != '/') {
-        std::cerr << "Error: wrong path" << std::endl;
+        std::cerr << "Error: wrong path format" << std::endl;
         error_code = 404; // or 400?
+        return false;
+    }
+
+    //untill we get root it has to be set manually for example "www" in current working directory
+    std::string rootPath = "";
+     try {
+        rootPath = std::filesystem::current_path().string() + "/www" + path;
+        std::cout << "root path: " << rootPath << std::endl;
+    } catch (const std::filesystem::filesystem_error& e) {
+        // Handle potential errors
+        error_code = 500;
+        return false;
+    } catch (const std::exception& e) {
+        error_code = 500;
+        return false;
+    }
+
+    /*check the directory and file existence and permissions, 
+    can take absolute and relative path, needs to be tested 
+    more when we get the root from confiq*/
+    try {
+        if (rootPath.back() == '/') {
+            if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)){
+                //std::cout << "valid directory" << std::endl;
+                return true;
+            } else {
+                error_code = 404;
+                //std::cout << "no valid directory" << std::endl;
+                return false;
+            }
+        }
+        
+        if (rootPath.back() != '/') {
+            if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)){
+                //std::cout << "file found" << std::endl;
+                return true;  
+            } else {
+                //std::cout << "file not found" << std::endl;
+                error_code = 404;
+                return false;
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        // Handle filesystem-related errors
+        //std::cout << "not valid file" << std::endl;
+        if (e.code() == std::errc::permission_denied) {
+            error_code = 403; //or 404, basically no permission to file
+        }
+        error_code = 500;
+        return false;
+    } catch (const std::exception& e) {
+        //std::cout << "internal error" << std::endl;
+        //handle unexpected internal errors
+        error_code = 500;
         return false;
     }
 
