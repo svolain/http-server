@@ -44,9 +44,8 @@ void WebServer::composeHeader(const int &clientSocket, int errorCode,
 	oss << "\r\n";
 	// oss << *content;
 	std::string output = oss.str();
-	size_t size = output.size();
   std::cout << output << std::endl;
-  sendToClient(clientSocket, output.c_str(), size);
+  sendToClient(clientSocket, oss.str().c_str(), output.size());
 }
 
 std::ifstream WebServer::openFile(std::vector<std::string> &parsed, int *errorCode)
@@ -79,18 +78,25 @@ std::ifstream WebServer::openFile(std::vector<std::string> &parsed, int *errorCo
   return file;
 }
 
+//Make it more c++ like with the pairs 
 void  assignContType(std::string *contType, std::vector<std::string> *parsed)
 {
   if ((*parsed)[1].find(".jpg") != std::string::npos)
     (*contType).assign("image/jpeg");
   else if ((*parsed)[1].find(".mp4") != std::string::npos)
     (*contType).assign("video/mp4");
+  else if ((*parsed)[1].find(".png") != std::string::npos)
+    (*contType).assign("image/png");
 }
 
 void WebServer::onMessageRecieved(const int clientSocket, const char *msg, 
-  int length){
+  int bytesIn){
 	
-  (void)length;
+  (void)bytesIn;
+  /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
+    see 100 Continue status message
+    https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
+
 	//TODO: check if the header contains "Connection: close"
 	std::string content = "<h1>404 Not Found</h1>";
 	int errorCode = 404;
@@ -105,25 +111,30 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
   std::ifstream file = openFile(parsed, &errorCode);
   composeHeader(clientSocket, errorCode, contType);
 
-  const size_t chunk_size = 8192; // 8KB chunks
+  const int chunk_size = 8192; // 8KB chunks
   char buffer[chunk_size]{};
   if (file.is_open()){
     while (file) {
-     
       file.read(buffer, chunk_size);
+      
       std::streamsize bytes_read = file.gcount(); 
-
+      if (bytes_read == -1)
+      {
+        std::cout << "bytes_read returned -1" << std::endl;
+        sendToClient(clientSocket, "0\r\n\r\n", 5);
+        break;
+      }
       // Send the size of the chunk in hexadecimal
       std::ostringstream chunk_size_hex;
       chunk_size_hex << std::hex << bytes_read << "\r\n";
       if (sendToClient(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1)
         perror("send 1:");
-      // Send the actual chunk data
       if (sendToClient(clientSocket, buffer, bytes_read) == -1)
         perror("send 2:");
       // End the chunk with CRLF
       if (sendToClient(clientSocket, "\r\n", 2) == -1)
         perror("send 3:");
+
     }
     // Send the final zero-length chunk to signal the end
     if (sendToClient(clientSocket, "0\r\n\r\n", 5) == -1)

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/12 18:40:02 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/13 13:44:00 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,8 @@ int	TcpListener::run(){
 			int sock = copyFDs[i].fd;
 			short revents = copyFDs[i].revents;
 			//is it an inbound connection?
-			if (sock == listening.fd && (revents & POLLIN)){
+			if (sock == listening.fd){
+				if (revents & POLLIN){
 				/* should we store the address of the connnecting client?
 					for now just using nullptr */
 				pollfd newClient;
@@ -119,6 +120,7 @@ int	TcpListener::run(){
 					newClient.events = POLLIN;
 					m_pollFDs.push_back(newClient);
 					// std::cout << "Created a new connection" << std::endl;
+				}
 				}
 				// onClientConnected();
 			}
@@ -140,6 +142,7 @@ int	TcpListener::run(){
 			else if (sock != listening.fd && (revents & POLLIN)){
 				char  buf[MAXBYTES];
 				int   bytesIn;
+				fcntl(sock, F_SETFL, O_NONBLOCK);
 				/* do it in a loop until recv is 0? 
 					would it be considered blocking?*/
 				// std::cout << "trying to recv on fd " << sock << " with i = " << i  << std::endl;
@@ -165,9 +168,11 @@ int	TcpListener::run(){
 						break;
 					}
 					else {
-						//TODO something with the recieved data chunk
+						/* TODO something with the recieved  data chunk*/
 						// std::cout << "recieved message" << std::endl;
 						onMessageRecieved(sock, buf, bytesIn);
+						/* If the request is maxbytes we should not break the connection here */
+						break ;
 					}
 
 				}
@@ -180,7 +185,6 @@ int	TcpListener::run(){
 						std::cout << eventFlag.description << std::endl;
 				}
 			}
-			std::cout << "here" << std::endl;
 		}
 	}	
 
