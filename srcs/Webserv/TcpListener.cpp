@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/13 13:44:00 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/13 14:01:55 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,7 +84,7 @@ EventFlag eventFlags[] = {
             {POLLPRI, "POLLPRI (Urgent Data)"}
 };
 
-#define TIMEOUT		3000
+#define TIMEOUT		5000
 	/* will be specified by us*/
 #define MAXBYTES	16000
 
@@ -100,9 +100,13 @@ int	TcpListener::run(){
 			perror("poll: ");
 			exit(TODO);
 		}
-		// std::cout << "There are " << socketsReady << " sockets ready" << std::endl;
 		if (!socketsReady){
-			std::cout << "poll() is waiting..." << std::endl;
+			std::cout << "poll() is closing connections on timeout..." << std::endl;
+			for (size_t i = 1; i < m_pollFDs.size(); i ++)
+			{
+				close(m_pollFDs[i].fd);
+				m_pollFDs.erase(m_pollFDs.begin() + i);
+			}	
 			continue;
 		}
 		for (size_t i = 0; i < copyFDs.size(); i++){
@@ -133,7 +137,7 @@ int	TcpListener::run(){
 			else if (sock != listening.fd && (revents & POLLNVAL))
 			{
 				std::cout << "invalid fd " << sock << " with i = " << i  << std::endl;
-				//try to close anyway?
+				//try to close anyway
 				close(sock);
 				m_pollFDs.erase(m_pollFDs.begin() + i);
 				continue;
@@ -145,31 +149,25 @@ int	TcpListener::run(){
 				fcntl(sock, F_SETFL, O_NONBLOCK);
 				/* do it in a loop until recv is 0? 
 					would it be considered blocking?*/
-				// std::cout << "trying to recv on fd " << sock << " with i = " << i  << std::endl;
 				while (1){
 					//TODO: add a Timeout timer for the client connection
 					memset(&buf, 0, MAXBYTES);
 					bytesIn = recv(sock, buf, MAXBYTES, 0);
 					std::cout << bytesIn << std::endl;
 					if (bytesIn < 0){
-						//drop the client
-						//exit for now
 						close(sock);
 						m_pollFDs.erase(m_pollFDs.begin() + i);
 						perror("recv -1:");
 						break ;
-						// m_pollFDs.erase(m_pollFDs.begin() + i);
-						// break ;
 					}
+					/* with the current break after onMessageRecieved
+						we can't get here */
 					else if (bytesIn == 0){
-						// std::cout << "bytesIn is 0, closing connection " << sock << std::endl;
 						close(sock);
 						m_pollFDs.erase(m_pollFDs.begin() + i);
 						break;
 					}
 					else {
-						/* TODO something with the recieved  data chunk*/
-						// std::cout << "recieved message" << std::endl;
 						onMessageRecieved(sock, buf, bytesIn);
 						/* If the request is maxbytes we should not break the connection here */
 						break ;
