@@ -1,19 +1,17 @@
 
 #include "WebServer.hpp"
+#include "HttpResponse.hpp"
+#include "HttpParser.hpp"
 #include <sstream>
 #include <fstream>
 #include <string>
 #include <iterator>
-#include <optional>
+// #include <optional>
 
 WebServer::WebServer(const char *m_ipAddress, const char *m_port)
 	: TcpListener(m_ipAddress, m_port){
 	;
 }
-
-
-/* tellg returns position of file pointer, gives the size of the file in bytes
-		  since it was at the end of file */
 
 void WebServer::composeHeader(const int &clientSocket, int errorCode, 
 	const std::string contType){
@@ -48,46 +46,31 @@ void WebServer::composeHeader(const int &clientSocket, int errorCode,
   sendToClient(clientSocket, oss.str().c_str(), output.size());
 }
 
-std::ifstream WebServer::openFile(std::vector<std::string> &parsed, int *errorCode)
+std::ifstream WebServer::openFile(std::string resourcePath)
 {
   std::ifstream file;
 
-	if (parsed.size() < 3 || parsed[0] != "GET"){
-    std::cerr << "Unknown request\n";
-    return file;
-  }
-
-  std::string requestFile = parsed[1];
-  std::cout << "the reqFile is " << requestFile << std::endl;
+  std::cout << "the resourcePath is " << resourcePath << std::endl;
   
   //naive parsing
-  if (requestFile != "/" && requestFile.find(".html") == std::string::npos &&  
-    requestFile.find(".ico") == std::string::npos) //read bin file
-      file.open("." + requestFile, std::ios::binary);
+  if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos &&  
+    resourcePath.find(".ico") == std::string::npos) //read bin file
+      file.open("." + resourcePath, std::ios::binary);
   else //read html file
   {
-    if (requestFile == "/")
-      requestFile = "index.html";
-    file.open("./pages/" + requestFile);
+    if (resourcePath == "/")
+      resourcePath = "index.html";
+    file.open("./pages/" + resourcePath);
   }
   if (!file.is_open())
     file.open("./pages/404.html");
-  else
-     *errorCode = 200;
+
+  //TODO: change the error code when the methd is gonna be of the responese class
+
   // Copy elision, c++ 17, not copying the object to get out of function
   return file;
 }
 
-//Make it more c++ like with the pairs 
-void  assignContType(std::string *contType, std::vector<std::string> *parsed)
-{
-  if ((*parsed)[1].find(".jpg") != std::string::npos)
-    (*contType).assign("image/jpeg");
-  else if ((*parsed)[1].find(".mp4") != std::string::npos)
-    (*contType).assign("video/mp4");
-  else if ((*parsed)[1].find(".png") != std::string::npos)
-    (*contType).assign("image/png");
-}
 
 void WebServer::onMessageRecieved(const int clientSocket, const char *msg, 
   int bytesIn){
@@ -98,18 +81,21 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
     https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
 
 	//TODO: check if the header contains "Connection: close"
-	std::string content = "<h1>404 Not Found</h1>";
-	int errorCode = 404;
 
-  std::istringstream iss(msg);
-  std::vector<std::string> parsed
-	  ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
-	
-  std::string contType = "text/html";
-  assignContType(&contType, &parsed);
+  // std::istringstream iss(msg);
+  // std::vector<std::string> parsed
+	//   ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
+  
+  HttpParser parser;
+  HttpResponse response;
+  if (!parser.parseRequest(msg))
+    std::cout << "false on parseRequest returned" << std::endl;
+  response.assignContType(parser.getResourcePath()); 
 
-  std::ifstream file = openFile(parsed, &errorCode);
-  composeHeader(clientSocket, errorCode, contType);
+  std::ifstream file = openFile(parser.getResourcePath());
+  composeHeader(clientSocket, parser.getErrorCode(), response.getContType());
+
+  response.setErrorCode(123); // temp to shut the compiler
 
   const int chunk_size = 8192; // 8KB chunks
   char buffer[chunk_size]{};

@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/11 13:06:47 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/13 10:40:45 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,9 @@
 # include <sstream>
 # include <string>
 # include <algorithm>
+# include <filesystem>
+# include <unistd.h>
+# include <fcntl.h>
 
 class HttpParser {
     public:
@@ -36,6 +39,8 @@ class HttpParser {
         int         getErrorCode() const;
         std::map<std::string, std::string> getHeaders() const;
 
+        bool checkValidPath(std::string path);
+
 
     private:
         std::string							method;
@@ -43,7 +48,7 @@ class HttpParser {
 		std::string							queryString;
 		std::string							httpVersion;
         std::string                         requestBody;
-        int                                 error_code = 0;
+        int                                 error_code;
 		std::map<std::string, std::string>	headers = {};
 };
 

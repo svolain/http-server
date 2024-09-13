@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 12:01:28 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/11 18:17:22 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/13 17:27:19 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 class WebServer : public TcpListener
 {
 	private:
-		std::ifstream openFile(std::vector<std::string> &parsed, int *errorCode);
+		std::ifstream openFile(std::string resourcePath);
 		void  composeHeader(const int &clientSocket, int errorCode, 
 	const std::string contType);
 
