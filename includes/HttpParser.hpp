@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/12 20:33:06 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/13 10:40:45 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 # include <string>
 # include <algorithm>
 # include <filesystem>
+# include <unistd.h>
+# include <fcntl.h>
 
 class HttpParser {
     public:

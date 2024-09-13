@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/12 20:42:27 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/13 10:46:35 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,29 +79,34 @@ bool HttpParser::parseRequest(const std::string request) {
         headers[header] = headerValue;
     }
 
-    /*
-    if (method == "GET") {
-        //read through asked file to see if there is images or another documents that
-        // client will ask with new get request -> if there is then the client socket has
-        // has to be left open
-    }*/
-
     if (method == "POST" || method == "PUT") {
         
         if (headers.find("Content-Length") == headers.end()) {
             std::cerr << "Error: content-lenght missing for request body" << std::endl;
-            //respoond with http 411 Length Required or general http 400 Bad Request?
+            //respond with http 411 Length Required or general http 400 Bad Request?
             error_code = 411;
             return false;
         }
         std::string contentLengthStr = headers["Content-Length"];
-        int contentLength = std::stoi(contentLengthStr);
-        std::string body;
-        body.reserve(contentLength);
-        
-        while (std::getline(requestStream, line)) {
-            body += line + "\n";
+        int contentLength = 0;
+        try {
+            contentLength = std::stoi(contentLengthStr);
+            //probably have to also add maximum size also and check it in thos same row
+            if (contentLength < 0) {
+                throw std::invalid_argument("Negative content length");
+            }
+            // Continue reading body as before
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Error: invalid Content-Length" << std::endl;
+            error_code = 400; // Bad Request for invalid Content-Length
+            return false;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "Error: Content-Length out of range" << std::endl;
+            error_code = 400; // Bad Request for excessively large Content-Length
+            return false;
         }
+        std::string body(contentLength, '\0');
+        requestStream.read(&body[0], contentLength);
         requestBody = body;
     }
     return true;
@@ -139,9 +144,9 @@ int HttpParser::getErrorCode() const {
 bool HttpParser::checkValidPath(std::string path) {
     /*for this function the root from confiq file is needed
     in short this searches the asked path either directory or file
-    within the root directory, if not found rsponse is 404*/
+    within the root directory*/
     if (path.at(0) != '/') {
-        std::cerr << "Error: wrong path format" << std::endl;
+        std::cerr << "Error: wrong path" << std::endl;
         error_code = 404; // or 400?
         return false;
     }
@@ -152,10 +157,11 @@ bool HttpParser::checkValidPath(std::string path) {
         rootPath = std::filesystem::current_path().string() + "/www" + path;
         std::cout << "root path: " << rootPath << std::endl;
     } catch (const std::filesystem::filesystem_error& e) {
-        // Handle potential errors
+        std::cerr << "Filesystem error: " << e.what() << std::endl;
         error_code = 500;
         return false;
     } catch (const std::exception& e) {
+        std::cerr << "Unexpected error: " << e.what() << std::endl;
         error_code = 500;
         return false;
     }
@@ -166,36 +172,35 @@ bool HttpParser::checkValidPath(std::string path) {
     try {
         if (rootPath.back() == '/') {
             if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)){
-                //std::cout << "valid directory" << std::endl;
+                std::cout << "valid path" << std::endl;
                 return true;
             } else {
                 error_code = 404;
-                //std::cout << "no valid directory" << std::endl;
+                std::cout << "no valid path" << std::endl;
                 return false;
             }
-        }
-        
-        if (rootPath.back() != '/') {
+        } else {
             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)){
-                //std::cout << "file found" << std::endl;
-                return true;  
+                if (access(rootPath.c_str(), R_OK) == 0) {
+                    std::cout << "file found" << std::endl;
+                    return true;
+                } else {
+                    std::cout << "permission denied" << std::endl;
+                    error_code = 403;
+                    return false;
+                } 
             } else {
-                //std::cout << "file not found" << std::endl;
+                std::cout << "file not found" << std::endl;
                 error_code = 404;
                 return false;
             }
         }
     } catch (const std::filesystem::filesystem_error& e) {
-        // Handle filesystem-related errors
-        //std::cout << "not valid file" << std::endl;
-        if (e.code() == std::errc::permission_denied) {
-            error_code = 403; //or 404, basically no permission to file
-        }
+        std::cerr << "Filesystem error: " << e.what() << std::endl;
         error_code = 500;
         return false;
     } catch (const std::exception& e) {
-        //std::cout << "internal error" << std::endl;
-        //handle unexpected internal errors
+        std::cerr << "Unexpected error: " << e.what() << std::endl;
         error_code = 500;
         return false;
     }
