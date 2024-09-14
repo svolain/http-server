@@ -6,11 +6,13 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/13 17:34:42 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/14 20:33:34 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
+
+extern bool showResponse;
 
 HttpResponse::HttpResponse()
   :  errorCode(404), contTypeMap{}, contType("text/html"){
@@ -19,6 +21,26 @@ HttpResponse::HttpResponse()
 
 HttpResponse::~HttpResponse(){
     ;
+}
+
+void HttpResponse::openFile(std::string resourcePath)
+{
+  std::cout << "the resourcePath is " << resourcePath << std::endl;
+  
+  //open in binary if not html
+  //TODO: make a check for the file extension in the parser
+  if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos) //read bin file
+      this->file.open("." + resourcePath, std::ios::binary);
+  else
+  {
+    if (resourcePath == "/")
+      resourcePath = "index.html";
+    file.open("./pages/" + resourcePath);
+  }
+  if (!file.is_open())
+    file.open("./pages/404.html");
+
+  //TODO: change the error code when the methd is gonna be of the responese class
 }
 
 void HttpResponse::assignContType(std::string resourcePath){
@@ -33,9 +55,41 @@ void HttpResponse::assignContType(std::string resourcePath){
   }
 }
 
-std::string HttpResponse::getContType(void) const{
-  return (contType);
+void HttpResponse::composeHeader(void){
+
+  //TODO do some kind of a table duple lookup for error codes  messages
+  std::string errorCodeMessage;
+  switch (errorCode)
+  {
+    case 500:
+      errorCodeMessage = "500 Internal Server Error";
+      break;
+
+    case 200:
+      errorCodeMessage = "200 OK";
+      break;
+    
+    default:
+      errorCodeMessage = "404 Not Found";
+      break;
+  }
+
+  std::ostringstream oss;
+	oss << "HTTP/1.1 " << errorCodeMessage << "\r\n";
+	oss << "Content-Type: " << contType << "\r\n";
+  /* Content length should be used when sends not in chunks */
+	// oss << "Content-Length: " << (*content).size()  << "\r\n";
+  oss << "Transfer-Encoding: chunked" << "\r\n";
+	oss << "\r\n";
+	this->header = oss.str();
+  if (showResponse)
+  {
+    std::cout << "------------" << std::endl;
+    std::cout << header << std::endl;
+    std::cout << "------------" << std::endl;
+  }
 }
+
 
 void HttpResponse::initContMap(void)
 {
@@ -85,4 +139,17 @@ void HttpResponse::initContMap(void)
 
 void  HttpResponse::setErrorCode(int errorCode){
   this->errorCode = errorCode;
+}
+
+
+std::string HttpResponse::getContType(void) const{
+  return (contType);
+}
+
+std::ifstream& HttpResponse::getFile(void){
+  return (this->file);
+}
+
+std::string HttpResponse::getHeader(void) const{
+  return (header);
 }

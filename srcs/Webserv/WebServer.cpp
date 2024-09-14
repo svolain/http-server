@@ -2,80 +2,29 @@
 #include "WebServer.hpp"
 #include "HttpResponse.hpp"
 #include "HttpParser.hpp"
-#include <sstream>
-#include <fstream>
-#include <string>
-#include <iterator>
+// #include <sstream>
+// #include <fstream>
+// #include <string>
+// #include <iterator>
 // #include <optional>
+
+
+extern bool showResponse;
+extern bool showRequest;
+
 
 WebServer::WebServer(const char *m_ipAddress, const char *m_port)
 	: TcpListener(m_ipAddress, m_port){
 	;
 }
 
-void WebServer::composeHeader(const int &clientSocket, int errorCode, 
-	const std::string contType){
-
-  //TODO do some kind of a table duple lookup for error codes  messages
-  std::string errorCodeMessage;
-  switch (errorCode)
-  {
-    case 500:
-      errorCodeMessage = "500 Internal Server Error";
-      break;
-
-    case 200:
-      errorCodeMessage = "200 OK";
-      break;
-    
-    default:
-      errorCodeMessage = "404 Not Found";
-      break;
-  }
-
-  std::ostringstream oss;
-	oss << "HTTP/1.1 " << errorCodeMessage << "\r\n";
-  (void)contType;
-	oss << "Content-Type: " << contType << "\r\n";
-	// oss << "Content-Length: " << (*content).size()  << "\r\n";
-  oss << "Transfer-Encoding: chunked" << "\r\n";
-	oss << "\r\n";
-	// oss << *content;
-	std::string output = oss.str();
-  std::cout << output << std::endl;
-  sendToClient(clientSocket, oss.str().c_str(), output.size());
-}
-
-std::ifstream WebServer::openFile(std::string resourcePath)
-{
-  std::ifstream file;
-
-  std::cout << "the resourcePath is " << resourcePath << std::endl;
-  
-  //naive parsing
-  if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos &&  
-    resourcePath.find(".ico") == std::string::npos) //read bin file
-      file.open("." + resourcePath, std::ios::binary);
-  else //read html file
-  {
-    if (resourcePath == "/")
-      resourcePath = "index.html";
-    file.open("./pages/" + resourcePath);
-  }
-  if (!file.is_open())
-    file.open("./pages/404.html");
-
-  //TODO: change the error code when the methd is gonna be of the responese class
-
-  // Copy elision, c++ 17, not copying the object to get out of function
-  return file;
-}
 
 
 void WebServer::onMessageRecieved(const int clientSocket, const char *msg, 
-  int bytesIn){
+  int bytesIn, short revents){
 	
   (void)bytesIn;
+  (void)revents;
   /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
     see 100 Continue status message
     https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
@@ -85,25 +34,35 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
   // std::istringstream iss(msg);
   // std::vector<std::string> parsed
 	//   ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
+  // std::cout << parsed[1] << std::endl;
   
   HttpParser parser;
   HttpResponse response;
+
   if (!parser.parseRequest(msg))
     std::cout << "false on parseRequest returned" << std::endl;
+  else if (showRequest)
+    std::cout << parser.getrequestBody() << std::endl;
+
   response.assignContType(parser.getResourcePath()); 
+  response.openFile(parser.getResourcePath());
+  response.composeHeader();
+  sendToClient(clientSocket, response.getHeader().c_str(), response.getHeader().size());
+  
+  response.setErrorCode(123); // temp to shut the compiler, cause parser errorCodes broken for now
 
-  std::ifstream file = openFile(parser.getResourcePath());
-  composeHeader(clientSocket, parser.getErrorCode(), response.getContType());
-
-  response.setErrorCode(123); // temp to shut the compiler
-
-  const int chunk_size = 8192; // 8KB chunks
+  const int chunk_size = 1024;
   char buffer[chunk_size]{};
+  int i = 0;
+  /* TODO: check if the handling of SIGINT on send error is needed  
+    It would sigint on too many failed send() attempts*/
+  std::ifstream& file = response.getFile();
   if (file.is_open()){
+
+    std::streamsize bytes_read;
     while (file) {
       file.read(buffer, chunk_size);
-      
-      std::streamsize bytes_read = file.gcount(); 
+      bytes_read = file.gcount(); 
       if (bytes_read == -1)
       {
         std::cout << "bytes_read returned -1" << std::endl;
@@ -113,18 +72,20 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
       // Send the size of the chunk in hexadecimal
       std::ostringstream chunk_size_hex;
       chunk_size_hex << std::hex << bytes_read << "\r\n";
-      if (sendToClient(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1)
-        perror("send 1:");
-      if (sendToClient(clientSocket, buffer, bytes_read) == -1)
-        perror("send 2:");
-      // End the chunk with CRLF
-      if (sendToClient(clientSocket, "\r\n", 2) == -1)
-        perror("send 3:");
-
+      if (sendToClient(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1 || 
+        sendToClient(clientSocket, buffer, bytes_read) == -1 ||
+        sendToClient(clientSocket, "\r\n", 2) == -1){
+          perror("send :");
+          break ;
+      }
+      i ++;
     }
+    std::cout << "sent a chunk " << i << " times and the last one was " << bytes_read << std::endl;
     // Send the final zero-length chunk to signal the end
     if (sendToClient(clientSocket, "0\r\n\r\n", 5) == -1)
       perror("send 4:");
+    else
+      std::cout << "sent the closing chunk" << std::endl;
   }
   else
     if (sendToClient(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 14:32:57 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/13 14:01:55 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/14 19:42:18 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ int	TcpListener::init(){
 	/* POLLIN is read-ready, 
 		POLLPRI is for out-of-band data, 
 		is it related to building a packet from multiple packets?*/
-	listening.events = POLLIN | POLLPRI;
+	listening.events = POLLIN | POLLPRI ;
 	m_pollFDs.push_back(listening);
 
 
@@ -168,7 +168,9 @@ int	TcpListener::run(){
 						break;
 					}
 					else {
-						onMessageRecieved(sock, buf, bytesIn);
+						onMessageRecieved(sock, buf, bytesIn, revents);
+						if (!recv(sock, buf, 0, 0))
+							std::cout << "Client closed the connection" << std::endl;
 						/* If the request is maxbytes we should not break the connection here */
 						break ;
 					}
@@ -182,6 +184,9 @@ int	TcpListener::run(){
 					if (revents & eventFlag.flag) 
 						std::cout << eventFlag.description << std::endl;
 				}
+			}
+			if (sock != listening.fd && (revents & POLLOUT)){
+				std::cout << "ready for write" << std::endl;
 			}
 		}
 	}	

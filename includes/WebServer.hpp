@@ -6,11 +6,15 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 12:01:28 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/13 17:27:19 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/14 18:24:01 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#pragma once
+
 #include "./TcpListener.hpp"
+
+#define PRINTRESPONSE true
 
 class WebServer : public TcpListener
 {
@@ -23,7 +27,7 @@ class WebServer : public TcpListener
 		virtual void onClientConnected() override;
 		virtual void onClientDisconected() override;
 
-		virtual void onMessageRecieved(int clientSocket, const char *msg, int length) override;
+		virtual void onMessageRecieved(int clientSocket, const char *msg, int length, short revents) override;
 
 	public:
 

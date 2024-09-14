@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/04 16:11:04 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/13 15:32:20 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/14 18:15:11 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ class TcpListener
 		virtual void onClientConnected() = 0;
 		virtual void onClientDisconected() = 0;
 
-		virtual void onMessageRecieved(const int clientSocket, const char *msg, int length) = 0;
+		virtual void onMessageRecieved(const int clientSocket, const char *msg, int length, short revents) = 0;
 
 		int sendToClient(int clientSocket, const char *msg, int length);
 
