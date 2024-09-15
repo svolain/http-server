@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/14 20:33:34 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/15 18:49:07 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 extern bool showResponse;
 
 HttpResponse::HttpResponse()
-  :  errorCode(404), contTypeMap{}, contType("text/html"){
+  :  errorCode(404), contTypeMap{}, contType("text/html"), errorCodeMessage{}{
   initContMap();
 }
 
@@ -55,33 +55,49 @@ void HttpResponse::assignContType(std::string resourcePath){
   }
 }
 
-void HttpResponse::composeHeader(void){
-
-  //TODO do some kind of a table duple lookup for error codes  messages
-  std::string errorCodeMessage;
+void HttpResponse::lookupErrMessage(void)
+{
+  //TODO do some kind of a table duple lookup for error codes with the parser?
   switch (errorCode)
   {
-    case 500:
-      errorCodeMessage = "500 Internal Server Error";
-      break;
-
     case 200:
       errorCodeMessage = "200 OK";
+      break;
+    
+    case 400:
+      errorCodeMessage = "400 Bad Request";
+      break;
+    
+    case 405:
+      errorCodeMessage = "405 Method Not Allowed Error";
+      break;
+    
+    case 411:
+      errorCodeMessage = "411 Length Required";
+      break;
+    
+    case 500:
+      errorCodeMessage = "500 Internal Server Error";
       break;
     
     default:
       errorCodeMessage = "404 Not Found";
       break;
   }
+}
 
+void HttpResponse::composeHeader(void){
+  lookupErrMessage();
+  
   std::ostringstream oss;
-	oss << "HTTP/1.1 " << errorCodeMessage << "\r\n";
+	oss << "HTTP/1.1 " << this->getErrorCodeMessage() << "\r\n";
 	oss << "Content-Type: " << contType << "\r\n";
   /* Content length should be used when sends not in chunks */
 	// oss << "Content-Length: " << (*content).size()  << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header = oss.str();
+  
   if (showResponse)
   {
     std::cout << "------------" << std::endl;
@@ -152,4 +168,9 @@ std::ifstream& HttpResponse::getFile(void){
 
 std::string HttpResponse::getHeader(void) const{
   return (header);
+}
+
+std::string HttpResponse::getErrorCodeMessage() const
+{
+  return (errorCodeMessage);
 }

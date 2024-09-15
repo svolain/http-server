@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/14 20:33:31 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/15 18:50:44 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,13 +20,16 @@
 class HttpResponse
 {
     private:
+        
         int         errorCode;
         std::unordered_map<std::string, std::string> contTypeMap;
         std::string contType;
+        std::string errorCodeMessage;
         std::ifstream file;
         std::string header;
 
         void initContMap(void);
+        void lookupErrMessage(void);
 
     public:
 
@@ -41,4 +44,5 @@ class HttpResponse
         std::ifstream& getFile(void);
         std::string getContType() const;
         std::string getHeader() const;
+        std::string getErrorCodeMessage() const;
 };
