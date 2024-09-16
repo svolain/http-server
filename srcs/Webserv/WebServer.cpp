@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 18:09:41 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/15 19:00:22 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/16 18:28:13 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
 	
   (void)bytesIn;
   (void)revents;
+  std::cout << "--- entering onMessageRecieved ---" << std::endl;
   /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
     see 100 Continue status message
     https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
@@ -46,15 +47,25 @@ void WebServer::onMessageRecieved(const int clientSocket, const char *msg,
   HttpParser parser;
   HttpResponse response;
 
+
   if (!parser.parseRequest(msg))
     std::cout << "false on parseRequest returned" << std::endl;
-  else if (showRequest)
-    std::cout << parser.getrequestBody() << std::endl;
+  std::cout << "\nrequestBody:\n" << parser.getrequestBody() << std::endl;
 
-  response.setErrorCode(200); //parser broken for now
+  std::cout << "the err code is " << parser.getErrorCode() << std::endl;
+  response.setErrorCode(parser.getErrorCode());
+  
+  if (showRequest)
+    std::cout << "the resource path is " << parser.getResourcePath() << std::endl;
   response.assignContType(parser.getResourcePath()); 
   response.openFile(parser.getResourcePath());
   response.composeHeader();
+  if (showResponse)
+  {
+    std::cout << "\n------response header------" << std::endl;
+    std::cout << response.getHeader() << std::endl;
+    std::cout << "-----end of response header------\n" << std::endl;
+  }
   sendToClient(clientSocket, response.getHeader().c_str(), response.getHeader().size());
 
   sendChunkedResponse(clientSocket, response.getFile());
@@ -89,14 +100,15 @@ void WebServer::sendChunkedResponse(int clientSocket, std::ifstream &file)
       }
       i ++;
     }
-    std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
+    // std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
     if (sendToClient(clientSocket, "0\r\n\r\n", 5) == -1)
       perror("send 2:");
   }
   else
     if (sendToClient(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)
       perror("send 3:");
-  file.close(); 
+  file.close();
+  std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
 void WebServer::onClientConnected()

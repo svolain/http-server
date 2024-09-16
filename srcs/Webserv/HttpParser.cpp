@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/15 12:27:04 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/16 18:24:11 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,6 +142,8 @@ int HttpParser::getErrorCode() const {
 }
 
 bool HttpParser::checkValidPath(std::string path) {
+
+    error_code = 200;
     /*for this function the root from confiq file is needed
     in short this searches the asked path either directory or file
     within the root directory*/

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/15 18:49:07 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/16 18:15:21 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,20 +25,23 @@ HttpResponse::~HttpResponse(){
 
 void HttpResponse::openFile(std::string resourcePath)
 {
-  std::cout << "the resourcePath is " << resourcePath << std::endl;
   
   //open in binary if not html
   //TODO: make a check for the file extension in the parser
   if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos) //read bin file
-      this->file.open("." + resourcePath, std::ios::binary);
+      this->file.open("./www/" + resourcePath, std::ios::binary);
   else
   {
     if (resourcePath == "/")
       resourcePath = "index.html";
-    file.open("./pages/" + resourcePath);
+    file.open("./www/" + resourcePath);
   }
   if (!file.is_open())
-    file.open("./pages/404.html");
+  {
+    std::cout << "couldnt open file " << resourcePath << ", opening 404" << std::endl;
+    file.open("./www/404.html");
+  }
+    
 
   //TODO: change the error code when the methd is gonna be of the responese class
 }
@@ -97,13 +100,6 @@ void HttpResponse::composeHeader(void){
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header = oss.str();
-  
-  if (showResponse)
-  {
-    std::cout << "------------" << std::endl;
-    std::cout << header << std::endl;
-    std::cout << "------------" << std::endl;
-  }
 }
 
 
