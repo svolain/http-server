@@ -8,13 +8,7 @@
         body {
             font-family: sans-serif;
             background-color: black;
-        }
-        
-        section {
-            position: relative;
-            width: 100%;
-            height:100vh;
-            overflow: hidden;
+            color: #62ffcd;
         }
 
         .background-animation {
@@ -29,15 +23,6 @@
             animation: color-change 2s linear infinite;
         }
 
-        @keyframes color-change {
-            0%, 100% {
-                filter: hue-rotate(0deg);
-            }
-            50% {
-                filter: hue-rotate(360deg);
-            }
-        }
-
         .star {
             position: absolute;
             top: 0;
@@ -49,95 +34,64 @@
             animation: animate 8s ease-in-out infinite;
         }
 
-        .star.star1 {
-            animation-delay: 0s;
-            background: url(img/star1.png);
-        }
-
-        .star.star2 {
-            animation-delay: -1s;
-            background: url(img/star2.png);
-        }
-
-        .star.star3 {
-            animation-delay: -2s;
-            background: url(img/star3.png);
-        }
-
-        .star.star4 {
-            animation-delay: -3s;
-            background: url(img/star4.png);
-        }
-
-        .star.star5 {
-            animation-delay: -4s;
-            background: url(img/star5.png);
-        }
-
-        .star.star6 {
-            animation-delay: -5s;
-            background: url(img/star6.png);
-        }
-
-        .star.star7 {
-            animation-delay: -6s;
-            background: url(img/star7.png);
-        }
-
-        .star.star8 {
-            animation-delay: -7s;
-            background: url(img/star8.png);
-        }
+        .star.star1 { animation-delay: 0s; background: url(img/star1.png); }
+        .star.star2 { animation-delay: -1s; background: url(img/star2.png); }
+        .star.star3 { animation-delay: -2s; background: url(img/star3.png); }
+        .star.star4 { animation-delay: -3s; background: url(img/star4.png); }
+        .star.star5 { animation-delay: -4s; background: url(img/star5.png); }
+        .star.star6 { animation-delay: -5s; background: url(img/star6.png); }
+        .star.star7 { animation-delay: -6s; background: url(img/star7.png); }
+        .star.star8 { animation-delay: -7s; background: url(img/star8.png); }
 
         @keyframes animate {
-            0%,20%,40%,60%,80%,100%
-            {
-                opacity: 0;
-            }
+            0%,20%,40%,60%,80%,100% {opacity: 0;}
 
-            10%,30%,50%,70%,90%
-            {
-                opacity: 1;
-            }
+            10%,30%,50%,70%,90% {opacity: 1;}
+        }
+
+        @keyframes color-change {
+            0%, 100% { filter: hue-rotate(0deg); }
+            0% { filter: hue-rotate(360deg); }
         }
 
         .index-wrp {
             position: relative;
-            z-index: 1;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
+            z-index: 1;
         }
 
-        .main-card{
+        .main-content {
             max-width: 560px;
             width: 100%;
-            text-align: center;
-        }
-
-
-        .main-content text{
             font-size: clamp(20px, 18vw, 80px);
             letter-spacing: 10px;
             font-weight: 700;
-            fill: none;
             stroke: #62ffcd;
             stroke-width: 2px;
-            stroke-linejoin: round;
+            text-align: center;
         }
 
-        .main-card p{
-            color: #62ffcd;
+        p{
             position: relative;
             font-size: clamp(16px, 4vw, 40px);
             font-weight: 500;
             margin-top: 0;
         }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            margin: 0 auto;
+        }
+
     </style>
 </head>
-<body>
-    <section>
+<body>   
         <div class="background-animation"></div>
         <div class="star star1"></div>
         <div class="star star2"></div>
@@ -146,16 +100,28 @@
         <div class="star star5"></div>
         <div class="star star6"></div>
         <div class="star star7"></div>
-        <div class="star stra8"></div>
+        <div class="star star8"></div>
         <div class="index-wrp">
-            <div class="main-card">
-                <div class="main-content">
-                    <svg width="100%" height="100%" viewBox="0 0 450 220" preserveAspectRatio="xMidYMid meet">
-                        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Webserv</text>
-                </div>
-                <p>Welcome to our server</p>
+            <div class="main-content">
+                <svg width="100%" height="100%" viewBox="0 0 450 220" preserveAspectRatio="xMidYMid meet">
+                    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Webserv</text>
             </div>
-        </div>
-    </section>
+            <p>Welcome to our server</p>
+            <div class="form">
+                <form action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">
+                    <div>
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" name="name">
+                    </div>
+                    <div>
+                        <label for="file">Upload a file:</label>
+                        <input type="file" id="file" name="file">
+                    </div>
+                    <div>
+                        <input type="submit" value="Submit">
+                    </div>
+                </form>
+            </div>
+        </div>    
 </body>
 </html>
