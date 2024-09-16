@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/13 17:27:02 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/15 12:27:04 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,9 +61,9 @@ bool HttpParser::parseRequest(const std::string request) {
     }
 
     //call a function that checks if path exists
-    if (!checkValidPath(resourcePath)) {
-        return false;
-    }
+        if (!checkValidPath(resourcePath)) {
+            return false;
+        }
 
     while (std::getline(requestStream, line) && line != "\r") {
         size_t delim = line.find(":");
