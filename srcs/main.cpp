@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/16 16:00:12 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/17 13:49:01 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ int main(int ac, char **av)
 		std::cout << "no config, showResponse: " << showResponse << std::endl;
 	std::cout << "-------------" << std::endl;
 		
-	WebServer webServer("0.0.0.0", "8080");
+	WebServer webServer("0.0.0.0", "8081");
 	if (webServer.init())
 		return (1);
 	std::cout << "Initialized a server" << std::endl;

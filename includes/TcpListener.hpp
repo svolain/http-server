@@ -21,7 +21,6 @@
 
 #include <poll.h>
 #include <sys/select.h>
-#include <sys/epoll.h>
 
 #include <vector>
 

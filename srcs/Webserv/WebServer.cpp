@@ -76,7 +76,7 @@ void WebServer::sendChunkedResponse(int clientSocket, std::ifstream &file)
   const int chunk_size = 1024;
    
   char buffer[chunk_size]{};
-  int i = 0;
+  // int i = 0;
   /* TODO: check if the handling of SIGINT on send error is needed  
     It would sigint on too many failed send() attempts*/
   if (file.is_open()){
@@ -98,7 +98,7 @@ void WebServer::sendChunkedResponse(int clientSocket, std::ifstream &file)
           perror("send :");
           break ;
       }
-      i ++;
+      // i ++;
     }
     // std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
     if (sendToClient(clientSocket, "0\r\n\r\n", 5) == -1)
