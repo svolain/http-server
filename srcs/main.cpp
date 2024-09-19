@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.42.fr>          +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/17 13:49:01 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/19 15:50:55 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 
 bool showResponse = 0;
 bool showRequest = 0;
-
 
 // int main(int argc, char* argv[]) {
   // if (argc > 2) {
@@ -28,34 +27,39 @@ bool showRequest = 0;
   //   return (1);
   // webserv.Run();
 
-#include "WebServer.hpp"
+#include "WebServ.hpp"
 #include <iostream>
 
 int main(int ac, char **av)
 {
-	if (ac == 4)
-	{
-		try {
-			if (std::stoi(av[2]) == 1)
-				showRequest = 1;
-			if (std::stoi(av[3]) == 1)
-				showResponse = 1;
-		}
-		catch (const std::out_of_range &e){
-			std::cout << "num out of range" << std::endl;
-		}
-		std::cout << "showRequest: " << showRequest << ", showResponse: " << showResponse << std::endl;
-	}
-	else
-		std::cout << "no config, showResponse: " << showResponse << std::endl;
-	std::cout << "-------------" << std::endl;
+	// if (ac == 4)
+	// {
+	// 	try {
+	// 		if (std::stoi(av[2]) == 1)
+	// 			showRequest = 1;
+	// 		if (std::stoi(av[3]) == 1)
+	// 			showResponse = 1;
+	// 	}
+	// 	catch (const std::out_of_range &e){
+	// 		std::cout << "num out of range" << std::endl;
+	// 	}
+	// 	std::cout << "showRequest: " << showRequest << ", showResponse: " << showResponse << std::endl;
+	// }
+	// else
+	// 	std::cout << "no config, showResponse: " << showResponse << std::endl;
+	// std::cout << "-------------" << std::endl;
 		
-	WebServer webServer("0.0.0.0", "8081");
-	if (webServer.init())
+	if (ac > 2) {
+		std::cerr << "Usage: /webserv [configuration file]\n";
+		return 1;
+  }
+	WebServ webServ(av[1]);
+	
+	if (webServ.init())
 		return (1);
 	std::cout << "Initialized a server" << std::endl;
 	
-	webServer.run();
+	webServ.run();
 
 	return  0;
 

@@ -3,221 +3,309 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 15:30:31 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/16 14:40:17 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:34:43 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
+#include "HttpResponse.hpp"
+#include "HttpParser.hpp"
+
+
+extern bool showResponse;
+extern bool showRequest;
+
+#define TODO 123
 
 WebServ::WebServ(char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {}
 
-void WebServ::Run() {
+int WebServ::init() {
+
+  ConfigParser parser;
+
+  if (parser.parseConfig(sockets_)) 
+    return 1;
+    
+	struct addrinfo hints{}, *servinfo;
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	int status = getaddrinfo(ipAddress_, port_, &hints, &servinfo);
+	if (status  != 0){
+		std::cerr << gai_strerror(status) << std::endl;
+		return (1);
+	}
+
+	if ((listening_.fd = socket(servinfo->ai_family, servinfo->ai_socktype,
+			servinfo->ai_protocol)) == -1) {
+		std::cerr << "server: socket() error"  << std::endl; 
+		return 1;
+	}
+	/* SO_REUSEADDR for TCP to handle the case when the server shuts down
+		and we can't bind to the same socket if there's data left
+		port goes into a TIME_WAIT state otherwise*/
+	int yes = 1;
+	if (setsockopt(listening_.fd, SOL_SOCKET, SO_REUSEADDR, &yes,
+			sizeof(int)) == -1) {
+		std::cerr << "server: setsockopt() error"  << std::endl; 
+		return (2);
+	}
+	if (bind(listening_.fd, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+		close(listening_.fd);
+		std::cerr << "server: bind() error"  << std::endl; 
+		return (3);
+	}
+	// fcntl(listening_.fd, F_SETFL, O_NONBLOCK);
+	
+	freeaddrinfo(servinfo);
+
+	#define BACKLOG 10
+
+	if (listen(listening_.fd, BACKLOG) == -1){
+		std::cerr << "server: listen() error"  << std::endl; 
+		return (3);
+	}
+
+	/* POLLIN is read-ready, 
+		POLLPRI is for out-of-band data, 
+		is it related to building a packet from multiple packets?*/
+	listening_.events = POLLIN | POLLPRI ;
+	pollFDs_.push_back(listening_);
+
+
+	return (0);
+}
+
+struct EventFlag {
+    short flag;
+    const char* description;
+};
+
+
+EventFlag eventFlags[] = {
+            {POLLIN, "POLLIN (Data to read)"},
+            {POLLOUT, "POLLOUT (Ready for writing)"},
+            {POLLERR, "POLLERR (Error)"},
+            {POLLHUP, "POLLHUP (Hang-up)"},
+            {POLLNVAL, "POLLNVAL (Invalid FD)"},
+            {POLLPRI, "POLLPRI (Urgent Data)"}
+};
+
+#define TIMEOUT		5000
+	/* will be specified by us*/
+#define MAXBYTES	16000
+
+
+void WebServ::run() {
   std::cout << "Server is ready.\n";
+	while (1)
+	{
+		std::vector<pollfd> copyFDs = pollFDs_;
+		/* the socketsReady from poll() 
+			is the number of file descriptors with events that occurred. */
+		int socketsReady = poll(copyFDs.data(), copyFDs.size(), TIMEOUT);
+		if (socketsReady == -1){
+			perror("poll: ");
+			exit(TODO);
+		}
+		if (!socketsReady){
+			std::cout << "poll() is closing connections on timeout..." << std::endl;
+			for (size_t i = 1; i < pollFDs_.size(); i ++)
+			{
+				close(pollFDs_[i].fd);
+				pollFDs_.erase(pollFDs_.begin() + i);
+			}	
+			continue;
+		}
+		for (size_t i = 0; i < copyFDs.size(); i++){
+			//for readability
+			int sock = copyFDs[i].fd;
+			short revents = copyFDs[i].revents;
+			//is it an inbound connection?
+			if (sock == listening_.fd){
+				if (revents & POLLIN){
+				/* should we store the address of the connnecting client?
+					for now just using nullptr */
+				pollfd newClient;
+				newClient.fd = accept(listening_.fd, nullptr, nullptr);
+				if (newClient.fd != -1){
+					newClient.events = POLLIN;
+					pollFDs_.push_back(newClient);
+					// std::cout << "Created a new connection" << std::endl;
+				}
+				}
+				// onClientConnected();
+			}
+			else if (sock != listening_.fd && (revents & POLLHUP)){
+				std::cout << "hang up" << sock << " with i = " << i  << std::endl;
+				close(sock);
+				pollFDs_.erase(pollFDs_.begin() + i);
+				continue;
+			}
+			else if (sock != listening_.fd && (revents & POLLNVAL))
+			{
+				std::cout << "invalid fd " << sock << " with i = " << i  << std::endl;
+				//try to close anyway
+				close(sock);
+				pollFDs_.erase(pollFDs_.begin() + i);
+				continue;
+			}
+			//there is data to recv
+			else if (sock != listening_.fd && (revents & POLLIN)){
+				char  buf[MAXBYTES];
+				int   bytesIn;
+				fcntl(sock, F_SETFL, O_NONBLOCK);
+				/* do it in a loop until recv is 0? 
+					would it be considered blocking?*/
+				while (1){
+					//TODO: add a Timeout timer for the client connection
+					memset(&buf, 0, MAXBYTES);
+					bytesIn = recv(sock, buf, MAXBYTES, 0);
+					if (bytesIn < 0){
+						close(sock);
+						pollFDs_.erase(pollFDs_.begin() + i);
+						perror("recv -1:");
+						break ;
+					}
+					/* with the current break after on_message_recieved
+						we can't get here */
+					else if (bytesIn == 0){
+						close(sock);
+						pollFDs_.erase(pollFDs_.begin() + i);
+						break;
+					}
+					else {
+						on_message_recieved(sock, buf, bytesIn, revents);
+						if (!recv(sock, buf, 0, 0))
+							std::cout << "Client closed the connection" << std::endl;
+						/* If the request is maxbytes we should not break the connection here */
+						break ;
+					}
+
+				}
+			}
+			/* An unspecified event will trigget this loop 
+				to see which flag is in the revents*/
+			else {
+				for (const auto& eventFlag : eventFlags) {
+					if (revents & eventFlag.flag) 
+						std::cout << eventFlag.description << std::endl;
+				}
+			}
+			if (sock != listening_.fd && (revents & POLLOUT)){
+				std::cout << "ready for write" << std::endl;
+			}
+	}	
+
+	pollFDs_.clear();
+	//closing the listening_ socket
+	close(listening_.fd);
+
+	std::cout << "--- Shutting down the server ---" << std::endl;
 
 }
 
-int WebServ::Init() {
-  if (ParseConfig()) 
-    return 1;
-  return 0;
 }
 
-int WebServ::ParseConfig() {
-  std::cout << "[INFO] Opening Conf file: " << conf_ <<'\n';
-  std::ifstream input(conf_);
-  if (!input.is_open()) {
-    std::cerr << "[ERROR] Can't open input file: \"" << conf_ << "\"\n";
-    return 1;
+
+void WebServ::on_message_recieved(const int clientSocket, const char *msg, 
+  int bytesIn, short revents){
+	
+  (void)bytesIn;
+  (void)revents;
+  std::cout << "--- entering on_message_recieved ---" << std::endl;
+  /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
+    see 100 Continue status message
+    https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
+
+	//TODO: check if the header contains "Connection: close"
+
+  // std::istringstream iss(msg);
+  // std::vector<std::string> parsed
+	//   ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
+  // std::cout << parsed[1] << std::endl;
+  
+  HttpParser parser;
+  HttpResponse response;
+
+
+  if (!parser.parseRequest(msg))
+    std::cout << "false on parseRequest returned" << std::endl;
+  std::cout << "\nrequestBody:\n" << parser.get_request_body() << std::endl;
+
+  std::cout << "the err code is " << parser.get_error_code() << std::endl;
+  response.set_error_code_(parser.get_error_code());
+  
+  if (showRequest)
+    std::cout << "the resource path is " << parser.get_resource_path() << std::endl;
+  response.assign_cont_type_(parser.get_resource_path()); 
+  response.open_file(parser.get_resource_path());
+  response.compose_header();
+  if (showResponse)
+  {
+    std::cout << "\n------response header------" << std::endl;
+    std::cout << response.get_header_() << std::endl;
+    std::cout << "-----end of response header------\n" << std::endl;
   }
-  std::stringstream ss;
-  while (!input.eof()) {
-    std::string line;
-    std::getline(input, line);
-    if (size_t pos = line.find('#') != std::string::npos)
-       line.resize(pos);
-    ss << line << ' ';
-  }
-  while (!ss.eof()) {
-    try {
-      ParseServer(ss);
-    } catch (std::string& error_token) {
-      std::cerr << "[ERROR] invalid input: \"" << error_token << "\"\n";
-      return 1;
-    }
-  }
-  return 0;
+  send_to_client(clientSocket, response.get_header_().c_str(), response.get_header_().size());
+
+  send_chunked_response(clientSocket, response.get_file_());
 }
 
-void WebServ::ParseServer(std::stringstream& ss) {
-    std::string token;
-    ss >> token;
-    if (token == "")
-     return;
-    if (token != "server")
-      throw token;
-    ss >> token;
-    if (token != "{")
-      throw token;
-    VirtualHost virtual_host;
-    std::string socket;
-    while (true) {
-      ss >> token;
-      if (token == "listen")
-        ParseSocket(socket, ss);
-      else if (token == "server_name")
-        ParseName(virtual_host, ss);
-      else if (token == "client_max_body_size")
-        ParseMaxBodySize(virtual_host, ss);
-      else if (token == "error_page")
-        ParseErrorPage(virtual_host, ss);
-      else if (token == "location")
-        ParseLocation(virtual_host, ss);
-      else if (token == "}")
+void WebServ::send_chunked_response(int clientSocket, std::ifstream &file)
+{
+  const int chunk_size = 1024;
+   
+  char buffer[chunk_size]{};
+  // int i = 0;
+  /* TODO: check if the handling of SIGINT on send error is needed  
+    It would sigint on too many failed send() attempts*/
+  if (file.is_open()){
+    std::streamsize bytesRead;
+    
+    while (file) {
+      file.read(buffer, chunk_size);
+      bytesRead = file.gcount(); 
+      if (bytesRead == -1)
+      {
+        std::cout << "bytesRead returned -1" << std::endl;
         break;
-      else
-        throw token;
+      }
+      std::ostringstream chunk_size_hex;
+      chunk_size_hex << std::hex << bytesRead << "\r\n";
+      if (send_to_client(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1 || 
+        send_to_client(clientSocket, buffer, bytesRead) == -1 ||
+        send_to_client(clientSocket, "\r\n", 2) == -1){
+          perror("send :");
+          break ;
+      }
+      // i ++;
     }
-  auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
-        return obj.GetSocket() == socket;
-    });
-  if (it != sockets_.end())
-    (*it).AddVirtualHost(virtual_host);
-  else
-    sockets_.push_back(Socket(socket, virtual_host));
-}
-
-void WebServ::ParseLocation(VirtualHost& v, std::stringstream& ss) {
-  static std::regex path_format("/[a-zA-Z0-9_-]*");
-  std::string       path;
-  Location          location;
-  std::string       token;
-  ss >> path;
-  if (!std::regex_match(path, path_format))
-    throw "location " + path;
-  ss >> token;
-  if (token != "{")
-    throw token;
-  while (true) { //what if location is in format location / {} ?
-    ss >> token;
-    if (token == "limit_except")
-      ParseAllowedMethods(location, ss);
-    else if (token == "return")
-      ParseRedirection(location, ss);
-    else if (token == "root")
-      ParseRoot(location, ss);
-    else if (token == "autoindex")
-      ParseAutoindex(location, ss);
-    else if (token == "index")
-      ParseIndex(location, ss);
-    else if (token == "}")
-      break;
-    else
-      throw token;
+    // std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
+    if (send_to_client(clientSocket, "0\r\n\r\n", 5) == -1)
+      perror("send 2:");
   }
-   v.SetLocation(path, location);
+  else
+    if (send_to_client(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)
+      perror("send 3:");
+  file.close();
+  std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
-void WebServ::ParseSocket(std::string& socket, std::stringstream& ss) {
-  static std::regex format("((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.)"
-                           "{3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]):"
-                           "(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4]"
-                           "[0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{1,3}|[0-9]);");
-  ss >> socket;
-  if (!std::regex_match(socket, format))
-    throw "listen " + socket;
-  socket.pop_back();
+void WebServ::onClientConnected()
+{
+	;
 }
 
-void WebServ::ParseName(VirtualHost& v, std::stringstream& ss) {
-  static std::regex format(R"(([a-z0-9-]{1,63}\.){1,124}com;)");
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format) || token.size() > 253)
-    throw "server_name " + token;
-  token.pop_back();
-  v.SetName(token);
+void WebServ::onClientDisconected()
+{
+	;
 }
 
-void WebServ::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
-  static std::regex format("0|[1-9][0-9]{0,5}|1000000)K"
-                           "|(0|[1-9][0-9]{0,2}|1000)M);");
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "client_max_body_size " + token;
-  token.pop_back();
-  v.SetSize(token);
+int WebServ::send_to_client(const int clientSocket, const char *msg, int length){
+	return (send(clientSocket, msg, length, 0));
 }
 
-void WebServ::ParseErrorPage(VirtualHost& v, std::stringstream& ss) {
-  static std::regex code_format("404|505"); //all possible error codes
-  static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]+/)*"
-                                "[a-zA-Z0-9_-]+\\.html;");
-  std::string code;
-  std::string path;
-  ss >> code;
-  ss >> path;
-  if (!std::regex_match(code, code_format)
-      || !std::regex_match(code, path_format))
-    throw "error_page " + code + " " + path;
-  path.pop_back();
-  v.SetErrorPage(code, path);
-}
-
-void WebServ::ParseAllowedMethods(Location& l, std::stringstream& ss) {
-  static std::regex format("\\s*((GET|HEAD|POST|DELETE)\\s+)*"
-                                "(GET|HEAD|POST|DELETE)\\s*"); 
-  std::string line;
-  std::getline(ss, line, ';');
-  if (!std::regex_match(line, format))
-    throw "limit_except " + line;
-  l.SetAllowedMethods(line);
-}
-
-void WebServ::ParseRedirection(Location& l, std::stringstream& ss) {
-  static std::regex code_format("30[0-478]");
-  static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]/)*"
-                                "[a-zA-Z0-9_-]+\\.html;"); //Not sure about allowed redirections
-  std::string code;
-  std::string path;
-  ss >> code;
-  ss >> path;
-  if (!std::regex_match(code, code_format)
-      || !std::regex_match(code, path_format))
-    throw "return " + code + " " + path;
-  path.pop_back();
-  l.SetRedirection(code, path);
-}
-
-void WebServ::ParseRoot(Location& l, std::stringstream& ss) {
-  static std::regex format("(/[a-zA-Z0-9_-]+)+;"); 
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "root " + token;
-  token.pop_back();
-  l.SetRoot(token);
-}
-
-void WebServ::ParseAutoindex(Location& l, std::stringstream& ss) {
-  static std::regex format("(on|off);"); 
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "autoindex " + token;
-  token.pop_back();
-  l.SetAutoindex(token);
-}
-
-void WebServ::ParseIndex(Location& l, std::stringstream& ss) {
-  static std::regex format("[a-zA-Z0-9_-]+\\.html;"); 
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "index " + token;
-  token.pop_back();
-  l.SetIndex(token);
-}

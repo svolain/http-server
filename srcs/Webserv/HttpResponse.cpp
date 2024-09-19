@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/16 18:15:21 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:34:43 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 extern bool showResponse;
 
 HttpResponse::HttpResponse()
-  :  errorCode(404), contTypeMap{}, contType("text/html"), errorCodeMessage{}{
+  :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
   initContMap();
 }
 
@@ -23,34 +23,34 @@ HttpResponse::~HttpResponse(){
     ;
 }
 
-void HttpResponse::openFile(std::string resourcePath)
+void HttpResponse::open_file(std::string resourcePath)
 {
   
   //open in binary if not html
   //TODO: make a check for the file extension in the parser
   if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos) //read bin file
-      this->file.open("./www/" + resourcePath, std::ios::binary);
+      this->file_.open("./www/" + resourcePath, std::ios::binary);
   else
   {
     if (resourcePath == "/")
       resourcePath = "index.html";
-    file.open("./www/" + resourcePath);
+    file_.open("./www/" + resourcePath);
   }
-  if (!file.is_open())
+  if (!file_.is_open())
   {
     std::cout << "couldnt open file " << resourcePath << ", opening 404" << std::endl;
-    file.open("./www/404.html");
+    file_.open("./www/404.html");
   }
     
 
   //TODO: change the error code when the methd is gonna be of the responese class
 }
 
-void HttpResponse::assignContType(std::string resourcePath){
+void HttpResponse::assign_cont_type_(std::string resourcePath){
   try{
-    auto it = contTypeMap.find(resourcePath.substr(resourcePath.find_last_of('.')));
-    if (it != contTypeMap.end()){
-      contType = it->second;
+    auto it = cont_type_map_.find(resourcePath.substr(resourcePath.find_last_of('.')));
+    if (it != cont_type_map_.end()){
+      cont_type_ = it->second;
     }
   }
   catch (const std::out_of_range &e){
@@ -61,51 +61,51 @@ void HttpResponse::assignContType(std::string resourcePath){
 void HttpResponse::lookupErrMessage(void)
 {
   //TODO do some kind of a table duple lookup for error codes with the parser?
-  switch (errorCode)
+  switch (error_code_)
   {
     case 200:
-      errorCodeMessage = "200 OK";
+      error_code_message_ = "200 OK";
       break;
     
     case 400:
-      errorCodeMessage = "400 Bad Request";
+      error_code_message_ = "400 Bad Request";
       break;
     
     case 405:
-      errorCodeMessage = "405 Method Not Allowed Error";
+      error_code_message_ = "405 Method Not Allowed Error";
       break;
     
     case 411:
-      errorCodeMessage = "411 Length Required";
+      error_code_message_ = "411 Length Required";
       break;
     
     case 500:
-      errorCodeMessage = "500 Internal Server Error";
+      error_code_message_ = "500 Internal Server Error";
       break;
     
     default:
-      errorCodeMessage = "404 Not Found";
+      error_code_message_ = "404 Not Found";
       break;
   }
 }
 
-void HttpResponse::composeHeader(void){
+void HttpResponse::compose_header(void){
   lookupErrMessage();
   
   std::ostringstream oss;
-	oss << "HTTP/1.1 " << this->getErrorCodeMessage() << "\r\n";
-	oss << "Content-Type: " << contType << "\r\n";
+	oss << "HTTP/1.1 " << this->get_error_codeMessage() << "\r\n";
+	oss << "Content-Type: " << cont_type_ << "\r\n";
   /* Content length should be used when sends not in chunks */
 	// oss << "Content-Length: " << (*content).size()  << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
-	this->header = oss.str();
+	this->header_ = oss.str();
 }
 
 
 void HttpResponse::initContMap(void)
 {
-  this->contTypeMap = {
+  this->cont_type_map_ = {
     {".mp3", "audio/mpeg"},
     {".wma", "audio/x-ms-wma"},
     {".wav", "audio/x-wav"},
@@ -149,24 +149,24 @@ void HttpResponse::initContMap(void)
 }
 
 
-void  HttpResponse::setErrorCode(int errorCode){
-  this->errorCode = errorCode;
+void  HttpResponse::set_error_code_(int error_code_){
+  this->error_code_ = error_code_;
 }
 
 
-std::string HttpResponse::getContType(void) const{
-  return (contType);
+std::string HttpResponse::get_cont_type_(void) const{
+  return (cont_type_);
 }
 
-std::ifstream& HttpResponse::getFile(void){
-  return (this->file);
+std::ifstream& HttpResponse::get_file_(void){
+  return (this->file_);
 }
 
-std::string HttpResponse::getHeader(void) const{
-  return (header);
+std::string HttpResponse::get_header_(void) const{
+  return (header_);
 }
 
-std::string HttpResponse::getErrorCodeMessage() const
+std::string HttpResponse::get_error_codeMessage() const
 {
-  return (errorCodeMessage);
+  return (error_code_message_);
 }

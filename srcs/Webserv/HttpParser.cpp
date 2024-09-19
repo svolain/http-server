@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/16 18:24:11 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:27:20 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,31 +113,31 @@ bool HttpParser::parseRequest(const std::string request) {
 
 }
         
-std::string HttpParser::getMethod() const {
+std::string HttpParser::get_method() const {
     return method;
 }
 
-std::string HttpParser::getResourcePath() const {
+std::string HttpParser::get_resource_path() const {
     return resourcePath;
 }
 
-std::string HttpParser::getQueryString() const {
+std::string HttpParser::get_query_string() const {
     return queryString;
 }
 
-std::string HttpParser::getHttpVersion() const{
+std::string HttpParser::get_http_version() const{
     return httpVersion;
 }
 
-std::string HttpParser::getrequestBody() const {
+std::string HttpParser::get_request_body() const {
     return requestBody;
 }
 
-std::map<std::string, std::string> HttpParser::getHeaders() const {
+std::map<std::string, std::string> HttpParser::get_headers() const {
     return headers;
 }
 
-int HttpParser::getErrorCode() const {
+int HttpParser::get_error_code() const {
     return error_code;   
 }
 

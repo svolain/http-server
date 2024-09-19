@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:09:33 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/16 14:07:14 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:23:23 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,11 +25,11 @@ class Location {
 
   ~Location() = default;
 
-  void SetAllowedMethods(std::string& line);
-  void SetRedirection(std::string& code, std::string& path);
-  void SetRoot(std::string& root);
-  void SetAutoindex(std::string& autoindex);
-  void SetIndex(std::string& index);
+  void set_allowed_methods(std::string& line);
+  void set_redirection(std::string& code, std::string& path);
+  void set_root(std::string& root);
+  void set_auto_index(std::string& autoindex);
+  void set_index(std::string& index);
 
  private:
 

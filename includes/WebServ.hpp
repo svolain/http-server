@@ -3,24 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/16 12:35:17 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:22:29 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef WebServ_HPP_
 #define WebServ_HPP_
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <regex>
-#include <sstream>
-#include <string>
-#include "Location.hpp"
-#include "VirtualHost.hpp"
+#include <netdb.h> 
+#include <unistd.h>
+#include <poll.h>
+#include <deque>
 #include "Socket.hpp"
 
 #define DEFAULT_CONF "./conf/default.conf"
@@ -33,25 +29,24 @@ class WebServ {
 
   ~WebServ() = default;
 
-  void  Run();
-  int   Init();
+  void  run();
+  int   init();
+
+  void send_chunked_response(int clientSocket, std::ifstream &file);
+  void on_message_recieved(const int clientSocket, const char *msg, int length, short revents);
 
  private:
-  int ParseConfig();
-  void ParseServer(std::stringstream& ss);
-  void ParseLocation(VirtualHost& v, std::stringstream& ss);
-  void ParseSocket(std::string& s, std::stringstream& ss);
-  void ParseName(VirtualHost& v, std::stringstream& ss);
-  void ParseMaxBodySize(VirtualHost& v, std::stringstream& ss);
-  void ParseErrorPage(VirtualHost& v, std::stringstream& ss);
-  void ParseAllowedMethods(Location& l, std::stringstream& ss);
-  void ParseRedirection(Location& l, std::stringstream& ss);
-  void ParseRoot(Location& l, std::stringstream& ss);
-  void ParseAutoindex(Location& l, std::stringstream& ss);
-  void ParseIndex(Location& l, std::stringstream& ss);
 
   std::string          conf_;
   std::deque<Socket>   sockets_;
   // std::vector<pollfd>  sockets_fd_;
+
+  int send_to_client(const int clientSocket, const char *msg, int length);
+
+  //older, del
+  const char* 		ipAddress_;
+  const char*			port_;
+  pollfd				listening_;
+  std::vector<pollfd>	pollFDs_;
 };
 #endif

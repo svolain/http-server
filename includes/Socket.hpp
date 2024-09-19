@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 13:34:24 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/16 14:16:48 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:19:47 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,8 @@ class Socket {
 
   ~Socket() = default;
 
-  std::string GetSocket();
-  void        AddVirtualHost(VirtualHost& v);
+  std::string get_socket();
+  void        add_virtual_host(VirtualHost& v);
 
  private:
   std::string                         address_;

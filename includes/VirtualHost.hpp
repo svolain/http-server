@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/16 14:07:22 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:19:20 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,11 @@ class VirtualHost {
 
   ~VirtualHost() = default;
 
-  std::string GetName();
-  void        SetName(std::string& name);
-  void        SetSize(std::string& size);
-  void        SetErrorPage(std::string& code, std::string& path);
-  void        SetLocation(std::string& path, Location& location);
+  std::string get_name();
+  void        set_name(std::string& name);
+  void        set_size(std::string& size);
+  void        set_error_page(std::string& code, std::string& path);
+  void        set_location(std::string& path, Location& location);
   
  private:
   std::string                        name_;

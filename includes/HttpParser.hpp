@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/13 10:40:45 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/09/19 16:27:20 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,13 +31,13 @@ class HttpParser {
         
         bool parseRequest(const std::string buffer);
         
-        std::string getMethod() const;
-        std::string getResourcePath() const;
-        std::string getQueryString() const;
-        std::string getHttpVersion() const;
-        std::string getrequestBody() const;
-        int         getErrorCode() const;
-        std::map<std::string, std::string> getHeaders() const;
+        std::string get_method() const;
+        std::string get_resource_path() const;
+        std::string get_query_string() const;
+        std::string get_http_version() const;
+        std::string get_request_body() const;
+        int         get_error_code() const;
+        std::map<std::string, std::string> get_headers() const;
 
         bool checkValidPath(std::string path);
 
