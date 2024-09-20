@@ -6,11 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/19 16:34:43 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/20 15:44:24 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef HTTPRESPONSE_HPP_
+#define HTTPRESPONSE_HPP_
 
 #include <iostream>
 #include <unordered_map>
@@ -46,3 +47,5 @@ class HttpResponse
         std::string get_header_() const;
         std::string get_error_codeMessage() const;
 };
+
+#endif

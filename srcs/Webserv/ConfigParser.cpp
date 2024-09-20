@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/19 16:55:10 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/20 13:01:44 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,12 @@
 
 ConfigParser::ConfigParser()
 {
-    ;
+  ;
 }
 
 ConfigParser::~ConfigParser()
 {
-   ;
+  ;
 }
 
 int ConfigParser::parse_config(std::deque<Socket> &sockets_) {

@@ -6,12 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/19 16:22:29 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/20 15:42:30 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef WebServ_HPP_
-#define WebServ_HPP_
+#ifndef WEBSERV_HPP_
+#define WEBSERV_HPP_
 
 #include <netdb.h> 
 #include <unistd.h>
@@ -44,9 +44,5 @@ class WebServ {
   int send_to_client(const int clientSocket, const char *msg, int length);
 
   //older, del
-  const char* 		ipAddress_;
-  const char*			port_;
-  pollfd				listening_;
-  std::vector<pollfd>	pollFDs_;
 };
 #endif

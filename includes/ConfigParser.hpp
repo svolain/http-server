@@ -6,12 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:56:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/19 16:26:13 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/20 15:44:21 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONFIGPARSER_HPP
-#define CONFIGPARSER_HPP
+#ifndef CONFIGPARSER_HPP_
+#define CONFIGPARSER_HPP_
 
 #include "Location.hpp"
 #include "VirtualHost.hpp"
@@ -29,9 +29,9 @@ class ConfigParser
     public:
       ConfigParser() = default;
       ~ConfigParser() = default;
+      int parse_config(std::deque<Socket> &sockets_);
 
     private:
-      int parse_config(std::deque<Socket> &sockets_);
       void parse_server(std::stringstream& ss, std::deque<Socket> &sockets_);
       void parse_location(VirtualHost& v, std::stringstream& ss);
       void parse_socket(std::string& s, std::stringstream& ss);
@@ -43,7 +43,6 @@ class ConfigParser
       void parse_root(Location& l, std::stringstream& ss);
       void parse_autoindex(Location& l, std::stringstream& ss);
       void parse_index(Location& l, std::stringstream& ss);
-
 
       std::string          conf_;
 };

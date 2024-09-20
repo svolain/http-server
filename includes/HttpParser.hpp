@@ -6,12 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/19 16:27:20 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/20 15:44:23 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HTTPPARSER_HPP
-# define HTTPPARSER_HPP
+#ifndef HTTPPARSER_HPP_
+# define HTTPPARSER_HPP_
 
 # include <iostream>
 # include <map>
