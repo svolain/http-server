@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/20 13:05:10 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 14:45:37 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ int main(int ac, char **av)
 	if (ac > 2) {
 		std::cerr << "Usage: /webserv [configuration file]\n";
 		return 1;
-  }
+  	}
 	WebServ webServ(av[1]);
 	
 	if (webServ.init())

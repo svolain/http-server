@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 13:34:24 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/20 15:57:01 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 14:33:35 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,16 @@
 #define SOCKET_HPP_
 
 #include "VirtualHost.hpp"
+#include "HttpParser.hpp"
+#include "HttpResponse.hpp"
 
 #include <netdb.h> 
 #include <unistd.h>
 #include <poll.h>
+#include <vector>
+#include <fcntl.h>
+#include <string.h> //memset
+
 
 class Socket {
  public:
@@ -33,6 +39,8 @@ class Socket {
   int                                 init_server();
   int                                 poll_server(void);
   void                                close_all_connections(void);
+
+  void on_message_recieved(const int clientSocket, const char *msg, int length, short revents);
   
  private:
   std::string                         address_;
@@ -41,6 +49,9 @@ class Socket {
 
   pollfd                              listening_;
   std::vector<pollfd>                 pollFDs_;
+
+  int send_to_client(const int clientSocket, const char *msg, int length);
+  void send_chunked_response(int clientSocket, std::ifstream &file);
 };
 
 #endif

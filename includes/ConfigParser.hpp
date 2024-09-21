@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:56:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/20 15:44:21 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 14:45:12 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,13 @@
 #include <sstream>
 #include <string>
 
+
 class ConfigParser
 {
     public:
       ConfigParser() = default;
       ~ConfigParser() = default;
+      ConfigParser(const char* conf);
       int parse_config(std::deque<Socket> &sockets_);
 
     private:

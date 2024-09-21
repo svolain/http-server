@@ -14,7 +14,7 @@ EC						:=	\033[0m
 
 
 WEBSERV_NAME	:=	WebServ.cpp HttpParser.cpp \
-	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp
+	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp ConfigParser.cpp
 
 WEBSERV_PATH	:=	Webserv/
 WEBSERV				:=	$(addprefix $(WEBSERV_PATH), $(WEBSERV_NAME))
