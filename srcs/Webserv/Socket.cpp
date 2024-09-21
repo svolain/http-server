@@ -6,14 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/21 15:21:55 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 17:46:38 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Socket.hpp"
 
-extern bool showResponse;
-extern bool showRequest;
 
 Socket::Socket(std::string& socket, VirtualHost& v) : v_hosts_({{v.get_name(), v}}) {
   size_t colon = socket.find(':');
@@ -43,9 +41,9 @@ EventFlag eventFlags[] = {
             {POLLPRI, "POLLPRI (Urgent Data)"}
 };
 
-#define TIMEOUT		100
-  /* will be specified by us*/
-#define MAXBYTES	16000
+#define TIMEOUT		5000
+
+#define MAXBYTES 16000
 
 int Socket::poll_server(void)
 {
@@ -82,17 +80,16 @@ int Socket::poll_server(void)
           pollFDs_.push_back(newClient);
           // std::cout << "Created a new connection" << std::endl;
         }
-        }
-        // onClientConnected();
       }
+        // onClientConnected();
+    }
       else if (sock != listening_.fd && (revents & POLLHUP)){
         std::cout << "hang up" << sock << " with i = " << i  << std::endl;
         close(sock);
         pollFDs_.erase(pollFDs_.begin() + i);
         continue;
       }
-      else if (sock != listening_.fd && (revents & POLLNVAL))
-      {
+      else if (sock != listening_.fd && (revents & POLLNVAL)){
         std::cout << "invalid fd " << sock << " with i = " << i  << std::endl;
         //try to close anyway
         close(sock);
@@ -101,8 +98,11 @@ int Socket::poll_server(void)
       }
       //there is data to recv
       else if (sock != listening_.fd && (revents & POLLIN)){
-        char  buf[MAXBYTES];
-        int   bytesIn;
+        char                buf[MAXBYTES];
+        int                 bytesIn;
+        std::ostringstream  oss;
+        size_t              body_count = 0;
+        
         fcntl(sock, F_SETFL, O_NONBLOCK);
         /* do it in a loop until recv is 0? 
           would it be considered blocking?*/
@@ -116,21 +116,45 @@ int Socket::poll_server(void)
             perror("recv -1:");
             break ;
           }
-          /* with the current break after on_message_recieved
-            we can't get here */
+          /* Clean parser memory, decide which virtual host it belongs to, choose
+            from the list and pass it to the on_message_recived*/
           else if (bytesIn == 0){
+             /* with the current break after on_message_recieved
+            we can't get here */
             close(sock);
             pollFDs_.erase(pollFDs_.begin() + i);
             break;
           }
+          else if (bytesIn == MAXBYTES){
+            // TODO: implement error of body too long
+            oss << buf;
+            body_count += bytesIn;
+          }
           else {
-            on_message_recieved(sock, buf, bytesIn, revents);
+            oss << buf;
+            body_count += bytesIn;
+
+            if (!parser.parseRequest(oss.str().c_str()));
+              std::cout << "false on parseRequest returned" << std::endl;
+            std::cout << "\nrequestBody:\n" << parser.get_request_body() << std::endl;
+            std::cout << "the err code is " << parser.get_error_code() << std::endl;
+
+            /* TODO: add fin host method to the parser */
+            auto it = v_hosts_.find("example.com");
+            if (it != v_hosts_.end()){
+              it->second.on_message_recieved(sock, parser);
+            }
+            else {
+              /* TODO: wrong hostname. Forward to default? 
+                What do we have at index 0?*/
+              v_hosts_[0].on_message_recieved(sock, parser);
+            }
+           
             if (!recv(sock, buf, 0, 0))
               std::cout << "Client closed the connection" << std::endl;
             /* If the request is maxbytes we should not break the connection here */
             break ;
           }
-
         }
       }
       /* An unspecified event will trigget this loop 
@@ -142,6 +166,7 @@ int Socket::poll_server(void)
         }
       }
       if (sock != listening_.fd && (revents & POLLOUT)){
+        /* TODO: check the case wehn bytesIn < 0 and we try to send */
         std::cout << "ready for write" << std::endl;
       }
     }
@@ -207,92 +232,4 @@ void Socket::close_all_connections(void)
 {
   for (size_t i = 0; i < pollFDs_.size(); i++)
     close(pollFDs_[i].fd);
-}
-
-void Socket::on_message_recieved(const int clientSocket, const char *msg, 
-  int bytesIn, short revents){
-  
-  (void)bytesIn;
-  (void)revents;
-  std::cout << "--- entering on_message_recieved ---" << std::endl;
-  /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
-    see 100 Continue status message
-    https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
-
-  //TODO: check if the header contains "Connection: close"
-
-  // std::istringstream iss(msg);
-  // std::vector<std::string> parsed
-  //   ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
-  // std::cout << parsed[1] << std::endl;
-  
-  HttpParser parser;
-  HttpResponse response;
-
-
-  if (!parser.parseRequest(msg))
-    std::cout << "false on parseRequest returned" << std::endl;
-  std::cout << "\nrequestBody:\n" << parser.get_request_body() << std::endl;
-
-  std::cout << "the err code is " << parser.get_error_code() << std::endl;
-  response.set_error_code_(parser.get_error_code());
-  
-  if (showRequest)
-    std::cout << "the resource path is " << parser.get_resource_path() << std::endl;
-  response.assign_cont_type_(parser.get_resource_path()); 
-  response.open_file(parser.get_resource_path());
-  response.compose_header();
-  if (showResponse)
-  {
-    std::cout << "\n------response header------" << std::endl;
-    std::cout << response.get_header_() << std::endl;
-    std::cout << "-----end of response header------\n" << std::endl;
-  }
-  send_to_client(clientSocket, response.get_header_().c_str(), response.get_header_().size());
-
-  send_chunked_response(clientSocket, response.get_file_());
-}
-
-void Socket::send_chunked_response(int clientSocket, std::ifstream &file)
-{
-  const int chunk_size = 1024;
-   
-  char buffer[chunk_size]{};
-  // int i = 0;
-  /* TODO: check if the handling of SIGINT on send error is needed  
-    It would sigint on too many failed send() attempts*/
-  if (file.is_open()){
-    std::streamsize bytesRead;
-    
-    while (file) {
-      file.read(buffer, chunk_size);
-      bytesRead = file.gcount(); 
-      if (bytesRead == -1)
-      {
-        std::cout << "bytesRead returned -1" << std::endl;
-        break;
-      }
-      std::ostringstream chunk_size_hex;
-      chunk_size_hex << std::hex << bytesRead << "\r\n";
-      if (send_to_client(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1 || 
-        send_to_client(clientSocket, buffer, bytesRead) == -1 ||
-        send_to_client(clientSocket, "\r\n", 2) == -1){
-          perror("send :");
-          break ;
-      }
-      // i ++;
-    }
-    // std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
-    if (send_to_client(clientSocket, "0\r\n\r\n", 5) == -1)
-      perror("send 2:");
-  }
-  else
-    if (send_to_client(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)
-      perror("send 3:");
-  file.close();
-  std::cout << "\n-----response sent-----\n" << std::endl;
-}
-
-int Socket::send_to_client(const int clientSocket, const char *msg, int length){
-  return (send(clientSocket, msg, length, 0));
 }

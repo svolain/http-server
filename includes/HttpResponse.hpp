@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/20 15:44:24 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 17:34:00 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,12 +22,15 @@ class HttpResponse
 {
     private:
         
-        int         error_code_;
-        std::unordered_map<std::string, std::string> cont_type_map_;
-        std::string cont_type_;
-        std::string error_code_message_;
-        std::ifstream file_;
-        std::string header_;
+        int                            error_code_;
+        std::unordered_map
+            <std::string, std::string> cont_type_map_;
+        std::string                    cont_type_;
+        std::string                    error_code_message_;
+        // std::ifstream               file_;
+        std::streampos                 saved_position_; 
+
+        std::string                    header_;
 
         void initContMap(void);
         void lookupErrMessage(void);
@@ -35,6 +38,7 @@ class HttpResponse
     public:
 
         HttpResponse();
+        HttpResponse(const HttpResponse &other) = default;
         ~HttpResponse();
         
         void assign_cont_type_(std::string resourcePath);

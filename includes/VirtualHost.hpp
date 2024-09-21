@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/19 16:19:20 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 17:29:37 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,11 @@
 #include <string>
 #include <map>
 #include <utility>
-#include "Location.hpp"
+#include <netdb.h> 
 
+#include "Location.hpp"
+#include "HttpResponse.hpp"
+#include "HttpParser.hpp"
 
 
 class VirtualHost {
@@ -26,7 +29,6 @@ class VirtualHost {
   VirtualHost()                                    = default;
   VirtualHost(const VirtualHost& other)            = default;
   VirtualHost& operator=(const VirtualHost& other) = default;
-
   ~VirtualHost() = default;
 
   std::string get_name();
@@ -34,6 +36,8 @@ class VirtualHost {
   void        set_size(std::string& size);
   void        set_error_page(std::string& code, std::string& path);
   void        set_location(std::string& path, Location& location);
+
+  void        on_message_recieved(const int clientSocket, HttpParser &parser);
   
  private:
   std::string                        name_;
@@ -41,6 +45,10 @@ class VirtualHost {
   size_t                             client_max_body_size_ = 1048576;
   std::map<std::string, Location>    locations_;
   
+  HttpResponse                       response;
+
+  int   send_to_client(const int clientSocket, const char *msg, int length);
+  void  send_chunked_response(int clientSocket, std::ifstream &file);
 };
 
 #endif

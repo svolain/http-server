@@ -6,13 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/19 16:34:43 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 17:28:03 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 
-extern bool showResponse;
 
 HttpResponse::HttpResponse()
   :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
@@ -100,6 +99,7 @@ void HttpResponse::compose_header(void){
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();
+
 }
 
 

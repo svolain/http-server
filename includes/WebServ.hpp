@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/21 14:45:34 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/21 17:29:34 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,8 +37,6 @@ class WebServ {
   std::string          conf_;
   std::deque<Socket>   sockets_;
   // std::vector<pollfd>  sockets_fd_;
-
-
   //older, del
 };
 #endif
