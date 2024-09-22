@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/21 16:54:00 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 18:15:15 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,7 @@
 
 
 extern bool showResponse;
-extern bool showRequest;
-
+extern bool showRequest;                                 ;
 
 void VirtualHost::on_message_recieved(const int clientSocket, HttpParser &parser){
   
@@ -31,15 +30,15 @@ void VirtualHost::on_message_recieved(const int clientSocket, HttpParser &parser
   //   ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
   // std::cout << parsed[1] << std::endl;
   
-  HttpResponse response;
-
-
-  response.set_error_code_(parser.get_error_code());
-  
   if (showRequest)
     std::cout << "the resource path is " << parser.get_resource_path() << std::endl;
+  
+  HttpResponse response;
+  
+  response.set_error_code_(parser.get_error_code());
   response.assign_cont_type_(parser.get_resource_path()); 
-  response.open_file(parser.get_resource_path());
+  std::ifstream file;
+  response.open_file(parser.get_resource_path(), file, files_pos);
   response.compose_header();
   if (showResponse)
   {
@@ -49,10 +48,10 @@ void VirtualHost::on_message_recieved(const int clientSocket, HttpParser &parser
   }
   send_to_client(clientSocket, response.get_header_().c_str(), response.get_header_().size());
 
-  send_chunked_response(clientSocket, response.get_file_());
+  send_chunked_body(clientSocket, file, parser.get_resource_path());
 }
 
-void VirtualHost::send_chunked_response(int clientSocket, std::ifstream &file)
+void VirtualHost::send_chunked_body(int clientSocket, std::ifstream &file, std::string resourcePath)
 {
   const int chunk_size = 1024;
    
@@ -60,14 +59,16 @@ void VirtualHost::send_chunked_response(int clientSocket, std::ifstream &file)
   // int i = 0;
   /* TODO: check if the handling of SIGINT on send error is needed  
     It would sigint on too many failed send() attempts*/
+
+  /* TODO: implement sending on POLLOUT and test */
   if (file.is_open()){
     std::streamsize bytesRead;
     
     while (file) {
       file.read(buffer, chunk_size);
+      files_pos[resourcePath] = file.tellg();
       bytesRead = file.gcount(); 
-      if (bytesRead == -1)
-      {
+      if (bytesRead == -1){
         std::cout << "bytesRead returned -1" << std::endl;
         break;
       }
@@ -84,6 +85,7 @@ void VirtualHost::send_chunked_response(int clientSocket, std::ifstream &file)
     // std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
     if (send_to_client(clientSocket, "0\r\n\r\n", 5) == -1)
       perror("send 2:");
+    files_pos[resourcePath] = 0;
   }
   else
     if (send_to_client(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)

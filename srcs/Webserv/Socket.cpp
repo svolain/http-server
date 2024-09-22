@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/21 17:46:38 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 17:42:58 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@ Socket::Socket(std::string& socket, VirtualHost& v) : v_hosts_({{v.get_name(), v
   size_t colon = socket.find(':');
   address_ = socket.substr(0, colon);
   port_ = socket.substr(colon + 1);
+
 }
 
 std::string Socket::get_socket() {
@@ -33,17 +34,17 @@ struct EventFlag {
 };
 
 EventFlag eventFlags[] = {
-            {POLLIN, "POLLIN (Data to read)"},
-            {POLLOUT, "POLLOUT (Ready for writing)"},
-            {POLLERR, "POLLERR (Error)"},
-            {POLLHUP, "POLLHUP (Hang-up)"},
-            {POLLNVAL, "POLLNVAL (Invalid FD)"},
-            {POLLPRI, "POLLPRI (Urgent Data)"}
+  {POLLIN, "POLLIN (Data to read)"},
+  {POLLOUT, "POLLOUT (Ready for writing)"},
+  {POLLERR, "POLLERR (Error)"},
+  {POLLHUP, "POLLHUP (Hang-up)"},
+  {POLLNVAL, "POLLNVAL (Invalid FD)"},
+  {POLLPRI, "POLLPRI (Urgent Data)"}
 };
 
-#define TIMEOUT		5000
+#define TIMEOUT   1000
 
-#define MAXBYTES 16000
+#define MAXBYTES  16000
 
 int Socket::poll_server(void)
 {
@@ -102,6 +103,9 @@ int Socket::poll_server(void)
         int                 bytesIn;
         std::ostringstream  oss;
         size_t              body_count = 0;
+
+        memset(&buf, 0, MAXBYTES);
+        oss.clear();
         
         fcntl(sock, F_SETFL, O_NONBLOCK);
         /* do it in a loop until recv is 0? 
@@ -126,7 +130,7 @@ int Socket::poll_server(void)
             break;
           }
           else if (bytesIn == MAXBYTES){
-            // TODO: implement error of body too long
+            // TODO: implement Body Too Long error
             oss << buf;
             body_count += bytesIn;
           }
@@ -134,25 +138,36 @@ int Socket::poll_server(void)
             oss << buf;
             body_count += bytesIn;
 
-            if (!parser.parseRequest(oss.str().c_str()));
+            HttpParser parser;
+            std::cout << "the whole request is " << oss.str() << std::endl;
+            if (!parser.parseRequest(oss.str().c_str()))
               std::cout << "false on parseRequest returned" << std::endl;
             std::cout << "\nrequestBody:\n" << parser.get_request_body() << std::endl;
             std::cout << "the err code is " << parser.get_error_code() << std::endl;
-
             /* TODO: add fin host method to the parser */
-            auto it = v_hosts_.find("example.com");
+
+            std::map <std::string, std::string> headers = parser.get_headers();
+            // std::map <std::string, std::string>::iterator it2 = headers.begin();
+            // while (it2 != headers.end())
+            // {
+            //   std::cout << it2->first << " " << it2->second << std::endl;
+            //   it2++;
+            // }
+
+            auto it = v_hosts_.find(headers["Host"]);
             if (it != v_hosts_.end()){
+              std::cout << "found " << it->second.get_name() << std::endl;
               it->second.on_message_recieved(sock, parser);
             }
             else {
               /* TODO: wrong hostname. Forward to default? 
                 What do we have at index 0?*/
-              v_hosts_[0].on_message_recieved(sock, parser);
+              it = v_hosts_.begin();
+              it->second.on_message_recieved(sock, parser);
             }
            
             if (!recv(sock, buf, 0, 0))
               std::cout << "Client closed the connection" << std::endl;
-            /* If the request is maxbytes we should not break the connection here */
             break ;
           }
         }
@@ -225,6 +240,7 @@ int Socket::init_server()
     is it related to building a packet from multiple packets?*/
   listening_.events = POLLIN | POLLPRI ;
   pollFDs_.push_back(listening_);
+
   return 0;
 }
 

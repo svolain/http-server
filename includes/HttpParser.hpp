@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/21 17:47:50 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 16:52:27 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,13 +43,14 @@ class HttpParser {
 
 
     private:
+        int                     error_code;
         std::string							method;
-		std::string							resourcePath;
-		std::string							queryString;
-		std::string							httpVersion;
-        std::string                         requestBody;
-        int                                 error_code;
-		std::map<std::string, std::string>	headers = {};
+        std::string							resourcePath;
+        std::string							queryString;
+        std::string							httpVersion;
+        std::string             requestBody;
+		    std::map<std::string, 
+          std::string>	        headers = {};
 };
 
 #endif

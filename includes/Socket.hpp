@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 13:34:24 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/21 17:39:17 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 17:33:06 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,16 +38,17 @@ class Socket {
   int                                 init_server();
   int                                 poll_server(void);
   void                                close_all_connections(void);
+
+  std::map<std::string, VirtualHost>  v_hosts_;
   
  private:
   std::string                         address_;
   std::string                         port_;
-  std::map<std::string, VirtualHost>  v_hosts_;
+  // std::map<std::string, VirtualHost>  v_hosts_;
 
   pollfd                              listening_;
   std::vector<pollfd>                 pollFDs_;
 
-  HttpParser                          parser;
 };
 
 #endif

@@ -6,11 +6,12 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/21 17:28:03 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 18:08:40 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
+#include <map>
 
 
 HttpResponse::HttpResponse()
@@ -22,27 +23,42 @@ HttpResponse::~HttpResponse(){
     ;
 }
 
-void HttpResponse::open_file(std::string resourcePath)
+void HttpResponse::open_file(std::string resourcePath, std::ifstream &file, std::map 
+  <std::string, std::streampos> &files_pos)
 {
-  
   //open in binary if not html
   //TODO: make a check for the file extension in the parser
+
+  auto it = files_pos.find(resourcePath);
+  std::streampos pos = 0;
+  if (it != files_pos.end())
+    pos = (*it).second;
+  else
+    files_pos[resourcePath] = 0;
+
   if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos) //read bin file
-      this->file_.open("./www/" + resourcePath, std::ios::binary);
+      file.open("./www/" + resourcePath, std::ios::binary);
   else
   {
     if (resourcePath == "/")
       resourcePath = "index.html";
-    file_.open("./www/" + resourcePath);
+    std::cout << "set index html as default" << std::endl;
+    file.open("./www/" + resourcePath);
   }
-  if (!file_.is_open())
+  if (!file.is_open())
   {
     std::cout << "couldnt open file " << resourcePath << ", opening 404" << std::endl;
-    file_.open("./www/404.html");
+    set_error_code_(404);
+    file.open("./www/404.html");
+    return ;
   }
-    
-
-  //TODO: change the error code when the methd is gonna be of the responese class
+  file.seekg(pos);
+  if (file.fail()) {
+    std::cerr << "Error: Failed to set the file position." << std::endl;
+  } 
+  else {
+        std::cout << "Previous file position set successfully." << std::endl;
+  }
 }
 
 void HttpResponse::assign_cont_type_(std::string resourcePath){
@@ -59,7 +75,7 @@ void HttpResponse::assign_cont_type_(std::string resourcePath){
 
 void HttpResponse::lookupErrMessage(void)
 {
-  //TODO do some kind of a table duple lookup for error codes with the parser?
+  //TODO do some kind of a pair lookup for error codes with the parser?
   switch (error_code_)
   {
     case 200:
@@ -158,9 +174,6 @@ std::string HttpResponse::get_cont_type_(void) const{
   return (cont_type_);
 }
 
-std::ifstream& HttpResponse::get_file_(void){
-  return (this->file_);
-}
 
 std::string HttpResponse::get_header_(void) const{
   return (header_);

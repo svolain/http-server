@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 15:30:31 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/21 14:57:42 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 16:54:05 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ int WebServ::init() {
     ConfigParser parser(conf_.c_str());
     if (parser.parse_config(this->sockets_))
       return 1;
+    
   }
   
   int i = 0;

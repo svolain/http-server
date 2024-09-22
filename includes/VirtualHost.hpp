@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/21 17:29:37 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 18:10:30 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,10 +45,12 @@ class VirtualHost {
   size_t                             client_max_body_size_ = 1048576;
   std::map<std::string, Location>    locations_;
   
-  HttpResponse                       response;
+  
+  std::map<std::string, std::streampos> files_pos;
+  // HttpResponse                       response;
 
   int   send_to_client(const int clientSocket, const char *msg, int length);
-  void  send_chunked_response(int clientSocket, std::ifstream &file);
+  void  send_chunked_body(int clientSocket, std::ifstream &file, std::string resourcePath);
 };
 
 #endif

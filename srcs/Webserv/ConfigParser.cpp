@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/21 14:45:17 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 17:10:36 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,41 +43,47 @@ int ConfigParser::parse_config(std::deque<Socket> &sockets_) {
 }
 
 void ConfigParser::parse_server(std::stringstream& ss, std::deque<Socket> &sockets_) {
-    std::string token;
+  std::string token;
+  ss >> token;
+
+  if (token == "")
+    return;
+  if (token != "server")
+    throw token;
+  ss >> token;
+  if (token != "{")
+    throw token;
+  VirtualHost virtual_host;
+  std::string socket;
+  while (true) {
     ss >> token;
-    if (token == "")
-     return;
-    if (token != "server")
+    if (token == "listen")
+      parse_socket(socket, ss);
+    else if (token == "server_name")
+      parse_name(virtual_host, ss);
+    else if (token == "client_max_body_size")
+      parse_max_body_size(virtual_host, ss);
+    else if (token == "error_page")
+      parse_error_page(virtual_host, ss);
+    else if (token == "location")
+      parse_location(virtual_host, ss);
+    else if (token == "}")
+      break;
+    else
       throw token;
-    ss >> token;
-    if (token != "{")
-      throw token;
-    VirtualHost virtual_host;
-    std::string socket;
-    while (true) {
-      ss >> token;
-      if (token == "listen")
-        parse_socket(socket, ss);
-      else if (token == "server_name")
-        parse_name(virtual_host, ss);
-      else if (token == "client_max_body_size")
-        parse_max_body_size(virtual_host, ss);
-      else if (token == "error_page")
-        parse_error_page(virtual_host, ss);
-      else if (token == "location")
-        parse_location(virtual_host, ss);
-      else if (token == "}")
-        break;
-      else
-        throw token;
-    }
-  auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
-        return obj.get_socket() == socket;
-    });
+  }
+auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
+      return obj.get_socket() == socket;
+  });
   if (it != sockets_.end())
+  {
     (*it).add_virtual_host(virtual_host);
+    /* Why it doesnt assign a name with the default config? */
+  }
+    
   else
     sockets_.push_back(Socket(socket, virtual_host));
+  
 }
 
 void ConfigParser::parse_location(VirtualHost& v, std::stringstream& ss) {
@@ -130,6 +136,7 @@ void ConfigParser::parse_name(VirtualHost& v, std::stringstream& ss) {
     throw "server_name " + token;
   token.pop_back();
   v.set_name(token);
+  std::cout << "the name is set to " << v.get_name() << std::endl;
 }
 
 void ConfigParser::parse_max_body_size(VirtualHost& v, std::stringstream& ss) {

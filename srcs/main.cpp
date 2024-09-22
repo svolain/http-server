@@ -6,14 +6,14 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/21 14:45:37 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/22 17:36:58 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
 
 
-bool showResponse = 0;
+bool showResponse = 1;
 bool showRequest = 0;
 
 // int main(int argc, char* argv[]) {
