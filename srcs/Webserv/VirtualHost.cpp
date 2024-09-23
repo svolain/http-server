@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/22 18:15:15 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/23 17:49:03 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 extern bool showResponse;
 extern bool showRequest;                                 ;
 
-void VirtualHost::on_message_recieved(const int clientSocket, HttpParser &parser){
+void VirtualHost::on_message_recieved(const int client_socket, HttpParser &parser){
   
   std::cout << "--- entering on_message_recieved ---" << std::endl;
   /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
@@ -40,62 +40,65 @@ void VirtualHost::on_message_recieved(const int clientSocket, HttpParser &parser
   std::ifstream file;
   response.open_file(parser.get_resource_path(), file, files_pos);
   response.compose_header();
-  if (showResponse)
-  {
+  if (showResponse){
     std::cout << "\n------response header------" << std::endl;
     std::cout << response.get_header_() << std::endl;
     std::cout << "-----end of response header------\n" << std::endl;
   }
-  send_to_client(clientSocket, response.get_header_().c_str(), response.get_header_().size());
+  
+  send_to_client(client_socket, response.get_header_().c_str(), response.get_header_().size());
 
-  send_chunked_body(clientSocket, file, parser.get_resource_path());
+  send_chunked_body(client_socket, file, parser.get_resource_path());
 }
 
-void VirtualHost::send_chunked_body(int clientSocket, std::ifstream &file, std::string resourcePath)
+void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, std::string resourcePath)
 {
   const int chunk_size = 1024;
-   
   char buffer[chunk_size]{};
-  // int i = 0;
-  /* TODO: check if the handling of SIGINT on send error is needed  
-    It would sigint on too many failed send() attempts*/
-
   /* TODO: implement sending on POLLOUT and test */
+  /* Nginx will not try to save the state of the previous transmission and retry later. 
+      It handles each request-response transaction independently. 
+      If the connection breaks, a client would need to send a new request to get the content again. 
+      Return the file position back to 0*/
   if (file.is_open()){
-    std::streamsize bytesRead;
+    std::streamsize bytes_read;
     
     while (file) {
       file.read(buffer, chunk_size);
       files_pos[resourcePath] = file.tellg();
-      bytesRead = file.gcount(); 
-      if (bytesRead == -1){
-        std::cout << "bytesRead returned -1" << std::endl;
+      bytes_read = file.gcount(); 
+      if (bytes_read == -1){
+        std::cout << "bytes_read returned -1" << std::endl;
         break;
       }
       std::ostringstream chunk_size_hex;
-      chunk_size_hex << std::hex << bytesRead << "\r\n";
-      if (send_to_client(clientSocket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1 || 
-        send_to_client(clientSocket, buffer, bytesRead) == -1 ||
-        send_to_client(clientSocket, "\r\n", 2) == -1){
+      chunk_size_hex << std::hex << bytes_read << "\r\n";
+      if (send_to_client(client_socket, chunk_size_hex.str().c_str(), 
+        chunk_size_hex.str().length()) == -1 || 
+        send_to_client(client_socket, buffer, bytes_read) == -1 ||
+        send_to_client(client_socket, "\r\n", 2) == -1){
           perror("send :");
           break ;
       }
-      // i ++;
+      std::cout << "sent " << bytes_read  << std::endl;
     }
-    // std::cout << "sent a chunk " << i << " times and the last one was " << bytesRead << std::endl;
-    if (send_to_client(clientSocket, "0\r\n\r\n", 5) == -1)
+    if (send_to_client(client_socket, "0\r\n\r\n", 5) == -1)
       perror("send 2:");
     files_pos[resourcePath] = 0;
   }
   else
-    if (send_to_client(clientSocket, "<h1>404 Not Found</h1>", 23) == -1)
+    if (send_to_client(client_socket, "<h1>404 Not Found</h1>", 23) == -1)
       perror("send 3:");
   file.close();
   std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
-int VirtualHost::send_to_client(const int clientSocket, const char *msg, int length){
-  return (send(clientSocket, msg, length, 0));
+int VirtualHost::send_to_client(const int client_socket, const char *msg, int length){
+  int bytes_sent;
+  bytes_sent = send(client_socket, msg, length, 0);
+  if (bytes_sent != length)
+    return -1;
+  return bytes_sent;
 }
 
 std::string VirtualHost::get_name() {

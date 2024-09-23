@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/22 17:42:58 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/23 17:33:15 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,167 +28,8 @@ void  Socket::add_virtual_host(VirtualHost& v) {
   v_hosts_[v.get_name()] = v;
 }
 
-struct EventFlag {
-    short flag;
-    const char* description;
-};
 
-EventFlag eventFlags[] = {
-  {POLLIN, "POLLIN (Data to read)"},
-  {POLLOUT, "POLLOUT (Ready for writing)"},
-  {POLLERR, "POLLERR (Error)"},
-  {POLLHUP, "POLLHUP (Hang-up)"},
-  {POLLNVAL, "POLLNVAL (Invalid FD)"},
-  {POLLPRI, "POLLPRI (Urgent Data)"}
-};
-
-#define TIMEOUT   1000
-
-#define MAXBYTES  16000
-
-int Socket::poll_server(void)
-{
-  std::vector<pollfd> copyFDs = pollFDs_;
-    /* the socketsReady from poll() 
-      is the number of file descriptors with events that occurred. */
-    int socketsReady = poll(copyFDs.data(), copyFDs.size(), TIMEOUT);
-    if (socketsReady == -1){
-      perror("poll: ");
-      return 0;
-    }
-    if (!socketsReady){
-      std::cout << "poll() is closing connections on timeout..." << std::endl;
-      for (size_t i = 1; i < pollFDs_.size(); i ++)
-      {
-        close(pollFDs_[i].fd);
-        pollFDs_.erase(pollFDs_.begin() + i);
-      }	
-      return 0;
-    }
-    for (size_t i = 0; i < copyFDs.size(); i++){
-      //for readability
-      int sock = copyFDs[i].fd;
-      short revents = copyFDs[i].revents;
-      //is it an inbound connection?
-      if (sock == listening_.fd){
-        if (revents & POLLIN){
-        /* should we store the address of the connnecting client?
-          for now just using nullptr */
-        pollfd newClient;
-        newClient.fd = accept(listening_.fd, nullptr, nullptr);
-        if (newClient.fd != -1){
-          newClient.events = POLLIN;
-          pollFDs_.push_back(newClient);
-          // std::cout << "Created a new connection" << std::endl;
-        }
-      }
-        // onClientConnected();
-    }
-      else if (sock != listening_.fd && (revents & POLLHUP)){
-        std::cout << "hang up" << sock << " with i = " << i  << std::endl;
-        close(sock);
-        pollFDs_.erase(pollFDs_.begin() + i);
-        continue;
-      }
-      else if (sock != listening_.fd && (revents & POLLNVAL)){
-        std::cout << "invalid fd " << sock << " with i = " << i  << std::endl;
-        //try to close anyway
-        close(sock);
-        pollFDs_.erase(pollFDs_.begin() + i);
-        continue;
-      }
-      //there is data to recv
-      else if (sock != listening_.fd && (revents & POLLIN)){
-        char                buf[MAXBYTES];
-        int                 bytesIn;
-        std::ostringstream  oss;
-        size_t              body_count = 0;
-
-        memset(&buf, 0, MAXBYTES);
-        oss.clear();
-        
-        fcntl(sock, F_SETFL, O_NONBLOCK);
-        /* do it in a loop until recv is 0? 
-          would it be considered blocking?*/
-        while (1){
-          //TODO: add a Timeout timer for the client connection
-          memset(&buf, 0, MAXBYTES);
-          bytesIn = recv(sock, buf, MAXBYTES, 0);
-          if (bytesIn < 0){
-            close(sock);
-            pollFDs_.erase(pollFDs_.begin() + i);
-            perror("recv -1:");
-            break ;
-          }
-          /* Clean parser memory, decide which virtual host it belongs to, choose
-            from the list and pass it to the on_message_recived*/
-          else if (bytesIn == 0){
-             /* with the current break after on_message_recieved
-            we can't get here */
-            close(sock);
-            pollFDs_.erase(pollFDs_.begin() + i);
-            break;
-          }
-          else if (bytesIn == MAXBYTES){
-            // TODO: implement Body Too Long error
-            oss << buf;
-            body_count += bytesIn;
-          }
-          else {
-            oss << buf;
-            body_count += bytesIn;
-
-            HttpParser parser;
-            std::cout << "the whole request is " << oss.str() << std::endl;
-            if (!parser.parseRequest(oss.str().c_str()))
-              std::cout << "false on parseRequest returned" << std::endl;
-            std::cout << "\nrequestBody:\n" << parser.get_request_body() << std::endl;
-            std::cout << "the err code is " << parser.get_error_code() << std::endl;
-            /* TODO: add fin host method to the parser */
-
-            std::map <std::string, std::string> headers = parser.get_headers();
-            // std::map <std::string, std::string>::iterator it2 = headers.begin();
-            // while (it2 != headers.end())
-            // {
-            //   std::cout << it2->first << " " << it2->second << std::endl;
-            //   it2++;
-            // }
-
-            auto it = v_hosts_.find(headers["Host"]);
-            if (it != v_hosts_.end()){
-              std::cout << "found " << it->second.get_name() << std::endl;
-              it->second.on_message_recieved(sock, parser);
-            }
-            else {
-              /* TODO: wrong hostname. Forward to default? 
-                What do we have at index 0?*/
-              it = v_hosts_.begin();
-              it->second.on_message_recieved(sock, parser);
-            }
-           
-            if (!recv(sock, buf, 0, 0))
-              std::cout << "Client closed the connection" << std::endl;
-            break ;
-          }
-        }
-      }
-      /* An unspecified event will trigget this loop 
-        to see which flag is in the revents*/
-      else {
-        for (const auto& eventFlag : eventFlags) {
-          if (revents & eventFlag.flag) 
-            std::cout << eventFlag.description << std::endl;
-        }
-      }
-      if (sock != listening_.fd && (revents & POLLOUT)){
-        /* TODO: check the case wehn bytesIn < 0 and we try to send */
-        std::cout << "ready for write" << std::endl;
-      }
-    }
-    return 0;
-}
-
-int Socket::init_server()
+int Socket::init_server(std::vector<pollfd> &pollFDs)
 {
   struct addrinfo hints{}, *servinfo;
   hints.ai_family = AF_INET;
@@ -215,13 +56,7 @@ int Socket::init_server()
     return 3;
   }
 
-  
-  // for (addrinfo *addr = hints; addr != NULL; addr = addr->ai_next)
-  //   {
-  //      std::cout << "here" << std::endl;
-  //   }
-
-  if (bind(listening_.fd, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+  if (bind(listening_.fd, servinfo->ai_addr, servinfo->ai_addrlen) == -1){
     close(listening_.fd);
     std::cerr << "server: bind() error"  << std::endl; 
     return 4;
@@ -230,22 +65,16 @@ int Socket::init_server()
   
   #define BACKLOG 10
   /* TODO: DEFINED IN THE BACKLOG PARAMETER */
-
   if (listen(listening_.fd, BACKLOG) == -1){
     std::cerr << "server: listen() error"  << std::endl; 
     return 5;
   }
-  /* POLLIN is read-ready, 
-    POLLPRI is for out-of-band data, 
-    is it related to building a packet from multiple packets?*/
-  listening_.events = POLLIN | POLLPRI ;
-  pollFDs_.push_back(listening_);
-
+  listening_.events = POLLIN;
+  pollFDs.push_back(listening_);
   return 0;
 }
 
-void Socket::close_all_connections(void)
-{
-  for (size_t i = 0; i < pollFDs_.size(); i++)
-    close(pollFDs_[i].fd);
+
+pollfd Socket::get_listening() const{
+  return listening_;
 }
