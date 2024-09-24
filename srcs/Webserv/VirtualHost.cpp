@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/23 17:49:03 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/24 14:05:41 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,19 +16,10 @@
 extern bool showResponse;
 extern bool showRequest;                                 ;
 
-void VirtualHost::on_message_recieved(const int client_socket, HttpParser &parser){
+void VirtualHost::on_message_recieved(const int client_socket, HttpParser &parser, pollfd &sock){
   
   std::cout << "--- entering on_message_recieved ---" << std::endl;
-  /* TODO if bytesIn == MAXBYTES then recv until the whole message is sent 
-    see 100 Continue status message
-    https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#:~:text=Requirements%20for%20HTTP/1.1%20origin%20servers%3A*/
-
   //TODO: check if the header contains "Connection: close"
-
-  // std::istringstream iss(msg);
-  // std::vector<std::string> parsed
-  //   ((std::istream_iterator<std::string>(iss)), (std::istream_iterator<std::string>()));
-  // std::cout << parsed[1] << std::endl;
   
   if (showRequest)
     std::cout << "the resource path is " << parser.get_resource_path() << std::endl;
@@ -48,10 +39,10 @@ void VirtualHost::on_message_recieved(const int client_socket, HttpParser &parse
   
   send_to_client(client_socket, response.get_header_().c_str(), response.get_header_().size());
 
-  send_chunked_body(client_socket, file, parser.get_resource_path());
+  send_chunked_body(client_socket, file, parser.get_resource_path(), sock);
 }
 
-void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, std::string resourcePath)
+void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, std::string resourcePath, pollfd &sock)
 {
   const int chunk_size = 1024;
   char buffer[chunk_size]{};
@@ -90,6 +81,7 @@ void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, std:
     if (send_to_client(client_socket, "<h1>404 Not Found</h1>", 23) == -1)
       perror("send 3:");
   file.close();
+  copyFDs_[i].
   std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
@@ -120,4 +112,9 @@ void VirtualHost::set_error_page(std::string& code, std::string& path) {
 
 void VirtualHost::set_location(std::string& path, Location& location) {
   locations_[path] = location;
+}
+
+size_t VirtualHost::get_max_body_size()
+{
+  return client_max_body_size_;
 }

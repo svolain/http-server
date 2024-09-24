@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/22 18:10:30 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/24 14:05:04 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <map>
 #include <utility>
 #include <netdb.h> 
+#include <poll>
 
 #include "Location.hpp"
 #include "HttpResponse.hpp"
@@ -32,13 +33,13 @@ class VirtualHost {
   ~VirtualHost() = default;
 
   std::string get_name();
+  size_t      get_max_body_size();
   void        set_name(std::string& name);
   void        set_size(std::string& size);
   void        set_error_page(std::string& code, std::string& path);
   void        set_location(std::string& path, Location& location);
+  void        on_message_recieved(const int clientSocket, HttpParser &parser, pollfd &sock);
 
-  void        on_message_recieved(const int clientSocket, HttpParser &parser);
-  
  private:
   std::string                        name_;
   std::map<std::string, std::string> error_pages_;

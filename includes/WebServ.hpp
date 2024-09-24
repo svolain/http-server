@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/23 17:41:31 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/24 13:16:02 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ class WebServ {
   
   void poll_available_fds(void);
   bool is_sock_listening(int sock, short revents);
+  void close_connection(int sock, int i);
   void close_all_connections(void);
 
   struct EventFlag {
