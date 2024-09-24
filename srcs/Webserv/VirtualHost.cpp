@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/24 14:05:41 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/24 17:20:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,37 +42,47 @@ void VirtualHost::on_message_recieved(const int client_socket, HttpParser &parse
   send_chunked_body(client_socket, file, parser.get_resource_path(), sock);
 }
 
-void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, std::string resourcePath, pollfd &sock)
+int VirtualHost::send_one_chunk(int client_socket, std::ifstream &file, std::string resourcePath)
 {
+  std::streamsize bytes_read;
   const int chunk_size = 1024;
   char buffer[chunk_size]{};
-  /* TODO: implement sending on POLLOUT and test */
+
+  file.read(buffer, chunk_size);
+  files_pos[resourcePath] = file.tellg();
+  bytes_read = file.gcount(); 
+  if (bytes_read == -1){
+    std::cout << "bytes_read returned -1" << std::endl;
+    return 1;
+  }
+  std::ostringstream chunk_size_hex;
+  chunk_size_hex << std::hex << bytes_read << "\r\n";
+  if (send_to_client(client_socket, chunk_size_hex.str().c_str(), 
+    chunk_size_hex.str().length()) == -1 || 
+    send_to_client(client_socket, buffer, bytes_read) == -1 ||
+    send_to_client(client_socket, "\r\n", 2) == -1){
+      perror("send :");
+      return 1;
+  }
+  std::cout << "sent " << bytes_read  << std::endl;
+  if (bytes_read < chunk_size)
+    return 1;
+  return 0;
+}
+
+void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, 
+  std::string resourcePath, pollfd &sock)
+{
   /* Nginx will not try to save the state of the previous transmission and retry later. 
       It handles each request-response transaction independently. 
       If the connection breaks, a client would need to send a new request to get the content again. 
       Return the file position back to 0*/
   if (file.is_open()){
-    std::streamsize bytes_read;
-    
-    while (file) {
-      file.read(buffer, chunk_size);
-      files_pos[resourcePath] = file.tellg();
-      bytes_read = file.gcount(); 
-      if (bytes_read == -1){
-        std::cout << "bytes_read returned -1" << std::endl;
-        break;
-      }
-      std::ostringstream chunk_size_hex;
-      chunk_size_hex << std::hex << bytes_read << "\r\n";
-      if (send_to_client(client_socket, chunk_size_hex.str().c_str(), 
-        chunk_size_hex.str().length()) == -1 || 
-        send_to_client(client_socket, buffer, bytes_read) == -1 ||
-        send_to_client(client_socket, "\r\n", 2) == -1){
-          perror("send :");
-          break ;
-      }
-      std::cout << "sent " << bytes_read  << std::endl;
-    }
+    if (file)
+    {
+      if (send_one_chunk(client_socket, file, resourcePath) == 0)
+        return ;
+    } 
     if (send_to_client(client_socket, "0\r\n\r\n", 5) == -1)
       perror("send 2:");
     files_pos[resourcePath] = 0;
@@ -81,7 +91,7 @@ void VirtualHost::send_chunked_body(int client_socket, std::ifstream &file, std:
     if (send_to_client(client_socket, "<h1>404 Not Found</h1>", 23) == -1)
       perror("send 3:");
   file.close();
-  copyFDs_[i].
+  sock.events = POLLIN;
   std::cout << "\n-----response sent-----\n" << std::endl;
 }
 

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 15:30:31 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/24 14:04:10 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/24 17:55:09 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,14 +59,6 @@ bool WebServ::is_sock_listening(int sock, short revents)
 #define MAXBYTES  16000
 
 void WebServ::poll_available_fds(void){
-  // EventFlag eventFlags[] = {
-  //   {POLLIN, "POLLIN (Data to read)"},
-  //   {POLLOUT, "POLLOUT (Ready for writing)"},
-  //   {POLLERR, "POLLERR (Error)"},
-  //   {POLLHUP, "POLLHUP (Hang-up)"},
-  //   {POLLNVAL, "POLLNVAL (Invalid FD)"},
-  //   {POLLPRI, "POLLPRI (Urgent Data)"}
-  // };
   
   std::vector<pollfd> copyFDs = pollFDs_;
   for (size_t i = 0; i < copyFDs.size(); i++){
@@ -74,6 +66,8 @@ void WebServ::poll_available_fds(void){
       //for readability
       int sock = copyFDs[i].fd;
       short revents = copyFDs[i].revents;
+      ConnectInfo data;
+      connection_map[sock] = data;
       //is it an inbound connection?
       if (is_sock_listening(sock, revents)){
         continue;
@@ -109,7 +103,6 @@ void WebServ::poll_available_fds(void){
           it->second.on_message_recieved(sock, parser, copyFDs[i]);
         }
       }
-      //there is data to recv
       else if (revents & POLLIN){
         char                buf[MAXBYTES];
         int                 bytesIn;
@@ -152,14 +145,6 @@ void WebServ::poll_available_fds(void){
           }
         }
       }
-      /* An unspecified event will trigget this loop 
-        to see which flag is in the revents*/
-      // else {
-      //   for (const auto& eventFlag : eventFlags) {
-      //     if (revents & eventFlag.flag) 
-      //       std::cout << eventFlag.description << std::endl;
-      //   }
-      // }
     }
 }
 
