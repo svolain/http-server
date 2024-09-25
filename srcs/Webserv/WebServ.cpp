@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 15:30:31 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/24 17:55:09 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/25 17:19:04 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,17 +35,18 @@ int WebServ::init() {
 }
 
 
-bool WebServ::is_sock_listening(int sock, short revents)
+bool WebServ::is_fd_listening(int sock, short revents, std::vector<pollfd> &copyFDs)
 {
   for (auto it = sockets_.begin(); it != sockets_.end(); it ++){
     if ((*it).get_listening().fd == sock && (revents & POLLIN)){
       pollfd newClient;
       newClient.fd = accept(sock, nullptr, nullptr);
       if (newClient.fd != -1){
-        Socket *connect_ptr = &(*it);
+        fcntl(newClient.fd, F_SETFL, O_NONBLOCK);
         newClient.events = POLLIN;
-        pollFDs_.push_back(newClient);
-        connection_map[newClient.fd] = connect_ptr;
+        copyFDs.push_back(newClient);
+        ConnectInfo& newclient_info = connection_map[newClient.fd];
+        newclient_info.init_info(newClient.fd, &(*it));
       }
       else
         std::cerr << "Error on accept()\n"; 
@@ -64,43 +65,50 @@ void WebServ::poll_available_fds(void){
   for (size_t i = 0; i < copyFDs.size(); i++){
       std::ostringstream  oss;
       //for readability
-      int sock = copyFDs[i].fd;
+      int fd = copyFDs[i].fd;
       short revents = copyFDs[i].revents;
-      ConnectInfo data;
-      connection_map[sock] = data;
+      auto map_it = connection_map;
+      ConnectInfo* fd_info = nullptr;
+      HttpParser* parser = nullptr;
+      if (map_it.find(fd) != map_it.end()){
+        fd_info = &map_it.at(fd);
+        (*fd_info).set_copyFD_index(i);
+        parser = (*fd_info).get_parser();
+      }
       //is it an inbound connection?
-      if (is_sock_listening(sock, revents)){
+      if (!fd_info && is_fd_listening(fd, revents, copyFDs)){
         continue;
       }
       else if (revents & POLLHUP){
-        std::cout << "hang up" << sock << " with i = " << i  << std::endl;
-        close_connection(sock, i);
+        std::cout << "hang up" << fd << " with i = " << i  << std::endl;
+        close_connection(fd, i, copyFDs);
         continue;
       }
       else if (revents & POLLNVAL){
-        std::cout << "invalid fd " << sock << " with i = " << i  << std::endl;
+        std::cout << "invalid fd " << fd << " with i = " << i  << std::endl;
         //try to close anyway
-        close_connection(sock, i);
+        close_connection(fd, i, copyFDs);
         continue;
       }
       else if (revents & POLLOUT){
-        fcntl(sock, F_SETFL, O_NONBLOCK);
         /* TODO: check the case wehn bytesIn < 0 and we try to send */
         std::cout << "ready for write" << std::endl;
         //Get the host: part from the parser
-        std::map <std::string, std::string> headers = parser.get_headers();
+        std::map <std::string, std::string> headers = parser->get_headers();
         //for readability, find the host name among the Vhosts for this connection
-        std::map<std::string, VirtualHost>  *v_hosts_ = &connection_map[sock]->v_hosts_;
-        auto it = (*v_hosts_).find(headers["Host"]);
+        std::map<std::string, VirtualHost>  *v_hosts_ = &fd_info->get_socket()->v_hosts_;
+        auto vhosts_it = (*v_hosts_).find(headers["Host"]);
         //if we've found the name then direct it to the proper vhost
-        if (it != (*v_hosts_).end()){
-          std::cout << "found " << it->second.get_name() << std::endl;
-          it->second.on_message_recieved(sock, parser, copyFDs[i]);
+        if (vhosts_it != (*v_hosts_).end()){
+          std::cout << "found " << vhosts_it->second.get_name() << std::endl;
+          (*fd_info).set_vhost(&vhosts_it->second);
+          vhosts_it->second.on_message_recieved(fd_info, copyFDs);
         }
         else {
           /* wrong hostname. Forward to default at index 0*/
-          it = (*v_hosts_).begin();
-          it->second.on_message_recieved(sock, parser, copyFDs[i]);
+          vhosts_it = (*v_hosts_).begin();
+          (*fd_info).set_vhost(&vhosts_it->second);
+          vhosts_it->second.on_message_recieved(fd_info, copyFDs);
         }
       }
       else if (revents & POLLIN){
@@ -109,20 +117,20 @@ void WebServ::poll_available_fds(void){
         size_t              request_size = 0;
 
         memset(&buf, 0, MAXBYTES);
-        fcntl(sock, F_SETFL, O_NONBLOCK);
+        //clear the parser memeory
         while (1){
           //TODO: add a Timeout timer for the client connection
           memset(&buf, 0, MAXBYTES);
-          bytesIn = recv(sock, buf, MAXBYTES, 0);
+          bytesIn = recv(fd, buf, MAXBYTES, 0);
           if (bytesIn < 0){
-            close_connection(sock, i);
+            close_connection(fd, i, copyFDs);
             perror("recv -1:");
-            break ;
+            break;
           }
           else if (bytesIn == 0){
              /* with the current break after on_message_recieved
             we can't get here */
-            close_connection(sock, i);
+            close_connection(fd, i, copyFDs);
             break;
           }
           else if (bytesIn == MAXBYTES){
@@ -135,17 +143,18 @@ void WebServ::poll_available_fds(void){
             request_size += bytesIn;
             
             std::cout << "the whole request is:\n" << oss.str() << std::endl;
-            if (!parser.parseRequest(oss.str().c_str()))
+            if (!parser->parseRequest(oss.str().c_str()))
               std::cout << "false on parseRequest returned" << std::endl;
             /* TODO: add find_host method to the parser, add body too long check */
             if (request_size > SIZE_MAX)
               std::cout << "could add body too long check to parser" << std::endl;
             copyFDs[i].events = POLLIN | POLLOUT;
-            break ;
+            break;
           }
         }
       }
     }
+   pollFDs_ = std::move(copyFDs);
 }
 
 void WebServ::run() {
@@ -181,9 +190,9 @@ void WebServ::close_all_connections(void)
     close(pollFDs_[i].fd);
 }
 
-void WebServ::close_connection(int sock, int i)
+void WebServ::close_connection(int sock, int i, std::vector<pollfd> &copyFDs)
 {
   close(sock);
-  pollFDs_.erase(pollFDs_.begin() + i);
+  copyFDs.erase(copyFDs.begin() + i);
   connection_map.erase(sock);
 }

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/22 18:09:44 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/25 16:01:44 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+
+class ConnectInfo;
 
 class HttpResponse
 {
@@ -42,8 +44,7 @@ class HttpResponse
         void assign_cont_type_(std::string resourcePath);
      
         void            set_error_code_(int error_code_);
-        void            open_file(std::string resourcePath, std::ifstream &file, std::map 
-          <std::string, std::streampos> &files_pos);
+        void            open_file(ConnectInfo *fd_info, std::ifstream &file);
         void            compose_header(void);
         std::string     get_cont_type_() const;
         std::string     get_header_() const;

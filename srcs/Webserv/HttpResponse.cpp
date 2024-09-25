@@ -6,13 +6,13 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/22 18:08:40 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/25 16:39:02 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
+#include "ConnectInfo.hpp"
 #include <map>
-
 
 HttpResponse::HttpResponse()
   :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
@@ -23,16 +23,17 @@ HttpResponse::~HttpResponse(){
     ;
 }
 
-void HttpResponse::open_file(std::string resourcePath, std::ifstream &file, std::map 
-  <std::string, std::streampos> &files_pos)
+void HttpResponse::open_file(ConnectInfo *fd_info, std::ifstream &file)
 {
   //open in binary if not html
   //TODO: make a check for the file extension in the parser
+  std::string resourcePath = (*fd_info).get_parser()->get_resource_path();
+  auto files_pos = (*fd_info).get_file_map();
 
-  auto it = files_pos.find(resourcePath);
+  auto filesmap_it = files_pos.find(resourcePath);
   std::streampos pos = 0;
-  if (it != files_pos.end())
-    pos = (*it).second;
+  if (filesmap_it != files_pos.end())
+    pos = (*filesmap_it).second;
   else
     files_pos[resourcePath] = 0;
 
