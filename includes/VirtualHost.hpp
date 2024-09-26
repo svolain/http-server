@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/25 17:11:35 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/26 14:06:53 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,8 @@ class VirtualHost {
   
   void  send_header(ConnectInfo *fd_info, std::ifstream &file);
   void  send_chunked_body(ConnectInfo* fd_info, std::ifstream &file, std::vector<pollfd> &copyFDs);
-  int   send_one_chunk(int client_socket, std::ifstream &file, std::string resourcePath, auto files_pos);
+  int   send_one_chunk(int client_socket, std::ifstream &file, std::string resourcePath, 
+    std::map<std::string, std::streampos>& files_pos);
   int   send_to_client(const int clientSocket, const char *msg, int length);
   
 };

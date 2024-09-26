@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/25 17:11:26 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/26 14:14:18 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,13 @@ void VirtualHost::on_message_recieved(ConnectInfo *fd_info, std::vector<pollfd> 
   std::ifstream file;
   if ((*fd_info).get_is_sending() == false){
       send_header(fd_info, file);
+      (*fd_info).set_is_sending(true);
   }
   else{
+    std::cout << "sending the body" << std::endl;
     send_chunked_body(fd_info, file, copyFDs);
   }
+  std::cout << "----- leaving on_message_recieved -----" << std::endl;
 }
 
 void VirtualHost::send_header(ConnectInfo *fd_info, std::ifstream &file){
@@ -34,6 +37,7 @@ void VirtualHost::send_header(ConnectInfo *fd_info, std::ifstream &file){
 
   if (showRequest)
     std::cout << "the resource path is " << parser->get_resource_path() << std::endl;
+  std::cout << "the error code from parser is " << parser->get_error_code() << std::endl;
   response.set_error_code_(parser->get_error_code());
   response.assign_cont_type_(parser->get_resource_path());
   if (parser->get_error_code() == 200)
@@ -54,9 +58,13 @@ void VirtualHost::send_chunked_body(ConnectInfo* fd_info, std::ifstream &file, s
       If the connection breaks, a client would need to send a new request to get the content again. 
       Return the file position back to 0*/
   int client_socket = (*fd_info).get_fd();
-  auto files_pos = (*fd_info).get_file_map();
+  std::map<std::string, std::streampos>& files_pos = (*fd_info).get_file_map();
   std::string resource_path = (*fd_info).get_parser()->get_resource_path();
-
+  
+  HttpResponse response;
+  HttpParser *parser = (*fd_info).get_parser();
+  if (parser->get_error_code() == 200)
+    response.open_file(fd_info, file);
   if (file.is_open()){
     if (file){
       if (send_one_chunk(client_socket, file, resource_path, files_pos) == 0){
@@ -78,7 +86,7 @@ void VirtualHost::send_chunked_body(ConnectInfo* fd_info, std::ifstream &file, s
 }
 
 int VirtualHost::send_one_chunk(int client_socket, std::ifstream &file, std::string resourcePath, 
-  auto files_pos_)
+  std::map<std::string, std::streampos>& files_pos_)
 {
   std::streamsize bytes_read;
   const int chunk_size = 1024;
@@ -86,6 +94,7 @@ int VirtualHost::send_one_chunk(int client_socket, std::ifstream &file, std::str
 
   file.read(buffer, chunk_size);
   files_pos_[resourcePath] = file.tellg();
+  std::cout << "new pos is " << files_pos_[resourcePath] << "and res Path is " << resourcePath << std::endl;
   bytes_read = file.gcount(); 
   if (bytes_read == -1){
     std::cout << "bytes_read returned -1" << std::endl;
@@ -108,7 +117,8 @@ int VirtualHost::send_one_chunk(int client_socket, std::ifstream &file, std::str
 
 int VirtualHost::send_to_client(const int client_socket, const char *msg, int length){
   int bytes_sent;
-  bytes_sent = send(client_socket, msg, length, 0);
+  /* https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly */
+  bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
   if (bytes_sent != length)
     return -1;
   return bytes_sent;

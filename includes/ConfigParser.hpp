@@ -31,6 +31,7 @@ class ConfigParser
       ConfigParser() = default;
       ~ConfigParser() = default;
       ConfigParser(const char* conf);
+      
       int parse_config(std::deque<Socket> &sockets_);
 
     private:

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/23 15:40:44 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/26 14:02:50 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 
 bool showResponse = 1;
-bool showRequest = 0;
+bool showRequest = 1;
 
 #include "WebServ.hpp"
 #include <iostream>

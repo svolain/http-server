@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/25 16:39:02 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/26 13:58:51 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,10 @@ void HttpResponse::open_file(ConnectInfo *fd_info, std::ifstream &file)
   auto filesmap_it = files_pos.find(resourcePath);
   std::streampos pos = 0;
   if (filesmap_it != files_pos.end())
+  {
     pos = (*filesmap_it).second;
+    std::cout << "found the file for access in the map" << std::endl;
+  }
   else
     files_pos[resourcePath] = 0;
 
@@ -53,11 +56,12 @@ void HttpResponse::open_file(ConnectInfo *fd_info, std::ifstream &file)
     file.open("./www/404.html");
     return ;
   }
+  std::cout << "the pos for file is " << pos << std::endl;
   file.seekg(pos);
   if (file.fail()) {
     std::cerr << "Error: Failed to set the file position." << std::endl;
   } 
-  else {
+  else if (pos != 0){
         std::cout << "Previous file position set successfully." << std::endl;
   }
 }

@@ -22,9 +22,11 @@ class VirtualHost;
 class ConnectInfo
 {
   public:
-    ConnectInfo() = default;
+    ConnectInfo();
     //will add freeing
-    ~ConnectInfo() = default;
+    ~ConnectInfo();
+    ConnectInfo(const ConnectInfo &other);
+    ConnectInfo&	operator=(const ConnectInfo& other);
 
     void        init_info(int fd, Socket *sock);
 
@@ -38,7 +40,6 @@ class ConnectInfo
     bool        get_is_sending();
     std::map
       <std::string, std::streampos>& get_file_map();
-
 
   private:
 
