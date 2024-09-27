@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/26 13:21:20 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/27 16:15:26 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,10 @@
 
 class HttpParser {
   public:
-      HttpParser(void);
+  
+      HttpParser() = default;
       HttpParser(const std::string buffer);
-      HttpParser(const HttpParser& other);
-      HttpParser& operator=(const HttpParser& other);
-      ~HttpParser(void);
+      ~HttpParser() = default;
       
       bool parseRequest(const std::string buffer);
       

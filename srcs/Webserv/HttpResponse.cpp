@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/26 13:58:51 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/27 17:15:10 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,52 +23,35 @@ HttpResponse::~HttpResponse(){
     ;
 }
 
-void HttpResponse::open_file(ConnectInfo *fd_info, std::ifstream &file)
+void HttpResponse::open_file(std::string& resource_path, std::ifstream& file)
 {
   //open in binary if not html
   //TODO: make a check for the file extension in the parser
-  std::string resourcePath = (*fd_info).get_parser()->get_resource_path();
-  auto files_pos = (*fd_info).get_file_map();
-
-  auto filesmap_it = files_pos.find(resourcePath);
-  std::streampos pos = 0;
-  if (filesmap_it != files_pos.end())
-  {
-    pos = (*filesmap_it).second;
-    std::cout << "found the file for access in the map" << std::endl;
-  }
-  else
-    files_pos[resourcePath] = 0;
-
-  if (resourcePath != "/" && resourcePath.find(".html") == std::string::npos) //read bin file
-      file.open("./www/" + resourcePath, std::ios::binary);
+  if (file.is_open())
+    std::cout << "already opened! cool!" << std::endl;
   else
   {
-    if (resourcePath == "/")
-      resourcePath = "index.html";
-    std::cout << "set index html as default" << std::endl;
-    file.open("./www/" + resourcePath);
-  }
-  if (!file.is_open())
-  {
-    std::cout << "couldnt open file " << resourcePath << ", opening 404" << std::endl;
-    set_error_code_(404);
-    file.open("./www/404.html");
-    return ;
-  }
-  std::cout << "the pos for file is " << pos << std::endl;
-  file.seekg(pos);
-  if (file.fail()) {
-    std::cerr << "Error: Failed to set the file position." << std::endl;
-  } 
-  else if (pos != 0){
-        std::cout << "Previous file position set successfully." << std::endl;
+    std::cout << "not opened file" << std::endl;
+    if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
+    file.open("./www/" + resource_path, std::ios::binary);
+    else{
+      if (resource_path == "/")
+        resource_path = "index.html";
+      std::cout << "set index html as default" << std::endl;
+      file.open("./www/" + resource_path);
+    }
+    if (!file.is_open()){
+      std::cout << "couldnt open file " << resource_path << ", opening 404" << std::endl;
+      set_error_code_(404);
+      file.open("./www/404.html");
+      return ;
+    }
   }
 }
 
-void HttpResponse::assign_cont_type_(std::string resourcePath){
+void HttpResponse::assign_cont_type_(std::string resource_path){
   try{
-    auto it = cont_type_map_.find(resourcePath.substr(resourcePath.find_last_of('.')));
+    auto it = cont_type_map_.find(resource_path.substr(resource_path.find_last_of('.')));
     if (it != cont_type_map_.end()){
       cont_type_ = it->second;
     }

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/26 13:21:18 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/27 15:59:45 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ class WebServ {
   
   
   void poll_available_fds(void);
-  bool is_fd_listening(int sock, short revents, std::vector<pollfd> &copyFDs);
-  void close_connection(int sock, int i, std::vector<pollfd> &copyFDs);
+  bool accept_new_connection(int sock, short revents, std::vector<pollfd> &pollFDs_);
+  void close_connection(int sock, int i, std::vector<pollfd> &pollFDs_);
   void close_all_connections(void);
 
   struct EventFlag {

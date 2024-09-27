@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/26 14:14:18 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/27 18:17:32 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,32 +16,31 @@
 extern bool showResponse;
 extern bool showRequest;
 
-void VirtualHost::on_message_recieved(ConnectInfo *fd_info, std::vector<pollfd> &copyFDs){
+void VirtualHost::on_message_recieved(ConnectInfo *fd_info, pollfd &poll){
   std::cout << "--- entering on_message_recieved ---" << std::endl;
   //TODO: check if the header contains "Connection: close"  
-  std::ifstream file;
   if ((*fd_info).get_is_sending() == false){
-      send_header(fd_info, file);
+      send_header(fd_info);
       (*fd_info).set_is_sending(true);
   }
   else{
     std::cout << "sending the body" << std::endl;
-    send_chunked_body(fd_info, file, copyFDs);
+    send_chunked_body(fd_info, poll);
   }
   std::cout << "----- leaving on_message_recieved -----" << std::endl;
 }
 
-void VirtualHost::send_header(ConnectInfo *fd_info, std::ifstream &file){
-  HttpResponse response;
+void VirtualHost::send_header(ConnectInfo *fd_info){
   HttpParser *parser = (*fd_info).get_parser();
-
+  std::string resource_path = parser->get_resource_path();
   if (showRequest)
-    std::cout << "the resource path is " << parser->get_resource_path() << std::endl;
+    std::cout << "the resource path is " << resource_path << std::endl;
   std::cout << "the error code from parser is " << parser->get_error_code() << std::endl;
+  HttpResponse response;
   response.set_error_code_(parser->get_error_code());
   response.assign_cont_type_(parser->get_resource_path());
-  if (parser->get_error_code() == 200)
-    response.open_file(fd_info, file);
+  std::ifstream& file = (*fd_info).get_file();
+  response.open_file(resource_path, file);
   response.compose_header();
    if (showResponse){
     std::cout << "\n------response header------" << std::endl;
@@ -51,50 +50,42 @@ void VirtualHost::send_header(ConnectInfo *fd_info, std::ifstream &file){
   send_to_client((*fd_info).get_fd(), response.get_header_().c_str(), response.get_header_().size());
 }
 
-void VirtualHost::send_chunked_body(ConnectInfo* fd_info, std::ifstream &file, std::vector<pollfd> &copyFDs)
+void VirtualHost::send_chunked_body(ConnectInfo* fd_info, pollfd &poll)
 {
   /* Nginx will not try to save the state of the previous transmission and retry later. 
       It handles each request-response transaction independently. 
       If the connection breaks, a client would need to send a new request to get the content again. 
       Return the file position back to 0*/
-  int client_socket = (*fd_info).get_fd();
-  std::map<std::string, std::streampos>& files_pos = (*fd_info).get_file_map();
-  std::string resource_path = (*fd_info).get_parser()->get_resource_path();
-  
+
+  HttpParser *parser = (*fd_info).get_parser();    
+  std::string resource_path = parser->get_resource_path();
+  std::ifstream& file = (*fd_info).get_file();
   HttpResponse response;
-  HttpParser *parser = (*fd_info).get_parser();
-  if (parser->get_error_code() == 200)
-    response.open_file(fd_info, file);
+  response.open_file(resource_path, file);
+  int client_socket = (*fd_info).get_fd();
   if (file.is_open()){
-    if (file){
-      if (send_one_chunk(client_socket, file, resource_path, files_pos) == 0){
-        file.close();
-        return ;
-      }
+    if (send_one_chunk(client_socket, file) == 0){
+      return ;
     } 
     if (send_to_client(client_socket, "0\r\n\r\n", 5) == -1)
       perror("send 2:");
-    files_pos[resource_path] = 0;
   }
   else
     if (send_to_client(client_socket, "<h1>404 Not Found</h1>", 23) == -1)
       perror("send 3:");
   file.close();
-  copyFDs[(*fd_info).get_pollFD_index()].events = POLLIN;
+  poll.events = POLLIN;
   (*fd_info).set_is_sending(false);
   std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
-int VirtualHost::send_one_chunk(int client_socket, std::ifstream &file, std::string resourcePath, 
-  std::map<std::string, std::streampos>& files_pos_)
+int VirtualHost::send_one_chunk(int client_socket, std::ifstream &file)
 {
   std::streamsize bytes_read;
   const int chunk_size = 1024;
   char buffer[chunk_size]{};
 
   file.read(buffer, chunk_size);
-  files_pos_[resourcePath] = file.tellg();
-  std::cout << "new pos is " << files_pos_[resourcePath] << "and res Path is " << resourcePath << std::endl;
   bytes_read = file.gcount(); 
   if (bytes_read == -1){
     std::cout << "bytes_read returned -1" << std::endl;

@@ -6,45 +6,16 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/26 13:28:57 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/27 16:15:19 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 
-HttpParser::HttpParser(void) {}
-
 HttpParser::HttpParser(const std::string request): error_code_(0) {
     parseRequest(request);
 }
-
-
-HttpParser::~HttpParser(void) {
-    std::cout << "Parser dectructor called" << std::endl;
-}
-
-HttpParser::HttpParser(const HttpParser& other){
-  *this = other;
-  std::cout << "Copy constructor for Parser//// called" << std::endl;
-}
-
-HttpParser& HttpParser::operator=(const HttpParser& other)
-{
-  std::cout << "equals operator for Parser called /////" << std::endl;
-  if (this != &other)
-  {
-    std::cout << "this wasnt like other " << std::endl;
-    error_code_ = other.error_code_;
-    method_ = other.method_;
-    resource_path_ = other.resource_path_;
-    query_string_ = other.query_string_;
-    http_version_ = other.http_version_;
-    request_body_ = other.request_body_;
-    headers_ = other.headers_;
-  }
-  return *this;
-}
-        
+      
 bool HttpParser::parseRequest(const std::string request) {
     std::istringstream requestStream(request);
     std::string line;

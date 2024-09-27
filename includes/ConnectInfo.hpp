@@ -15,6 +15,7 @@
 
 #include "HttpParser.hpp"
 #include <poll.h>
+#include <fstream>
 
 class Socket;
 class VirtualHost;
@@ -22,34 +23,27 @@ class VirtualHost;
 class ConnectInfo
 {
   public:
-    ConnectInfo();
-    //will add freeing
-    ~ConnectInfo();
-    ConnectInfo(const ConnectInfo &other);
-    ConnectInfo&	operator=(const ConnectInfo& other);
+    ConnectInfo() = default;
+    ~ConnectInfo() = default;
+    // ConnectInfo(const ConnectInfo &other);
+    // ConnectInfo&	operator=(const ConnectInfo& other);
 
-    void        init_info(int fd, Socket *sock);
+    void            init_info(int fd, Socket *sock);
 
-    void        set_vhost(VirtualHost *vhost);
-    void        set_is_sending(bool boolean);
-    void        set_copyFD_index(int i);
-    HttpParser* get_parser();
-    Socket*     get_socket();
-    int         get_fd();
-    int         get_pollFD_index();
-    bool        get_is_sending();
-    std::map
-      <std::string, std::streampos>& get_file_map();
-
+    void            set_vhost(VirtualHost *vhost);
+    void            set_is_sending(bool boolean);
+    HttpParser*     get_parser();
+    Socket*         get_socket();
+    int             get_fd();
+    bool            get_is_sending();
+    std::ifstream&  get_file();
+    
   private:
-
     int                       fd_;
-    int                       pollFD_index_;
     Socket*                   sock_;
     VirtualHost*              vhost_;
     HttpParser                parser_;
-    std::map
-      <std::string, std::streampos> files_pos_;
+    std::ifstream             file_;
     bool                      is_sending_chunks;
     
 };
