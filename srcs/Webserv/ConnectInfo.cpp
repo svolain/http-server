@@ -12,7 +12,7 @@
 
 #include "ConnectInfo.hpp"
 
-void ConnectInfo::init_info(int fd, Socket *sock){
+void ConnectInfo::InitInfo(int fd, Socket *sock){
   fd_ = fd;
   sock_ = sock;
   is_sending_chunks = false;

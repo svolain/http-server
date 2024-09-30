@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/27 17:15:10 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:51:46 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,24 +16,24 @@
 
 HttpResponse::HttpResponse()
   :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
-  initContMap();
+  InitContMap();
 }
 
 HttpResponse::~HttpResponse(){
     ;
 }
 
-void HttpResponse::open_file(std::string& resource_path, std::ifstream& file)
-{
+void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
   //open in binary if not html
   //TODO: make a check for the file extension in the parser
+  
   if (file.is_open())
     std::cout << "already opened! cool!" << std::endl;
   else
   {
     std::cout << "not opened file" << std::endl;
     if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
-    file.open("./www/" + resource_path, std::ios::binary);
+      file.open("./www/" + resource_path, std::ios::binary);
     else{
       if (resource_path == "/")
         resource_path = "index.html";
@@ -49,7 +49,7 @@ void HttpResponse::open_file(std::string& resource_path, std::ifstream& file)
   }
 }
 
-void HttpResponse::assign_cont_type_(std::string resource_path){
+void HttpResponse::AssignContType(std::string resource_path){
   try{
     auto it = cont_type_map_.find(resource_path.substr(resource_path.find_last_of('.')));
     if (it != cont_type_map_.end()){
@@ -61,8 +61,7 @@ void HttpResponse::assign_cont_type_(std::string resource_path){
   }
 }
 
-void HttpResponse::lookupErrMessage(void)
-{
+void HttpResponse::lookupErrMessage(void){
   //TODO do some kind of a pair lookup for error codes with the parser?
   switch (error_code_)
   {
@@ -92,7 +91,7 @@ void HttpResponse::lookupErrMessage(void)
   }
 }
 
-void HttpResponse::compose_header(void){
+void HttpResponse::ComposeHeader(void){
   lookupErrMessage();
   
   std::ostringstream oss;
@@ -107,8 +106,7 @@ void HttpResponse::compose_header(void){
 }
 
 
-void HttpResponse::initContMap(void)
-{
+void HttpResponse::InitContMap(void){
   this->cont_type_map_ = {
     {".mp3", "audio/mpeg"},
     {".wma", "audio/x-ms-wma"},

@@ -28,7 +28,7 @@ class ConnectInfo
     // ConnectInfo(const ConnectInfo &other);
     // ConnectInfo&	operator=(const ConnectInfo& other);
 
-    void            init_info(int fd, Socket *sock);
+    void            InitInfo(int fd, Socket *sock);
 
     void            set_vhost(VirtualHost *vhost);
     void            set_is_sending(bool boolean);
@@ -45,7 +45,7 @@ class ConnectInfo
     HttpParser                parser_;
     std::ifstream             file_;
     bool                      is_sending_chunks;
-    
+    // bool                      is_reading_body;
 };
 
 

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/27 17:15:05 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:51:48 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ class HttpResponse
         std::string                    error_code_message_;
         std::string                    header_;
 
-        void initContMap(void);
+        void InitContMap(void);
         void lookupErrMessage(void);
 
     public:
@@ -39,14 +39,13 @@ class HttpResponse
         HttpResponse();
         ~HttpResponse();
         
-        void assign_cont_type_(std::string resourcePath);
-     
-        void            set_error_code_(int error_code_);
-        void            open_file(std::string& resource_path, std::ifstream& file);
-        void            compose_header(void);
+        void            AssignContType(std::string resourcePath);
+        void            OpenFile(std::string& resource_path, std::ifstream& file);
+        void            ComposeHeader(void);
         std::string     get_cont_type_() const;
         std::string     get_header_() const;
         std::string     get_error_codeMessage() const;
+        void            set_error_code_(int error_code_);
 };
 
 #endif

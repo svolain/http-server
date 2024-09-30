@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 13:34:24 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/25 16:27:31 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:54:08 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,17 +35,15 @@ class Socket {
 
   std::string                         get_socket();
   pollfd                              get_listening() const;
-  void                                add_virtual_host(VirtualHost& v);
-  int                                 init_server(std::vector<pollfd> &pollFDs);
+  std::map<std::string, VirtualHost>& get_v_hosts();
+  void                                AddVirtualHost(VirtualHost& v);
+  int                                 InitServer(std::vector<pollfd> &pollFDs);
 
-  //TODO: make private with a method
-  std::map<std::string, VirtualHost>  v_hosts_;
-  
  private:
   std::string                         address_;
   std::string                         port_;
-
   pollfd                              listening_;
+  std::map<std::string, VirtualHost>  v_hosts_;
 
 };
 

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/27 16:15:26 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 12:45:37 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class HttpParser {
       HttpParser(const std::string buffer);
       ~HttpParser() = default;
       
-      bool parseRequest(const std::string buffer);
+      
       
       std::string get_method() const;
       std::string get_resource_path() const;
@@ -39,7 +39,8 @@ class HttpParser {
       int         get_error_code() const;
       std::map<std::string, std::string> get_headers() const;
 
-      bool checkValidPath(std::string path);
+      bool ParseRequest(const std::string buffer);
+      bool CheckValidPath(std::string path);
 
 
   private:

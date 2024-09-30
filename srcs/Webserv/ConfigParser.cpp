@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/26 13:21:17 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:52:11 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 ConfigParser::ConfigParser(const char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
 }
 
-int ConfigParser::parse_config(std::deque<Socket> &sockets_) {
+int ConfigParser::ParseConfig(std::deque<Socket> &sockets_) {
   std::cout << "[INFO] Opening Conf file: " << conf_ <<'\n';
   std::ifstream input(conf_);
   if (!input.is_open()) {
@@ -33,7 +33,7 @@ int ConfigParser::parse_config(std::deque<Socket> &sockets_) {
   }
   while (!ss.eof()) {
     try {
-      parse_server(ss, sockets_);
+      ParseServer(ss, sockets_);
     } catch (std::string& error_token) {
       std::cerr << "[ERROR] invalid input: \"" << error_token << "\"\n";
       return 1;
@@ -42,7 +42,7 @@ int ConfigParser::parse_config(std::deque<Socket> &sockets_) {
   return 0;
 }
 
-void ConfigParser::parse_server(std::stringstream& ss, std::deque<Socket> &sockets_) {
+void ConfigParser::ParseServer(std::stringstream& ss, std::deque<Socket> &sockets_) {
   std::string token;
   ss >> token;
 
@@ -58,15 +58,15 @@ void ConfigParser::parse_server(std::stringstream& ss, std::deque<Socket> &socke
   while (true) {
     ss >> token;
     if (token == "listen")
-      parse_socket(socket, ss);
+      ParseSocket(socket, ss);
     else if (token == "server_name")
-      parse_name(virtual_host, ss);
+      ParseName(virtual_host, ss);
     else if (token == "client_max_body_size")
-      parse_max_body_size(virtual_host, ss);
+      ParseMaxBodySize(virtual_host, ss);
     else if (token == "error_page")
-      parse_error_page(virtual_host, ss);
+      ParseErrorPage(virtual_host, ss);
     else if (token == "location")
-      parse_location(virtual_host, ss);
+      ParseLocation(virtual_host, ss);
     else if (token == "}")
       break;
     else
@@ -77,7 +77,7 @@ auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
   });
   if (it != sockets_.end())
   {
-    (*it).add_virtual_host(virtual_host);
+    (*it).AddVirtualHost(virtual_host);
     /* Why it doesnt assign a name with the default config? */
   }
     
@@ -86,7 +86,7 @@ auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
   
 }
 
-void ConfigParser::parse_location(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseLocation(VirtualHost& v, std::stringstream& ss) {
   static std::regex path_format("/[a-zA-Z0-9_-]*");
   std::string       path;
   Location          location;
@@ -100,15 +100,15 @@ void ConfigParser::parse_location(VirtualHost& v, std::stringstream& ss) {
   while (true) { //what if location is in format location / {} ?
     ss >> token;
     if (token == "limit_except")
-      parse_allowed_methods(location, ss);
+      ParseAllowedMethods(location, ss);
     else if (token == "return")
-      parse_redirection(location, ss);
+      ParseRedirection(location, ss);
     else if (token == "root")
-      parse_root(location, ss);
+      ParseRoot(location, ss);
     else if (token == "autoindex")
-      parse_autoindex(location, ss);
+      ParseAutoindex(location, ss);
     else if (token == "index")
-      parse_index(location, ss);
+      ParseIndex(location, ss);
     else if (token == "}")
       break;
     else
@@ -117,7 +117,7 @@ void ConfigParser::parse_location(VirtualHost& v, std::stringstream& ss) {
    v.set_location(path, location);
 }
 
-void ConfigParser::parse_socket(std::string& socket, std::stringstream& ss) {
+void ConfigParser::ParseSocket(std::string& socket, std::stringstream& ss) {
   static std::regex format("((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.)"
                            "{3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]):"
                            "(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4]"
@@ -128,7 +128,7 @@ void ConfigParser::parse_socket(std::string& socket, std::stringstream& ss) {
   socket.pop_back();
 }
 
-void ConfigParser::parse_name(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseName(VirtualHost& v, std::stringstream& ss) {
   static std::regex format(R"(([a-z0-9-]{1,63}\.){1,124}com;)");
   std::string token;
   ss >> token;
@@ -139,7 +139,7 @@ void ConfigParser::parse_name(VirtualHost& v, std::stringstream& ss) {
   std::cout << "the name is set to " << v.get_name() << std::endl;
 }
 
-void ConfigParser::parse_max_body_size(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
   static std::regex format("0|[1-9][0-9]{0,5}|1000000)K"
                            "|(0|[1-9][0-9]{0,2}|1000)M);");
   std::string token;
@@ -150,7 +150,7 @@ void ConfigParser::parse_max_body_size(VirtualHost& v, std::stringstream& ss) {
   v.set_size(token);
 }
 
-void ConfigParser::parse_error_page(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseErrorPage(VirtualHost& v, std::stringstream& ss) {
   static std::regex code_format("404|505"); //all possible error codes
   static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]+/)*"
                                 "[a-zA-Z0-9_-]+\\.html;");
@@ -165,7 +165,7 @@ void ConfigParser::parse_error_page(VirtualHost& v, std::stringstream& ss) {
   v.set_error_page(code, path);
 }
 
-void ConfigParser::parse_allowed_methods(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseAllowedMethods(Location& l, std::stringstream& ss) {
   static std::regex format("\\s*((GET|HEAD|POST|DELETE)\\s+)*"
                                 "(GET|HEAD|POST|DELETE)\\s*"); 
   std::string line;
@@ -175,7 +175,7 @@ void ConfigParser::parse_allowed_methods(Location& l, std::stringstream& ss) {
   l.set_allowed_methods(line);
 }
 
-void ConfigParser::parse_redirection(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseRedirection(Location& l, std::stringstream& ss) {
   static std::regex code_format("30[0-478]");
   static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]/)*"
                                 "[a-zA-Z0-9_-]+\\.html;"); //Not sure about allowed redirections
@@ -190,7 +190,7 @@ void ConfigParser::parse_redirection(Location& l, std::stringstream& ss) {
   l.set_redirection(code, path);
 }
 
-void ConfigParser::parse_root(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseRoot(Location& l, std::stringstream& ss) {
   static std::regex format("(/[a-zA-Z0-9_-]+)+;"); 
   std::string token;
   ss >> token;
@@ -200,7 +200,7 @@ void ConfigParser::parse_root(Location& l, std::stringstream& ss) {
   l.set_root(token);
 }
 
-void ConfigParser::parse_autoindex(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseAutoindex(Location& l, std::stringstream& ss) {
   static std::regex format("(on|off);"); 
   std::string token;
   ss >> token;
@@ -210,7 +210,7 @@ void ConfigParser::parse_autoindex(Location& l, std::stringstream& ss) {
   l.set_auto_index(token);
 }
 
-void ConfigParser::parse_index(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseIndex(Location& l, std::stringstream& ss) {
   static std::regex format("[a-zA-Z0-9_-]+\\.html;"); 
   std::string token;
   ss >> token;

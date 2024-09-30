@@ -6,17 +6,17 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/27 16:15:19 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 12:45:37 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 
 HttpParser::HttpParser(const std::string request): error_code_(0) {
-    parseRequest(request);
+    ParseRequest(request);
 }
       
-bool HttpParser::parseRequest(const std::string request) {
+bool HttpParser::ParseRequest(const std::string request) {
     std::istringstream requestStream(request);
     std::string line;
     
@@ -54,7 +54,7 @@ bool HttpParser::parseRequest(const std::string request) {
     }
 
     //call a function that checks if path exists
-        if (!checkValidPath(resource_path_)) {
+        if (!CheckValidPath(resource_path_)) {
             return false;
         }
 
@@ -134,7 +134,7 @@ int HttpParser::get_error_code() const {
     return error_code_;   
 }
 
-bool HttpParser::checkValidPath(std::string path) {
+bool HttpParser::CheckValidPath(std::string path) {
 
     error_code_ = 200;
     /*for this function the root from confiq file is needed

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/27 18:17:40 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:55:15 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,19 +40,18 @@ class VirtualHost {
   void        set_size(std::string& size);
   void        set_error_page(std::string& code, std::string& path);
   void        set_location(std::string& path, Location& location);
-  void        on_message_recieved(ConnectInfo *fd_info, pollfd &poll);
+  void        OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll);
   
-
  private:
   std::string                        name_;
   std::map<std::string, std::string> error_pages_;
   size_t                             client_max_body_size_ = 1048576;
   std::map<std::string, Location>    locations_;
   
-  void  send_header(ConnectInfo *fd_info);
-  void  send_chunked_body(ConnectInfo* fd_info, pollfd &poll);
-  int   send_one_chunk(int client_socket, std::ifstream &file);
-  int   send_to_client(const int clientSocket, const char *msg, int length);
+  void  SendHeader(ConnectInfo *fd_info);
+  void  SendChunkedBody(ConnectInfo* fd_info, pollfd &poll);
+  int   SendOneChunk(int client_socket, std::ifstream &file);
+  int   SendToClient(const int clientSocket, const char *msg, int length);
   
 };
 

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/27 15:59:45 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 17:26:27 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,17 +34,17 @@ class WebServ {
   int   init();
 
  private:
-
   std::string                   conf_;
   std::deque<Socket>            sockets_;
   std::vector<pollfd>           pollFDs_;
-  std::map<int, ConnectInfo>    connection_map;
+  std::map<int, ConnectInfo>    client_info_map;
   
-  
-  void poll_available_fds(void);
-  bool accept_new_connection(int sock, short revents, std::vector<pollfd> &pollFDs_);
-  void close_connection(int sock, int i, std::vector<pollfd> &pollFDs_);
-  void close_all_connections(void);
+  void PollAvailableFDs(void);
+  void CheckForNewConnection(int fd, short revents, int i);
+  void CloseConnection(int sock, size_t& i);
+  void CloseAllConnections(void);
+  void RecvFromClient(ConnectInfo* fd_info, size_t& i);
+  void SendToClient(ConnectInfo* fd_info, size_t& i);
 
   struct EventFlag {
       short flag;

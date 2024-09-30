@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/25 16:27:34 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:53:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,12 +24,12 @@ std::string Socket::get_socket() {
   return address_ + ":" + port_;
 }
 
-void  Socket::add_virtual_host(VirtualHost& v) {
+void  Socket::AddVirtualHost(VirtualHost& v) {
   v_hosts_[v.get_name()] = v;
 }
 
 
-int Socket::init_server(std::vector<pollfd> &pollFDs)
+int Socket::InitServer(std::vector<pollfd> &pollFDs)
 {
   struct addrinfo hints{}, *servinfo;
   hints.ai_family = AF_INET;
@@ -77,4 +77,8 @@ int Socket::init_server(std::vector<pollfd> &pollFDs)
 
 pollfd Socket::get_listening() const{
   return listening_;
+}
+
+std::map<std::string, VirtualHost>& Socket::get_v_hosts(){
+    return v_hosts_;
 }
