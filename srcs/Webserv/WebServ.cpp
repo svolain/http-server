@@ -16,8 +16,8 @@
 
 #define TODO 123
 
-extern bool showResponse;
-extern bool showRequest;
+extern bool show_request;
+extern bool show_response;
 
 WebServ::WebServ(const char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {}
 
@@ -61,7 +61,6 @@ void WebServ::run() {
     else 
       PollAvailableFDs();
   }
-  
   CloseAllConnections();
   std::cout << "--- Shutting down the server ---" << std::endl;
 }
@@ -81,55 +80,18 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-#define MAXBYTES  8192
-
-
 void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
   
-  char                buf[MAXBYTES];
-  int                 bytesIn;
-  size_t              request_size = 0;
-  std::ostringstream  oss;
-  
   // std::vector<char>   oss;
-  int fd = fd_info->get_fd();
-  while (1) {
-    //TODO: add a Timeout timer for the client connection
-    memset(&buf, 0, MAXBYTES);
-    bytesIn = recv(fd, buf, MAXBYTES, 0);
-    if (bytesIn < 0) {
-      CloseConnection(fd, i);
-      perror("recv -1:");
-      break;
+  
+  if (fd_info->get_is_parsing_body() == false) {
+    if (fd_info->get_vhost()->ParseHeader(fd_info, pollFDs_[i]) != 0) {
+      CloseConnection(fd_info->get_fd(), i);
+      perror("recv: ");
     }
-    else if (bytesIn == 0) {
-      /* When a stream socket peer has performed an orderly shutdown, the
-        return value will be 0 (the traditional "end-of-file" return) */
-      CloseConnection(fd, i);
-      break;
-    }
-    else if (bytesIn == MAXBYTES) {
-      // TODO?: implement Header Too Long error?
-      oss << buf;
-      request_size += bytesIn;
-    }
-    else {
-      oss << buf;
-      request_size += bytesIn;
-      if (showRequest)
-        std::cout << "\nthe whole request is:\n" << oss.str() << std::endl;
-      HttpParser* parser = fd_info->get_parser();
-      // if (!parser->ParseRequest(oss.str().c_str()))
-      if (!parser->ParseRequest(oss.str()))
-        std::cout << "false on ParseRequest returned" << std::endl;
-      if (request_size > SIZE_MAX)
-        /* TODO: add body too long check in the parser */ ;
-      if (fd_info->get_vhost() == nullptr)
-        fd_info->AssignVHost();
-      pollFDs_[i].events = POLLOUT;
-      break;
-    }
-
+  }
+  else 
+    fd_info->get_vhost()->WriteBody(fd_info);
   /* find the host with the parser
     check if the permissions are good (Location)
     assign the vhost to the ConnecInfo class
@@ -137,7 +99,10 @@ void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
     get back and try to read the body
     read for MAXBYTES and go back and continue next time
      */
-  }
+
+  /* ASSIGN THIS AFTER BODY WAS READ*/
+  pollFDs_[i].events = POLLOUT;  
+
 }
 
 void WebServ::SendToClient(ConnectInfo* fd_info, pollfd& poll) {
@@ -146,7 +111,7 @@ void WebServ::SendToClient(ConnectInfo* fd_info, pollfd& poll) {
 
 void WebServ::PollAvailableFDs(void) {
   for (size_t i = 0; i < pollFDs_.size(); i++) {
-    //for readability
+    /* for readability */
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
     /* If fd is not a server fd */
@@ -154,9 +119,8 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
     else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
       ConnectInfo* fd_info = &client_info_map_.at(fd);
-      if (!fd_info) {
+      if (!fd_info) /* we should never get this error */
         std::cerr << "error: couldnt find the fd in the client_info_map_" << std::endl;
-      }
       else if (revents & POLLHUP) {
         std::cout << "hang up: " << fd << std::endl;
         CloseConnection(fd, i);
@@ -169,7 +133,7 @@ void WebServ::PollAvailableFDs(void) {
         RecvFromClient(fd_info, i);
       else if (revents & POLLOUT)
         SendToClient(fd_info, pollFDs_[i]);
-      }
+    }
   }
 }
 

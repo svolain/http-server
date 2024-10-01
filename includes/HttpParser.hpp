@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/01 12:44:47 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:22:29 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,16 +30,17 @@ class HttpParser {
       ~HttpParser() = default;
       
   
-      std::string get_method() const;
-      std::string get_resource_path() const;
-      std::string get_query_string() const;
-      std::string get_http_version() const;
-      std::string get_request_body() const;
-      int         get_error_code() const;
-      std::map<std::string, std::string> get_headers() const;
+      std::string  get_method() const;
+      std::string  get_resource_path() const;
+      std::string  get_query_string() const;
+      std::string  get_http_version() const;
+      std::string& get_request_body();
+      int          get_error_code() const;
+      std::map<std::string, std::string>& get_headers();
 
       bool ParseRequest(const std::string buffer);
       bool CheckValidPath(std::string path);
+      // void ClearMemory();
 
 
   private:

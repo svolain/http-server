@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/01 13:02:45 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:05:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,8 @@
 #include "ConnectInfo.hpp"
 #include <map>
 
-extern bool showResponse;
-extern bool showRequest;
+extern bool show_request;
+extern bool show_response;
 
 HttpResponse::HttpResponse()
   :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
@@ -30,7 +30,7 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
   
   if (!file.is_open())
   {
-    if (showResponse)
+    if (show_response)
       std::cout << "the file wasnt opened previously" << std::endl;
     if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
       file.open("./www/" + resource_path, std::ios::binary);

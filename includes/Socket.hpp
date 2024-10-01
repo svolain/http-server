@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 13:34:24 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/30 13:54:08 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:02:55 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <vector>
-#include <string.h> //memset
+// #include <string.h>
 
 
 class Socket {

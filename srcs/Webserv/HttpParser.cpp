@@ -6,17 +6,17 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/01 12:54:22 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:21:59 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 
-extern bool showResponse;
-extern bool showRequest;
+extern bool show_request;
+extern bool show_response;
 
 HttpParser::HttpParser(const std::string request): error_code_(0) {
-    ParseRequest(request);
+  ParseRequest(request);
 }
       
 bool HttpParser::ParseRequest(const std::string request) {
@@ -125,11 +125,11 @@ std::string HttpParser::get_http_version() const{
     return http_version_;
 }
 
-std::string HttpParser::get_request_body() const {
+std::string& HttpParser::get_request_body() {
     return request_body_;
 }
 
-std::map<std::string, std::string> HttpParser::get_headers() const {
+std::map<std::string, std::string>& HttpParser::get_headers() {
     return headers_;
 }
 
@@ -153,7 +153,7 @@ bool HttpParser::CheckValidPath(std::string path) {
     std::string rootPath = "";
      try {
         rootPath = std::filesystem::current_path().string() + "/www" + path;
-        if (showRequest)
+        if (show_request)
         std::cout << "root path: " << rootPath << std::endl;
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Filesystem error: " << e.what() << std::endl;
@@ -181,7 +181,7 @@ bool HttpParser::CheckValidPath(std::string path) {
         } else {
             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)){
                 if (access(rootPath.c_str(), R_OK) == 0) {
-                    if (showRequest)
+                    if (show_request)
                       std::cout << "file found" << std::endl;
                     return true;
                 } else {

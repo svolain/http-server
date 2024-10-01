@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/30 13:55:15 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 18:01:41 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,8 @@ class VirtualHost {
   void        set_size(std::string& size);
   void        set_error_page(std::string& code, std::string& path);
   void        set_location(std::string& path, Location& location);
+  int         ParseHeader(ConnectInfo* fd_info, pollfd& poll);
+  int         WriteBody(ConnectInfo* fd_info, pollfd& poll);
   void        OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll);
   
  private:

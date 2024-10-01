@@ -6,15 +6,15 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/01 12:52:07 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:05:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
 
 
-bool showResponse = 0;
-bool showRequest = 0;
+bool show_request = 1;
+bool show_response = 0;
 
 #include "WebServ.hpp"
 #include <iostream>

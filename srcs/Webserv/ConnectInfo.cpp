@@ -17,12 +17,12 @@ void ConnectInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
   sock_ = sock;
   vhost_ = nullptr;
-  is_sending_chunks = false;
+  is_sending_chunks_ = false;
 }
 
 void ConnectInfo::AssignVHost() {
-  std::map<std::string, VirtualHost> *v_hosts_ = &get_socket()->get_v_hosts();
-  std::map<std::string, std::string> headers = parser_.get_headers();
+  std::map<std::string, VirtualHost>*v_hosts_ = &get_socket()->get_v_hosts();
+  std::map<std::string, std::string>&headers = parser_.get_headers();
   std::map<std::string, VirtualHost>::iterator vhosts_it = (*v_hosts_).find(headers.at("Host"));
   if (vhosts_it != (*v_hosts_).end()){
     std::cout << "found " << vhosts_it->second.get_name() << std::endl;
@@ -34,20 +34,28 @@ void ConnectInfo::AssignVHost() {
   }
 }
 
-VirtualHost*  ConnectInfo::get_vhost() {
-  return vhost_;
-}
-
 void ConnectInfo::set_vhost(VirtualHost *vhost) {
   vhost_ = vhost;
 }
 
+void ConnectInfo::set_is_parsing_body(bool boolean) {
+  is_parsing_body_ = boolean;
+}
+
 void ConnectInfo::set_is_sending(bool boolean) {
-  is_sending_chunks = boolean;
+  is_sending_chunks_ = boolean;
 }
 
 bool ConnectInfo::get_is_sending() {
-  return is_sending_chunks;
+  return is_sending_chunks_;
+}
+
+bool ConnectInfo::get_is_parsing_body() {
+  return is_parsing_body_;
+}
+
+VirtualHost*  ConnectInfo::get_vhost() {
+  return vhost_;
 }
 
 HttpParser* ConnectInfo::get_parser() {
@@ -63,5 +71,5 @@ int ConnectInfo::get_fd() {
 }
 
 std::ifstream& ConnectInfo::get_file() {
-  return file_;
+  return getfile_;
 }

@@ -25,30 +25,30 @@ class ConnectInfo
   public:
     ConnectInfo() = default;
     ~ConnectInfo() = default;
-    // ConnectInfo(const ConnectInfo &other);
-    // ConnectInfo&	operator=(const ConnectInfo& other);
 
     void            InitInfo(int fd, Socket *sock);
     void            AssignVHost();
 
     void            set_vhost(VirtualHost *vhost);
     void            set_is_sending(bool boolean);
+    void            set_is_parsing_body(bool boolean);
     HttpParser*     get_parser();
     Socket*         get_socket();
     VirtualHost*    get_vhost();
     int             get_fd();
     bool            get_is_sending();
+    bool            get_is_parsing_body();
     std::ifstream&  get_file();
-    
     
   private:
     int                       fd_;
     Socket*                   sock_;
     VirtualHost*              vhost_;
     HttpParser                parser_;
-    std::ifstream             file_;
-    bool                      is_sending_chunks;
-    // bool                      is_reading_body;
+    std::ofstream             postfile_;
+    std::ifstream             getfile_;
+    bool                      is_sending_chunks_;
+    bool                      is_parsing_body_;
 };
 
 

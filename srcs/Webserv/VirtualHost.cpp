@@ -6,19 +6,89 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/01 12:53:05 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 18:06:19 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "VirtualHost.hpp"
 #include "ConnectInfo.hpp"
 
-extern bool showResponse;
-extern bool showRequest;
+extern bool show_request;
+extern bool show_response;
+
+#define MAXBYTES  8192
+
+int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
+
+  char                buf[MAXBYTES]{};
+  int                 bytesIn;
+  size_t              request_size = 0;
+
+  int fd = fd_info->get_fd();
+  bytesIn = recv(fd, buf, MAXBYTES, 0);
+  if (bytesIn < 0)
+    return 1;
+  else if (bytesIn == 0) {
+    /* When a stream socket peer has performed an orderly shutdown, the
+      return value will be 0 (the traditional "end-of-file" return) */
+    return 2;
+  }
+  else if (bytesIn == MAXBYTES)
+    std::cout << "MAXBYTES on recv. Check if the header is too long" << std::endl;
+
+  request_size += bytesIn;
+  
+  if (show_request)
+    std::cout << "\nthe whole request is:\n" << buf << std::endl;
+    
+  if (!fd_info->get_parser()->ParseRequest(buf))
+    std::cout << "false on ParseRequest returned" << std::endl;
+  if (request_size > SIZE_MAX)
+    /* TODO: add body too long check in the parser */ ;
+  if (fd_info->get_vhost() == nullptr)
+    fd_info->AssignVHost();
+  
+  /* If the message didnt fit into MAXBYTES then dont set the POLLOUT yet,
+    let the WriteBody do that */
+  poll.events = POLLOUT;
+  /* Set to true if we want to read the body 
+    If the whole message fit into MAXBYTES then dont set it to true*/
+  fd_info->set_is_parsing_body(false);
+  
+  return 0;
+}
+
+int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
+
+  std::string&        request_body = fd_info->get_parser()->get_request_body();
+  size_t              body_size = request_body.size();
+  // std::vector<char>   buf(body_size + MAXBYTES);
+  // buf.insert(buf.end(), request_body.begin(), request_body.end());
+
+  int                 bytesIn;
+  size_t              request_size = 0;
+
+  int fd = fd_info->get_fd();
+  bytesIn = recv(fd, buf.data() + body_size, MAXBYTES, 0);
+  if (bytesIn < 0)
+    return 1;
+  else if (bytesIn == 0) {
+    /* When a stream socket peer has performed an orderly shutdown, the
+      return value will be 0 (the traditional "end-of-file" return) */
+    return 2;
+  }
+  else if (bytesIn == MAXBYTES)
+    std::cout << "the header is too long! handle this" << std::endl;
+
+  request_size += bytesIn;
+  
+  poll.events = POLLOUT;
+  
+}
 
 void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
 
-  if (showResponse)
+  if (show_response)
     std::cout << "--- entering OnMessageRecieved ---" << std::endl;
 
   if (fd_info->get_is_sending() == false){
@@ -27,28 +97,33 @@ void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
   }
   else
     SendChunkedBody(fd_info, poll);
-  if (showResponse)
+    
+  if (show_response)
     std::cout << "----- leaving OnMessageRecieved -----" << std::endl;
 }
 
 void VirtualHost::SendHeader(ConnectInfo *fd_info){
   HttpParser *parser = fd_info->get_parser();
   std::string resource_path = parser->get_resource_path();
-  if (showRequest)
+
+  if (show_request)
     std::cout << "the resource path is " << resource_path << std::endl;
-  if (showResponse)
+  if (show_response)
     std::cout << "the error code from parser is " << parser->get_error_code() << std::endl;
+    
   HttpResponse response;
   response.set_error_code_(parser->get_error_code());
   response.AssignContType(parser->get_resource_path());
   std::ifstream& file = fd_info->get_file();
   response.OpenFile(resource_path, file);
   response.ComposeHeader();
-   if (showResponse){
+
+  if (show_response){
     std::cout << "\n------response header------" << std::endl;
     std::cout << response.get_header_() << std::endl;
     std::cout << "-----end of response header------\n" << std::endl;
   }
+  
   SendToClient(fd_info->get_fd(), response.get_header_().c_str(), response.get_header_().size());
 }
 
@@ -78,7 +153,8 @@ void VirtualHost::SendChunkedBody(ConnectInfo* fd_info, pollfd &poll)
   file.close();
   poll.events = POLLIN;
   fd_info->set_is_sending(false);
-  if (showResponse)
+  
+  if (show_response)
     std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
@@ -103,7 +179,7 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
       perror("send :");
       return 1;
   }
-  if (showResponse)
+  if (show_response)
     std::cout << "sent " << bytes_read  << std::endl;
   if (bytes_read < chunk_size)
     return 1;
