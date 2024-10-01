@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/30 13:52:11 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 22:55:03 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,26 +17,26 @@ ConfigParser::ConfigParser(const char* conf) : conf_(conf != nullptr ? conf : DE
 }
 
 int ConfigParser::ParseConfig(std::deque<Socket> &sockets_) {
-  std::cout << "[INFO] Opening Conf file: " << conf_ <<'\n';
+  logInfo("Opening Conf file: " + conf_);
   std::ifstream input(conf_);
   if (!input.is_open()) {
-    std::cerr << "[ERROR] Can't open input file: \"" << conf_ << "\"\n";
+    logError("Can't open input file: \"" + conf_ + "\"");
     return 1;
   }
   std::stringstream ss;
   while (!input.eof()) {
     std::string line;
     std::getline(input, line);
-    if (size_t pos = line.find('#') != std::string::npos)
-       line.resize(pos);
-    ss << line << ' ';
+    if (size_t pos = line.find('#'); pos != std::string::npos)
+      line.resize(pos);
+    ss << line << '\n';
   }
   while (!ss.eof()) {
     try {
       ParseServer(ss, sockets_);
     } catch (std::string& error_token) {
-      std::cerr << "[ERROR] invalid input: \"" << error_token << "\"\n";
-      return 1;
+        logError("invalid input: \"" + error_token + "\"");
+        return 1;
     }
   }
   return 0;
@@ -53,14 +53,16 @@ void ConfigParser::ParseServer(std::stringstream& ss, std::deque<Socket> &socket
   ss >> token;
   if (token != "{")
     throw token;
+
   VirtualHost virtual_host;
-  std::string socket;
+  std::string                        listen;
+
   while (true) {
     ss >> token;
     if (token == "listen")
-      ParseSocket(socket, ss);
+      ParseListen(listen, ss);
     else if (token == "server_name")
-      ParseName(virtual_host, ss);
+      ParseServerName(virtual_host, ss);
     else if (token == "client_max_body_size")
       ParseMaxBodySize(virtual_host, ss);
     else if (token == "error_page")
@@ -73,7 +75,7 @@ void ConfigParser::ParseServer(std::stringstream& ss, std::deque<Socket> &socket
       throw token;
   }
 auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
-      return obj.get_socket() == socket;
+      return obj.get_socket() == listen;
   });
   if (it != sockets_.end())
   {
@@ -82,12 +84,12 @@ auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
   }
     
   else
-    sockets_.push_back(Socket(socket, virtual_host));
+    sockets_.push_back(Socket(listen, virtual_host));
   
 }
 
 void ConfigParser::ParseLocation(VirtualHost& v, std::stringstream& ss) {
-  static std::regex path_format("/[a-zA-Z0-9_-]*");
+  static std::regex path_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+");
   std::string       path;
   Location          location;
   std::string       token;
@@ -117,7 +119,7 @@ void ConfigParser::ParseLocation(VirtualHost& v, std::stringstream& ss) {
    v.set_location(path, location);
 }
 
-void ConfigParser::ParseSocket(std::string& socket, std::stringstream& ss) {
+void ConfigParser::ParseListen(std::string& socket, std::stringstream& ss) {
   static std::regex format("((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.)"
                            "{3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]):"
                            "(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4]"
@@ -128,20 +130,21 @@ void ConfigParser::ParseSocket(std::string& socket, std::stringstream& ss) {
   socket.pop_back();
 }
 
-void ConfigParser::ParseName(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseServerName(VirtualHost& v, std::stringstream& ss) {
   static std::regex format(R"(([a-z0-9-]{1,63}\.){1,124}com;)");
+
   std::string token;
   ss >> token;
   if (!std::regex_match(token, format) || token.size() > 253)
     throw "server_name " + token;
   token.pop_back();
   v.set_name(token);
-  std::cout << "the name is set to " << v.get_name() << std::endl;
 }
 
 void ConfigParser::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
-  static std::regex format("0|[1-9][0-9]{0,5}|1000000)K"
-                           "|(0|[1-9][0-9]{0,2}|1000)M);");
+  std::regex format("0;|((0|[1-9][0-9]{0,5}|1000000)K;)"
+                      "|((0|[1-9][0-9]{0,2}|1000)M;)");
+
   std::string token;
   ss >> token;
   if (!std::regex_match(token, format))
@@ -151,15 +154,15 @@ void ConfigParser::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
 }
 
 void ConfigParser::ParseErrorPage(VirtualHost& v, std::stringstream& ss) {
-  static std::regex code_format("404|505"); //all possible error codes
-  static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]+/)*"
-                                "[a-zA-Z0-9_-]+\\.html;");
+  static std::regex code_format("404|505"); //input all possible error codes here
+  static std::regex path_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+\\.html;");
+
   std::string code;
   std::string path;
   ss >> code;
   ss >> path;
   if (!std::regex_match(code, code_format)
-      || !std::regex_match(code, path_format))
+      || !std::regex_match(path, path_format))
     throw "error_page " + code + " " + path;
   path.pop_back();
   v.set_error_page(code, path);
@@ -169,7 +172,7 @@ void ConfigParser::ParseAllowedMethods(Location& l, std::stringstream& ss) {
   static std::regex format("\\s*((GET|HEAD|POST|DELETE)\\s+)*"
                                 "(GET|HEAD|POST|DELETE)\\s*"); 
   std::string line;
-  std::getline(ss, line, ';');
+  std::getline(ss, line);
   if (!std::regex_match(line, format))
     throw "limit_except " + line;
   l.set_allowed_methods(line);
@@ -177,14 +180,14 @@ void ConfigParser::ParseAllowedMethods(Location& l, std::stringstream& ss) {
 
 void ConfigParser::ParseRedirection(Location& l, std::stringstream& ss) {
   static std::regex code_format("30[0-478]");
-  static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]/)*"
-                                "[a-zA-Z0-9_-]+\\.html;"); //Not sure about allowed redirections
+  static std::regex path_format("(/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+\\.html)|"
+                                "((https?://)?(www\\.)?([a-zA-Z0-9_-]+\\.)+[a-zA-Z]{2,});");
   std::string code;
   std::string path;
   ss >> code;
   ss >> path;
   if (!std::regex_match(code, code_format)
-      || !std::regex_match(code, path_format))
+      || !std::regex_match(path, path_format))
     throw "return " + code + " " + path;
   path.pop_back();
   l.set_redirection(code, path);

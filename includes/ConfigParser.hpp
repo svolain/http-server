@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:56:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/30 12:44:29 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:08:13 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CONFIGPARSER_HPP_
 #define CONFIGPARSER_HPP_
 
+#include "Logger.h"
 #include "Location.hpp"
 #include "VirtualHost.hpp"
 #include "Socket.hpp"
@@ -37,8 +38,8 @@ class ConfigParser
     private:
       void ParseServer(std::stringstream& ss, std::deque<Socket> &sockets_);
       void ParseLocation(VirtualHost& v, std::stringstream& ss);
-      void ParseSocket(std::string& s, std::stringstream& ss);
-      void ParseName(VirtualHost& v, std::stringstream& ss);
+      void ParseListen(std::string& s, std::stringstream& ss);
+      void ParseServerName(VirtualHost& v, std::stringstream& ss);
       void ParseMaxBodySize(VirtualHost& v, std::stringstream& ss);
       void ParseErrorPage(VirtualHost& v, std::stringstream& ss);
       void ParseAllowedMethods(Location& l, std::stringstream& ss);
