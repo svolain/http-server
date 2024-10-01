@@ -29,14 +29,17 @@ class ConnectInfo
     // ConnectInfo&	operator=(const ConnectInfo& other);
 
     void            InitInfo(int fd, Socket *sock);
+    void            AssignVHost();
 
     void            set_vhost(VirtualHost *vhost);
     void            set_is_sending(bool boolean);
     HttpParser*     get_parser();
     Socket*         get_socket();
+    VirtualHost*    get_vhost();
     int             get_fd();
     bool            get_is_sending();
     std::ifstream&  get_file();
+    
     
   private:
     int                       fd_;

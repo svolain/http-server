@@ -6,11 +6,14 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/30 12:45:37 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 12:54:22 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
+
+extern bool showResponse;
+extern bool showRequest;
 
 HttpParser::HttpParser(const std::string request): error_code_(0) {
     ParseRequest(request);
@@ -150,6 +153,7 @@ bool HttpParser::CheckValidPath(std::string path) {
     std::string rootPath = "";
      try {
         rootPath = std::filesystem::current_path().string() + "/www" + path;
+        if (showRequest)
         std::cout << "root path: " << rootPath << std::endl;
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Filesystem error: " << e.what() << std::endl;
@@ -177,7 +181,8 @@ bool HttpParser::CheckValidPath(std::string path) {
         } else {
             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)){
                 if (access(rootPath.c_str(), R_OK) == 0) {
-                    std::cout << "file found" << std::endl;
+                    if (showRequest)
+                      std::cout << "file found" << std::endl;
                     return true;
                 } else {
                     std::cout << "permission denied" << std::endl;

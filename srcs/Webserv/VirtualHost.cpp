@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/09/30 15:00:14 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 12:53:05 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,29 +17,31 @@ extern bool showResponse;
 extern bool showRequest;
 
 void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
-  std::cout << "--- entering OnMessageRecieved ---" << std::endl;
-  //TODO: check if the header contains "Connection: close"  
-  if ((*fd_info).get_is_sending() == false){
+
+  if (showResponse)
+    std::cout << "--- entering OnMessageRecieved ---" << std::endl;
+
+  if (fd_info->get_is_sending() == false){
       SendHeader(fd_info);
-      (*fd_info).set_is_sending(true);
+      fd_info->set_is_sending(true);
   }
-  else{
-    std::cout << "sending the body" << std::endl;
+  else
     SendChunkedBody(fd_info, poll);
-  }
-  std::cout << "----- leaving OnMessageRecieved -----" << std::endl;
+  if (showResponse)
+    std::cout << "----- leaving OnMessageRecieved -----" << std::endl;
 }
 
 void VirtualHost::SendHeader(ConnectInfo *fd_info){
-  HttpParser *parser = (*fd_info).get_parser();
+  HttpParser *parser = fd_info->get_parser();
   std::string resource_path = parser->get_resource_path();
   if (showRequest)
     std::cout << "the resource path is " << resource_path << std::endl;
-  std::cout << "the error code from parser is " << parser->get_error_code() << std::endl;
+  if (showResponse)
+    std::cout << "the error code from parser is " << parser->get_error_code() << std::endl;
   HttpResponse response;
   response.set_error_code_(parser->get_error_code());
   response.AssignContType(parser->get_resource_path());
-  std::ifstream& file = (*fd_info).get_file();
+  std::ifstream& file = fd_info->get_file();
   response.OpenFile(resource_path, file);
   response.ComposeHeader();
    if (showResponse){
@@ -47,7 +49,7 @@ void VirtualHost::SendHeader(ConnectInfo *fd_info){
     std::cout << response.get_header_() << std::endl;
     std::cout << "-----end of response header------\n" << std::endl;
   }
-  SendToClient((*fd_info).get_fd(), response.get_header_().c_str(), response.get_header_().size());
+  SendToClient(fd_info->get_fd(), response.get_header_().c_str(), response.get_header_().size());
 }
 
 void VirtualHost::SendChunkedBody(ConnectInfo* fd_info, pollfd &poll)
@@ -57,12 +59,12 @@ void VirtualHost::SendChunkedBody(ConnectInfo* fd_info, pollfd &poll)
       If the connection breaks, a client would need to send a new request to get the content again. 
       Return the file position back to 0*/
 
-  HttpParser *parser = (*fd_info).get_parser();    
+  HttpParser *parser = fd_info->get_parser();    
   std::string resource_path = parser->get_resource_path();
-  std::ifstream& file = (*fd_info).get_file();
+  std::ifstream& file = fd_info->get_file();
   HttpResponse response;
   response.OpenFile(resource_path, file);
-  int client_socket = (*fd_info).get_fd();
+  int client_socket = fd_info->get_fd();
   if (file.is_open()){
     if (SendOneChunk(client_socket, file) == 0){
       return ;
@@ -75,8 +77,9 @@ void VirtualHost::SendChunkedBody(ConnectInfo* fd_info, pollfd &poll)
       perror("send 3:");
   file.close();
   poll.events = POLLIN;
-  (*fd_info).set_is_sending(false);
-  std::cout << "\n-----response sent-----\n" << std::endl;
+  fd_info->set_is_sending(false);
+  if (showResponse)
+    std::cout << "\n-----response sent-----\n" << std::endl;
 }
 
 int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
@@ -100,7 +103,8 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
       perror("send :");
       return 1;
   }
-  std::cout << "sent " << bytes_read  << std::endl;
+  if (showResponse)
+    std::cout << "sent " << bytes_read  << std::endl;
   if (bytes_read < chunk_size)
     return 1;
   return 0;

@@ -11,37 +11,57 @@
 /* ************************************************************************** */
 
 #include "ConnectInfo.hpp"
+#include "Socket.hpp"
 
-void ConnectInfo::InitInfo(int fd, Socket *sock){
+void ConnectInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
   sock_ = sock;
+  vhost_ = nullptr;
   is_sending_chunks = false;
 }
 
-void ConnectInfo::set_vhost(VirtualHost *vhost){
+void ConnectInfo::AssignVHost() {
+  std::map<std::string, VirtualHost> *v_hosts_ = &get_socket()->get_v_hosts();
+  std::map<std::string, std::string> headers = parser_.get_headers();
+  std::map<std::string, VirtualHost>::iterator vhosts_it = (*v_hosts_).find(headers.at("Host"));
+  if (vhosts_it != (*v_hosts_).end()){
+    std::cout << "found " << vhosts_it->second.get_name() << std::endl;
+    set_vhost(&vhosts_it->second);
+  }
+  else {
+    vhosts_it = (*v_hosts_).begin();
+    set_vhost(&vhosts_it->second);
+  }
+}
+
+VirtualHost*  ConnectInfo::get_vhost() {
+  return vhost_;
+}
+
+void ConnectInfo::set_vhost(VirtualHost *vhost) {
   vhost_ = vhost;
 }
 
-void ConnectInfo::set_is_sending(bool boolean){
+void ConnectInfo::set_is_sending(bool boolean) {
   is_sending_chunks = boolean;
 }
 
-bool ConnectInfo::get_is_sending(){
+bool ConnectInfo::get_is_sending() {
   return is_sending_chunks;
 }
 
-HttpParser* ConnectInfo::get_parser(){
+HttpParser* ConnectInfo::get_parser() {
   return &parser_;
 }
 
-Socket* ConnectInfo::get_socket(){
+Socket* ConnectInfo::get_socket() {
   return sock_;
 }
 
-int ConnectInfo::get_fd(){
+int ConnectInfo::get_fd() {
   return fd_;
 }
 
-std::ifstream& ConnectInfo::get_file(){
+std::ifstream& ConnectInfo::get_file() {
   return file_;
 }

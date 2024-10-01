@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/09/30 12:45:37 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 12:44:47 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,8 +29,7 @@ class HttpParser {
       HttpParser(const std::string buffer);
       ~HttpParser() = default;
       
-      
-      
+  
       std::string get_method() const;
       std::string get_resource_path() const;
       std::string get_query_string() const;

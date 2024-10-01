@@ -6,13 +6,16 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/30 13:51:46 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/01 13:02:45 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 #include "ConnectInfo.hpp"
 #include <map>
+
+extern bool showResponse;
+extern bool showRequest;
 
 HttpResponse::HttpResponse()
   :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
@@ -24,20 +27,18 @@ HttpResponse::~HttpResponse(){
 }
 
 void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
-  //open in binary if not html
-  //TODO: make a check for the file extension in the parser
   
-  if (file.is_open())
-    std::cout << "already opened! cool!" << std::endl;
-  else
+  if (!file.is_open())
   {
-    std::cout << "not opened file" << std::endl;
+    if (showResponse)
+      std::cout << "the file wasnt opened previously" << std::endl;
     if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
       file.open("./www/" + resource_path, std::ios::binary);
     else{
-      if (resource_path == "/")
+      if (resource_path == "/") {
         resource_path = "index.html";
-      std::cout << "set index html as default" << std::endl;
+        std::cout << "return index html for the '/'" << std::endl;
+      }
       file.open("./www/" + resource_path);
     }
     if (!file.is_open()){
