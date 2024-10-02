@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 17:28:24 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:48:05 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -150,13 +150,15 @@ bool UnChunkBody(std::vector<char>& buf) {
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
     } else {
-    throw std::runtime_error("Malformed chunked encoding: missing \\r\\n after chunk data");
+      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      return false;
     }
 
 
     // Remove everything after the unchunked data (i.e., resize the vector)
     buf.resize(writeIndex);
-}
+  } 
+  return true;
 }
 
 void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
