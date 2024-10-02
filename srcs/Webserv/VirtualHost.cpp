@@ -43,8 +43,6 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
   if (!parser->ParseRequest(buf))
     std::cout << "false on ParseRequest returned" << std::endl;
 
-  if (bytesIn > SIZE_MAX)
-    /* TODO: add body too long check in the parser */ ;
   if (fd_info->get_vhost() == nullptr)
     fd_info->AssignVHost();
   
@@ -56,7 +54,6 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
     poll.events = POLLOUT;
   /* Set to true if we want to read the body 
     If the whole message fit into MAXBYTES then dont set it to true*/
-  
 
   return 0;
 }
@@ -69,21 +66,8 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
   int                 bytesIn;
   size_t              request_size = 0;
 
-
-
-  std::ofstream outFile("www/uploads/" + filename, std::ios::binary, std::ios_base::app);
-  if (outFile.is_open()) {
-      outFile.write(content.c_str(), content.size());
-      outFile.close();
-      std::cout << "File " << filename << " saved successfully." << std::endl;
-  } else {
-      std::cerr << "Error: failed to save file " << filename << std::endl;
-      return false;
-  }
-
-
   int fd = fd_info->get_fd();
-  bytesIn = recv(fd, buf.data() + body_size, MAXBYTES, 0);
+  bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
   else if (bytesIn == 0) {
@@ -95,9 +79,29 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
     std::cout << "the header is too long! handle this" << std::endl;
 
   request_size += bytesIn;
-  
   poll.events = POLLOUT;
-  
+  return 0;
+}
+
+bool VirtualHost::ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std::string, std::string> headers) {
+  if (headers["transfer-encoding"] == "chunked") {
+      ;
+    }
+    (void)bytesIn;
+    (void)buf;
+		/*std::string eoc = "0\r\n\r\n";
+    check if the chunk is received in whole, if not return to receiving next chunk
+    if (!oss.find(eoc));
+      return;
+    when all the chunks are received, the chunk characters need to be removed
+    UnChunkBody();
+	}*/
+	// if (/*check if content-length fully read*/)
+	// 	return ;
+	// else if (headers["content-type"].find("multipart/form-data") != std::string::npos){
+	// }
+
+	return true;        
 }
 
 bool UnChunkBody(std::vector<char>& buf) {
