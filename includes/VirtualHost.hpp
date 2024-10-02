@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/01 18:01:41 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/02 16:25:10 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,7 @@ class VirtualHost {
   int         ParseHeader(ConnectInfo* fd_info, pollfd& poll);
   int         WriteBody(ConnectInfo* fd_info, pollfd& poll);
   void        OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll);
+  bool        ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std::string, std::string> headers);
   
  private:
   std::string                        name_;

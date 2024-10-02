@@ -91,7 +91,7 @@ void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
     }
   }
   else 
-    fd_info->get_vhost()->WriteBody(fd_info);
+    fd_info->get_vhost()->WriteBody(fd_info, pollFDs_[i]);
   /* find the host with the parser
     check if the permissions are good (Location)
     assign the vhost to the ConnecInfo class
