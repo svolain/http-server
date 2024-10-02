@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 17:22:32 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:28:24 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,7 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
     poll.events = POLLOUT;
   /* Set to true if we want to read the body 
     If the whole message fit into MAXBYTES then dont set it to true*/
+
   return 0;
 }
 
@@ -64,7 +65,6 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
   size_t              body_size = request_body.size();
   int                 bytesIn;
   size_t              request_size = 0;
-
 
   int fd = fd_info->get_fd();
   bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
@@ -102,6 +102,61 @@ bool VirtualHost::ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std:
 	// }
 
 	return true;        
+}
+
+bool UnChunkBody(std::vector<char>& buf) {
+  std::size_t readIndex = 0;
+  std::size_t writeIndex = 0;
+
+  while(readIndex < buf.size()) {
+    std::size_t chunkSizeStart = readIndex;
+
+    // First row is the chunk size, iterating until the ending "\r\n"
+    while (readIndex < buf.size() && !(buf[readIndex] == '\r' && buf[readIndex + 1] == '\n')) {
+      readIndex++;
+    }
+
+    if (readIndex >= buf.size()) {
+      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      return false;
+    }
+
+    // Extract the hexadecimals to get the size of actual content of body
+    std::string chunkSizeStr(buf.begin() + chunkSizeStart, buf.begin() + readIndex);
+    std::size_t chunkSize;
+    std::stringstream ss;
+    ss << std::hex << chunkSizeStr;
+    ss >> chunkSize;
+
+    // Move readIndex past another "\r\n" after the chunk size row
+    readIndex += 2;
+
+    // check if reached final chunk which's size is always 0 
+    if (chunkSize == 0) {
+            break;
+        }
+
+    // Copy chunk data to the write position
+    if (readIndex + chunkSize > buf.size()) {
+      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      return false;
+    }
+
+    for (std::size_t i = 0; i < chunkSize; ++i) {
+      buf[writeIndex++] = buf[readIndex++];
+    }
+
+    // Skip the \r\n after the chunk data
+    if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
+      readIndex += 2;
+    } else {
+    throw std::runtime_error("Malformed chunked encoding: missing \\r\\n after chunk data");
+    }
+
+
+    // Remove everything after the unchunked data (i.e., resize the vector)
+    buf.resize(writeIndex);
+}
 }
 
 void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
