@@ -10,13 +10,13 @@ print("Content-Type: text/html\n")
 try:
     form = cgi.FieldStorage()
     name = form.getvalue("name")
-    file_item = form["file"]
+    getfile_item = form["file"]
 
-    if file_item.filename:
-        filename = os.path.basename(file_item.filename)
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        with open(file_path, "wb") as f:
-            f.write(file_item.file.read())
+    if getfile_item.filename:
+        filename = os.path.basename(getfile_item.filename)
+        getfile_path = os.path.join(UPLOAD_DIR, filename)
+        with open(getfile_path, "wb") as f:
+            f.write(getfile_item.file.read())
             #file uploaded successfully
     else:
         print("Error: file upload failed")

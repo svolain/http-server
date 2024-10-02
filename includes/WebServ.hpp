@@ -3,55 +3,53 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/09/16 12:35:17 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/01 15:06:23 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef WebServ_HPP_
-#define WebServ_HPP_
+#ifndef WEBSERV_HPP_
+#define WEBSERV_HPP_
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <regex>
-#include <sstream>
-#include <string>
-#include "Location.hpp"
-#include "VirtualHost.hpp"
+#include <netdb.h> 
+#include <unistd.h>
+#include <poll.h>
+#include <deque>
 #include "Socket.hpp"
+#include "ConnectInfo.hpp"
 
 #define DEFAULT_CONF "./conf/default.conf"
 
 class WebServ {
  public:
-  WebServ(char* config_file);
+  WebServ(const char* config_file);
   WebServ(const WebServ& other)            = delete;
   WebServ& operator=(const WebServ& other) = delete;
 
   ~WebServ() = default;
 
-  void  Run();
-  int   Init();
+  void  run();
+  int   init();
 
  private:
-  int ParseConfig();
-  void ParseServer(std::stringstream& ss);
-  void ParseLocation(VirtualHost& v, std::stringstream& ss);
-  void ParseSocket(std::string& s, std::stringstream& ss);
-  void ParseName(VirtualHost& v, std::stringstream& ss);
-  void ParseMaxBodySize(VirtualHost& v, std::stringstream& ss);
-  void ParseErrorPage(VirtualHost& v, std::stringstream& ss);
-  void ParseAllowedMethods(Location& l, std::stringstream& ss);
-  void ParseRedirection(Location& l, std::stringstream& ss);
-  void ParseRoot(Location& l, std::stringstream& ss);
-  void ParseAutoindex(Location& l, std::stringstream& ss);
-  void ParseIndex(Location& l, std::stringstream& ss);
+  std::string                   conf_;
+  std::deque<Socket>            sockets_;
+  std::vector<pollfd>           pollFDs_;
+  std::map<int, ConnectInfo>    client_info_map_;
+  
+  void PollAvailableFDs(void);
+  void CheckForNewConnection(int fd, short revents, int i);
+  void CloseConnection(int sock, size_t& i);
+  void CloseAllConnections(void);
+  void RecvFromClient(ConnectInfo* fd_info, size_t& i);
+  void SendToClient(ConnectInfo* fd_info, pollfd& poll);
 
-  std::string          conf_;
-  std::deque<Socket>   sockets_;
-  // std::vector<pollfd>  sockets_fd_;
+  struct EventFlag {
+      short flag;
+      const char* description;
+  };
+  
 };
 #endif

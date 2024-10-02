@@ -1,223 +1,151 @@
+
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/06 15:30:31 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/16 14:40:17 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/09/30 17:16:35 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
+#include "ConfigParser.hpp"
 
-WebServ::WebServ(char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {}
+#define TODO 123
 
-void WebServ::Run() {
-  std::cout << "Server is ready.\n";
+extern bool show_request;
+extern bool show_response;
 
-}
+WebServ::WebServ(const char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {}
 
-int WebServ::Init() {
-  if (ParseConfig()) 
-    return 1;
-  return 0;
-}
-
-int WebServ::ParseConfig() {
-  std::cout << "[INFO] Opening Conf file: " << conf_ <<'\n';
-  std::ifstream input(conf_);
-  if (!input.is_open()) {
-    std::cerr << "[ERROR] Can't open input file: \"" << conf_ << "\"\n";
-    return 1;
-  }
-  std::stringstream ss;
-  while (!input.eof()) {
-    std::string line;
-    std::getline(input, line);
-    if (size_t pos = line.find('#') != std::string::npos)
-       line.resize(pos);
-    ss << line << ' ';
-  }
-  while (!ss.eof()) {
-    try {
-      ParseServer(ss);
-    } catch (std::string& error_token) {
-      std::cerr << "[ERROR] invalid input: \"" << error_token << "\"\n";
+int WebServ::init() {
+  
+  {
+    ConfigParser parser(conf_.c_str());
+    if (parser.ParseConfig(this->sockets_))
       return 1;
+  }
+  
+  int i = 0;
+  for (auto it = sockets_.begin(); it != sockets_.end(); it ++, i ++) {
+    if (sockets_[i].InitServer(pollFDs_))
+      return 2;
+    std::cout << "init the server on socket " << sockets_[i].get_socket() << std::endl; 
+  }
+  return (0);
+}
+
+#define TIMEOUT   5000
+
+void WebServ::run() {
+  std::cout << "Servers are ready.\n";
+  int socketsReady = 0;
+  while (1) {
+    /* the socketsReady from poll() 
+      is the number of file descriptors with events that occurred. */
+    socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
+    if (socketsReady == -1)
+      perror("poll: ");
+    else if (!socketsReady) {
+      /* TODO: individual timer for the timeout close */
+      std::cout << "poll() is closing connections on timeout..." << std::endl;
+      for (size_t i = sockets_.size(); i < pollFDs_.size(); i ++) {
+        close(pollFDs_[i].fd);
+        pollFDs_.erase(pollFDs_.begin() + i);
+      }	
+      client_info_map_.clear();
+    }
+    else 
+      PollAvailableFDs();
+  }
+  CloseAllConnections();
+  std::cout << "--- Shutting down the server ---" << std::endl;
+}
+
+void WebServ::CheckForNewConnection(int fd, short revents, int i) {
+  if (revents & POLLIN) {
+    pollfd new_client;
+    new_client.fd = accept(fd, nullptr, nullptr);
+    if (new_client.fd != -1) {
+      /* O_NONBLOCK: No I/O operations on the file descriptor will cause the
+            calling process to wait. */
+      fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
+      new_client.events = POLLIN;
+      pollFDs_.push_back(new_client);
+      client_info_map_[new_client.fd].InitInfo(new_client.fd, &(sockets_[i]));
     }
   }
-  return 0;
 }
 
-void WebServ::ParseServer(std::stringstream& ss) {
-    std::string token;
-    ss >> token;
-    if (token == "")
-     return;
-    if (token != "server")
-      throw token;
-    ss >> token;
-    if (token != "{")
-      throw token;
-    VirtualHost virtual_host;
-    std::string socket;
-    while (true) {
-      ss >> token;
-      if (token == "listen")
-        ParseSocket(socket, ss);
-      else if (token == "server_name")
-        ParseName(virtual_host, ss);
-      else if (token == "client_max_body_size")
-        ParseMaxBodySize(virtual_host, ss);
-      else if (token == "error_page")
-        ParseErrorPage(virtual_host, ss);
-      else if (token == "location")
-        ParseLocation(virtual_host, ss);
-      else if (token == "}")
-        break;
-      else
-        throw token;
+void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
+  
+  // std::vector<char>   oss;
+  
+  if (fd_info->get_is_parsing_body() == false) {
+    if (fd_info->get_vhost()->ParseHeader(fd_info, pollFDs_[i]) != 0) {
+      CloseConnection(fd_info->get_fd(), i);
+      perror("recv: ");
     }
-  auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
-        return obj.GetSocket() == socket;
-    });
-  if (it != sockets_.end())
-    (*it).AddVirtualHost(virtual_host);
-  else
-    sockets_.push_back(Socket(socket, virtual_host));
-}
-
-void WebServ::ParseLocation(VirtualHost& v, std::stringstream& ss) {
-  static std::regex path_format("/[a-zA-Z0-9_-]*");
-  std::string       path;
-  Location          location;
-  std::string       token;
-  ss >> path;
-  if (!std::regex_match(path, path_format))
-    throw "location " + path;
-  ss >> token;
-  if (token != "{")
-    throw token;
-  while (true) { //what if location is in format location / {} ?
-    ss >> token;
-    if (token == "limit_except")
-      ParseAllowedMethods(location, ss);
-    else if (token == "return")
-      ParseRedirection(location, ss);
-    else if (token == "root")
-      ParseRoot(location, ss);
-    else if (token == "autoindex")
-      ParseAutoindex(location, ss);
-    else if (token == "index")
-      ParseIndex(location, ss);
-    else if (token == "}")
-      break;
-    else
-      throw token;
   }
-   v.SetLocation(path, location);
+  else 
+    fd_info->get_vhost()->WriteBody(fd_info, pollFDs_[i]);
+  /* find the host with the parser
+    check if the permissions are good (Location)
+    assign the vhost to the ConnecInfo class
+    set bool to send body if all is good
+    get back and try to read the body
+    read for MAXBYTES and go back and continue next time
+     */
+
+  /* ASSIGN THIS AFTER BODY WAS READ*/
+  pollFDs_[i].events = POLLOUT;  
+
 }
 
-void WebServ::ParseSocket(std::string& socket, std::stringstream& ss) {
-  static std::regex format("((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.)"
-                           "{3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]):"
-                           "(6553[0-5]|655[0-2][0-9]|65[0-4][0-9]{2}|6[0-4]"
-                           "[0-9]{3}|[1-5][0-9]{4}|[1-9][0-9]{1,3}|[0-9]);");
-  ss >> socket;
-  if (!std::regex_match(socket, format))
-    throw "listen " + socket;
-  socket.pop_back();
+void WebServ::SendToClient(ConnectInfo* fd_info, pollfd& poll) {
+  fd_info->get_vhost()->OnMessageRecieved(fd_info, poll);
 }
 
-void WebServ::ParseName(VirtualHost& v, std::stringstream& ss) {
-  static std::regex format(R"(([a-z0-9-]{1,63}\.){1,124}com;)");
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format) || token.size() > 253)
-    throw "server_name " + token;
-  token.pop_back();
-  v.SetName(token);
+void WebServ::PollAvailableFDs(void) {
+  for (size_t i = 0; i < pollFDs_.size(); i++) {
+    /* for readability */
+    int fd = pollFDs_[i].fd;
+    short revents = pollFDs_[i].revents;
+    /* If fd is not a server fd */
+    if (i < sockets_.size())
+      CheckForNewConnection(fd, revents, i);
+    else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
+      ConnectInfo* fd_info = &client_info_map_.at(fd);
+      if (!fd_info) /* we should never get this error */
+        std::cerr << "error: couldnt find the fd in the client_info_map_" << std::endl;
+      else if (revents & POLLHUP) {
+        std::cout << "hang up: " << fd << std::endl;
+        CloseConnection(fd, i);
+      }
+      else if (revents & POLLNVAL) {
+        std::cout << "invalid fd: " << fd << std::endl;
+        CloseConnection(fd, i);
+      }
+      else if (revents & POLLIN)
+        RecvFromClient(fd_info, i);
+      else if (revents & POLLOUT)
+        SendToClient(fd_info, pollFDs_[i]);
+    }
+  }
 }
 
-void WebServ::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
-  static std::regex format("0|[1-9][0-9]{0,5}|1000000)K"
-                           "|(0|[1-9][0-9]{0,2}|1000)M);");
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "client_max_body_size " + token;
-  token.pop_back();
-  v.SetSize(token);
+void WebServ::CloseAllConnections(void) {
+  for (size_t i = 0; i < pollFDs_.size(); i++)
+    close(pollFDs_[i].fd);
 }
 
-void WebServ::ParseErrorPage(VirtualHost& v, std::stringstream& ss) {
-  static std::regex code_format("404|505"); //all possible error codes
-  static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]+/)*"
-                                "[a-zA-Z0-9_-]+\\.html;");
-  std::string code;
-  std::string path;
-  ss >> code;
-  ss >> path;
-  if (!std::regex_match(code, code_format)
-      || !std::regex_match(code, path_format))
-    throw "error_page " + code + " " + path;
-  path.pop_back();
-  v.SetErrorPage(code, path);
+void WebServ::CloseConnection(int sock, size_t& i) {
+  close(sock);
+  pollFDs_.erase(pollFDs_.begin() + i);
+  client_info_map_.erase(sock);
+  i --;
 }
 
-void WebServ::ParseAllowedMethods(Location& l, std::stringstream& ss) {
-  static std::regex format("\\s*((GET|HEAD|POST|DELETE)\\s+)*"
-                                "(GET|HEAD|POST|DELETE)\\s*"); 
-  std::string line;
-  std::getline(ss, line, ';');
-  if (!std::regex_match(line, format))
-    throw "limit_except " + line;
-  l.SetAllowedMethods(line);
-}
-
-void WebServ::ParseRedirection(Location& l, std::stringstream& ss) {
-  static std::regex code_format("30[0-478]");
-  static std::regex path_format("(\\.{1,2}/)?([a-zA-Z0-9_-]/)*"
-                                "[a-zA-Z0-9_-]+\\.html;"); //Not sure about allowed redirections
-  std::string code;
-  std::string path;
-  ss >> code;
-  ss >> path;
-  if (!std::regex_match(code, code_format)
-      || !std::regex_match(code, path_format))
-    throw "return " + code + " " + path;
-  path.pop_back();
-  l.SetRedirection(code, path);
-}
-
-void WebServ::ParseRoot(Location& l, std::stringstream& ss) {
-  static std::regex format("(/[a-zA-Z0-9_-]+)+;"); 
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "root " + token;
-  token.pop_back();
-  l.SetRoot(token);
-}
-
-void WebServ::ParseAutoindex(Location& l, std::stringstream& ss) {
-  static std::regex format("(on|off);"); 
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "autoindex " + token;
-  token.pop_back();
-  l.SetAutoindex(token);
-}
-
-void WebServ::ParseIndex(Location& l, std::stringstream& ss) {
-  static std::regex format("[a-zA-Z0-9_-]+\\.html;"); 
-  std::string token;
-  ss >> token;
-  if (!std::regex_match(token, format))
-    throw "index " + token;
-  token.pop_back();
-  l.SetIndex(token);
-}

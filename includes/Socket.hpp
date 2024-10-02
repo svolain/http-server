@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 13:34:24 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/16 14:16:48 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/01 17:02:55 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,14 @@
 #define SOCKET_HPP_
 
 #include "VirtualHost.hpp"
+#include "HttpParser.hpp"
+
+
+#include <unistd.h>
+#include <poll.h>
+#include <fcntl.h>
+#include <vector>
+// #include <string.h>
 
 
 class Socket {
@@ -23,15 +31,18 @@ class Socket {
   Socket(std::string& socket, VirtualHost& v);
   Socket(const Socket& other)            = default;
   Socket& operator=(const Socket& other) = default;
-
   ~Socket() = default;
 
-  std::string GetSocket();
-  void        AddVirtualHost(VirtualHost& v);
+  std::string                         get_socket();
+  pollfd                              get_listening() const;
+  std::map<std::string, VirtualHost>& get_v_hosts();
+  void                                AddVirtualHost(VirtualHost& v);
+  int                                 InitServer(std::vector<pollfd> &pollFDs);
 
  private:
   std::string                         address_;
   std::string                         port_;
+  pollfd                              listening_;
   std::map<std::string, VirtualHost>  v_hosts_;
 
 };

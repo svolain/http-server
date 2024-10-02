@@ -6,29 +6,32 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/15 18:50:44 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/09/30 13:51:48 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef HTTPRESPONSE_HPP_
+#define HTTPRESPONSE_HPP_
 
 #include <iostream>
-#include <unordered_map>
+#include <map>
 #include <fstream>
 #include <sstream>
+
+class ConnectInfo;
 
 class HttpResponse
 {
     private:
         
-        int         errorCode;
-        std::unordered_map<std::string, std::string> contTypeMap;
-        std::string contType;
-        std::string errorCodeMessage;
-        std::ifstream file;
-        std::string header;
+        int                            error_code_;
+        std::map
+            <std::string, std::string> cont_type_map_;
+        std::string                    cont_type_;
+        std::string                    error_code_message_;
+        std::string                    header_;
 
-        void initContMap(void);
+        void InitContMap(void);
         void lookupErrMessage(void);
 
     public:
@@ -36,13 +39,13 @@ class HttpResponse
         HttpResponse();
         ~HttpResponse();
         
-        void assignContType(std::string resourcePath);
-     
-        void setErrorCode(int errorCode);
-        void openFile(std::string resourcePath);
-        void composeHeader(void);
-        std::ifstream& getFile(void);
-        std::string getContType() const;
-        std::string getHeader() const;
-        std::string getErrorCodeMessage() const;
+        void            AssignContType(std::string resourcePath);
+        void            OpenFile(std::string& resource_path, std::ifstream& file);
+        void            ComposeHeader(void);
+        std::string     get_cont_type_() const;
+        std::string     get_header_() const;
+        std::string     get_error_codeMessage() const;
+        void            set_error_code_(int error_code_);
 };
+
+#endif
