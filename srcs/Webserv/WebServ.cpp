@@ -19,12 +19,17 @@
 extern bool show_request;
 extern bool show_response;
 
-WebServ::WebServ(const char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {}
+WebServ::WebServ(const char* conf)
+    : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
+  if (conf == nullptr)
+    logInfo("Configuration file not provided. Using the "
+              "default configuration file: /" + std::string(DEFAULT_CONF));
+}
 
 int WebServ::init() {
   
   {
-    ConfigParser parser(conf_.c_str());
+    ConfigParser parser(conf_);
     if (parser.ParseConfig(this->sockets_))
       return 1;
   }
@@ -33,7 +38,7 @@ int WebServ::init() {
   for (auto it = sockets_.begin(); it != sockets_.end(); it ++, i ++) {
     if (sockets_[i].InitServer(pollFDs_))
       return 2;
-    std::cout << "init the server on socket " << sockets_[i].get_socket() << std::endl; 
+    std::cout << "init the server on socket " << sockets_[i].getSocket() << std::endl; 
   }
   return (0);
 }
@@ -91,7 +96,7 @@ void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
     }
   }
   else 
-    fd_info->get_vhost()->WriteBody(fd_info);
+    fd_info->get_vhost()->WriteBody(fd_info, pollFDs_[i]);
   /* find the host with the parser
     check if the permissions are good (Location)
     assign the vhost to the ConnecInfo class

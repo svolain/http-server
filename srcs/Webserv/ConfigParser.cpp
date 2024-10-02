@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/02 14:33:35 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:02:35 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,8 +55,6 @@ void ConfigParser::ParseServer(std::stringstream& ss,
   if (token != "{")
     throw token;
 
-  VirtualHost virtual_host;
-
   std::string listen;
   std::string server_name;
   std::string max_size;
@@ -82,17 +80,16 @@ void ConfigParser::ParseServer(std::stringstream& ss,
       throw token;
   }
 auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
-      return obj.get_socket() == listen;
+      return obj.getSocket() == listen;
   });
   if (it != sockets_.end())
   {
-    (*it).AddVirtualHost(virtual_host);
+    (*it).AddVirtualHost(server_name, max_size, errors, locations);
     /* Why it doesnt assign a name with the default config? */
   }
-    
   else
-    sockets_.push_back(Socket(listen, virtual_host));
-  
+    sockets_.push_back(
+      Socket(listen, server_name, max_size, errors, locations));
 }
 
 void ConfigParser::ParseListen(std::string& socket, std::stringstream& ss) {
@@ -158,7 +155,7 @@ void ConfigParser::ParseLocation(LocationMap& locations,
     throw "location " + location;
 
   std::string methods;
-  std::pair<std::string, std::string>  redirection;
+  StringPair  redirection;
   std::string root;
   std::string autoindex;
   std::string index;
@@ -186,8 +183,8 @@ void ConfigParser::ParseLocation(LocationMap& locations,
       throw token;
   }
   if (!locations.contains(location))
-    locations.insert({location, Location(methods, redirection, root, autoindex,
-                     index)});
+    locations.insert(
+      {location, Location(methods, redirection, root, autoindex, index)});
 }
 
 void ConfigParser::ParseAllowedMethods(std::string& methods,

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/01 18:06:19 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:08:55 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,18 @@ extern bool show_request;
 extern bool show_response;
 
 #define MAXBYTES  8192
+
+VirtualHost::VirtualHost(std::string& max_size,
+                         StringMap& errors,
+                         LocationMap& locations)
+    : locations_(locations) {
+  if (!max_size.empty()) {
+    client_max_body_size_ = std::stoi(max_size);
+    client_max_body_size_ *= (max_size.back() == 'M' ? 1048576 : 1024);
+  }
+  for (auto const& [key, value] : errors)
+    error_pages_[key] = value;
+}
 
 int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
 
@@ -69,7 +81,7 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
   size_t              request_size = 0;
 
   int fd = fd_info->get_fd();
-  bytesIn = recv(fd, buf.data() + body_size, MAXBYTES, 0);
+  bytesIn = recv(fd, &request_size + body_size, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
   else if (bytesIn == 0) {
@@ -83,7 +95,7 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
   request_size += bytesIn;
   
   poll.events = POLLOUT;
-  
+  return 0;
 }
 
 void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
@@ -193,27 +205,6 @@ int VirtualHost::SendToClient(const int client_socket, const char *msg, int leng
   if (bytes_sent != length)
     return -1;
   return bytes_sent;
-}
-
-std::string VirtualHost::get_name() {
-  return name_;
-}
-
-void VirtualHost::set_name(std::string& name) {
-  name_ = name;
-}
-
-void VirtualHost::set_size(std::string& size) {
-  client_max_body_size_ = std::stoi(size);
-  client_max_body_size_ *= (size.back() == 'M' ? 1048576 : 1024);
-}
-
-void VirtualHost::set_error_page(std::string& code, std::string& path) {
-  error_pages_[code] = path;
-}
-
-void VirtualHost::set_location(std::string& path, Location& location) {
-  locations_[path] = location;
 }
 
 size_t VirtualHost::get_max_body_size(){

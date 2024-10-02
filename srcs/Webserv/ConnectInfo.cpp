@@ -12,6 +12,7 @@
 
 #include "ConnectInfo.hpp"
 #include "Socket.hpp"
+#include "Logger.h"
 
 void ConnectInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
@@ -25,7 +26,7 @@ void ConnectInfo::AssignVHost() {
   std::map<std::string, std::string>&headers = parser_.get_headers();
   std::map<std::string, VirtualHost>::iterator vhosts_it = (*v_hosts_).find(headers.at("Host"));
   if (vhosts_it != (*v_hosts_).end()){
-    std::cout << "found " << vhosts_it->second.get_name() << std::endl;
+    logDebug("found " + vhosts_it->first);
     set_vhost(&vhosts_it->second);
   }
   else {

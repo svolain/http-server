@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:09:33 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 14:43:05 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:02:55 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 #include <utility>
 #include <array>
 #include <string>
-
 
 class Location {
  private:
@@ -30,10 +29,9 @@ class Location {
            std::string& index);
   Location() = default;
   Location(const Location& other)            = default;
-  Location& operator=(const Location& other) = default;
+  Location& operator=(const Location& other) = delete;
 
   ~Location() = default;
-
 
  private:
   void SetAllowedMethods(std::string& line);
