@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 17:08:51 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:30:14 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,8 @@ class VirtualHost {
   
  private:
   std::string name_;
-  StringMap   error_pages_;
+  StringMap   error_pages_ = {{"404", "www/404.html"},
+                              {"500", "www/500.html"}};
   size_t      client_max_body_size_ = 1048576;
   LocationMap locations_;
   

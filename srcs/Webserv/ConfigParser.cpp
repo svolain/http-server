@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/02 17:02:35 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:30:35 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,7 +130,7 @@ void ConfigParser::ParseMaxBodySize(std::string& max_size,
 }
 
 void ConfigParser::ParseErrorPage(StringMap& errors, std::stringstream& ss) {
-  static std::regex code_format("404|505"); //input all possible error codes here
+  static std::regex code_format("404|500"); //input all possible error codes here
   static std::regex path_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+\\.html;");
 
   std::string code;
