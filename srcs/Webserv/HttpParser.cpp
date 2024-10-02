@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/01 17:21:59 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/02 14:45:08 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 extern bool show_request;
 extern bool show_response;
 
-HttpParser::HttpParser(const std::string request): error_code_(0) {
+HttpParser::HttpParser(const std::string request): error_code_(0), is_chunked_(false) {
   ParseRequest(request);
 }
       
@@ -76,37 +76,52 @@ bool HttpParser::ParseRequest(const std::string request) {
     }
 
     if (method_ == "POST" || method_ == "PUT") {
-        
-        if (headers_.find("Content-Length") == headers_.end()) {
+
+        if (headers_["transfer-encoding"] == "chunked")
+            is_chunked_ = true;
+        int contentLength = 0;
+        if (headers_.find("Content-Length") == headers_.end() && is_chunked_ == false) {
             std::cerr << "Error: content-lenght missing for request body" << std::endl;
             //respond with http 411 Length Required or general http 400 Bad Request?
             error_code_ = 411;
             return false;
-        }
-        std::string contentLengthStr = headers_["Content-Length"];
-        int contentLength = 0;
-        try {
-            contentLength = std::stoi(contentLengthStr);
-            //probably have to also add maximum size also and check it in thos same row
-            if (contentLength < 0) {
-                throw std::invalid_argument("Negative content length");
+        } else if (headers_.find("Content-Length") != headers_.end() && is_chunked_ == false) {
+            std::string contentLengthStr = headers_["Content-Length"];
+            try {
+                contentLength = std::stoi(contentLengthStr);
+                //probably have to also add maximum size also and check it in thos same row
+                if (contentLength < 0) {
+                    throw std::invalid_argument("Negative content length");
+                }
+                // Continue reading body as before
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Error: invalid Content-Length" << std::endl;
+                error_code_ = 400; // Bad Request for invalid Content-Length
+                return false;
+            } catch (const std::out_of_range& e) {
+                std::cerr << "Error: Content-Length out of range" << std::endl;
+                error_code_ = 400; // Bad Request for excessively large Content-Length
+                return false;
             }
-            // Continue reading body as before
-        } catch (const std::invalid_argument& e) {
-            std::cerr << "Error: invalid Content-Length" << std::endl;
-            error_code_ = 400; // Bad Request for invalid Content-Length
-            return false;
-        } catch (const std::out_of_range& e) {
-            std::cerr << "Error: Content-Length out of range" << std::endl;
-            error_code_ = 400; // Bad Request for excessively large Content-Length
-            return false;
         }
-        std::string body(contentLength, '\0');
-        requestStream.read(&body[0], contentLength);
-        request_body_ = body;
+        
+        /* Beware of off by 1, should be good tho */
+        if (is_chunked_ == true)
+        {
+            std::streampos current = requestStream.tellg();
+            requestStream.seekg(0, std::ios::end);
+            contentLength = requestStream.tellg() - current;
+            requestStream.seekg(current);
+            chunk_size_ = contentLength;
+        }
+        requestStream.read(&request_body_[0], contentLength);
     }
     return true;
 
+}
+
+size_t HttpParser::get_chunk_size() const {
+    return chunk_size_;
 }
         
 std::string HttpParser::get_method() const {
@@ -125,7 +140,7 @@ std::string HttpParser::get_http_version() const{
     return http_version_;
 }
 
-std::string& HttpParser::get_request_body() {
+std::array<char, MAXBYTES>& HttpParser::get_request_body() {
     return request_body_;
 }
 
@@ -135,6 +150,10 @@ std::map<std::string, std::string>& HttpParser::get_headers() {
 
 int HttpParser::get_error_code() const {
     return error_code_;   
+}
+
+bool HttpParser::get_is_chunked() const {
+    return is_chunked_;
 }
 
 bool HttpParser::CheckValidPath(std::string path) {
