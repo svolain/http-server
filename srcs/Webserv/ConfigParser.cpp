@@ -6,46 +6,47 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/01 22:55:03 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/02 14:33:35 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
 #include "WebServ.hpp"
 
-ConfigParser::ConfigParser(const char* conf) : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
+ConfigParser::ConfigParser(const std::string& conf) : conf_(conf) {
+  logInfo("Opening configuration file");
 }
 
-int ConfigParser::ParseConfig(std::deque<Socket> &sockets_) {
-  logInfo("Opening Conf file: " + conf_);
-  std::ifstream input(conf_);
-  if (!input.is_open()) {
-    logError("Can't open input file: \"" + conf_ + "\"");
+int ConfigParser::ParseConfig(std::deque<Socket>& sockets) {
+  if (!conf_.is_open()) {
+    logError("Can't open configuration file");
     return 1;
   }
+
   std::stringstream ss;
-  while (!input.eof()) {
+  while (!conf_.eof()) {
     std::string line;
-    std::getline(input, line);
+    std::getline(conf_, line);
     if (size_t pos = line.find('#'); pos != std::string::npos)
       line.resize(pos);
     ss << line << '\n';
   }
+
   while (!ss.eof()) {
     try {
-      ParseServer(ss, sockets_);
+      ParseServer(ss, sockets);
     } catch (std::string& error_token) {
-        logError("invalid input: \"" + error_token + "\"");
-        return 1;
+      logError("invalid input: \"" + error_token + "\"");
+      return 1;
     }
   }
   return 0;
 }
 
-void ConfigParser::ParseServer(std::stringstream& ss, std::deque<Socket> &sockets_) {
+void ConfigParser::ParseServer(std::stringstream& ss,
+                               std::deque<Socket> &sockets_) {
   std::string token;
   ss >> token;
-
   if (token == "")
     return;
   if (token != "server")
@@ -55,20 +56,26 @@ void ConfigParser::ParseServer(std::stringstream& ss, std::deque<Socket> &socket
     throw token;
 
   VirtualHost virtual_host;
-  std::string                        listen;
+
+  std::string listen;
+  std::string server_name;
+  std::string max_size;
+  StringMap   errors;
+  LocationMap locations;
 
   while (true) {
     ss >> token;
+    logDebug(token);
     if (token == "listen")
       ParseListen(listen, ss);
     else if (token == "server_name")
-      ParseServerName(virtual_host, ss);
+      ParseServerName(server_name, ss);
     else if (token == "client_max_body_size")
-      ParseMaxBodySize(virtual_host, ss);
+      ParseMaxBodySize(max_size, ss);
     else if (token == "error_page")
-      ParseErrorPage(virtual_host, ss);
+      ParseErrorPage(errors, ss);
     else if (token == "location")
-      ParseLocation(virtual_host, ss);
+      ParseLocation(locations, ss);
     else if (token == "}")
       break;
     else
@@ -88,37 +95,6 @@ auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
   
 }
 
-void ConfigParser::ParseLocation(VirtualHost& v, std::stringstream& ss) {
-  static std::regex path_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+");
-  std::string       path;
-  Location          location;
-  std::string       token;
-  ss >> path;
-  if (!std::regex_match(path, path_format))
-    throw "location " + path;
-  ss >> token;
-  if (token != "{")
-    throw token;
-  while (true) { //what if location is in format location / {} ?
-    ss >> token;
-    if (token == "limit_except")
-      ParseAllowedMethods(location, ss);
-    else if (token == "return")
-      ParseRedirection(location, ss);
-    else if (token == "root")
-      ParseRoot(location, ss);
-    else if (token == "autoindex")
-      ParseAutoindex(location, ss);
-    else if (token == "index")
-      ParseIndex(location, ss);
-    else if (token == "}")
-      break;
-    else
-      throw token;
-  }
-   v.set_location(path, location);
-}
-
 void ConfigParser::ParseListen(std::string& socket, std::stringstream& ss) {
   static std::regex format("((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.)"
                            "{3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]):"
@@ -130,7 +106,7 @@ void ConfigParser::ParseListen(std::string& socket, std::stringstream& ss) {
   socket.pop_back();
 }
 
-void ConfigParser::ParseServerName(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseServerName(std::string& name, std::stringstream& ss) {
   static std::regex format(R"(([a-z0-9-]{1,63}\.){1,124}com;)");
 
   std::string token;
@@ -138,10 +114,12 @@ void ConfigParser::ParseServerName(VirtualHost& v, std::stringstream& ss) {
   if (!std::regex_match(token, format) || token.size() > 253)
     throw "server_name " + token;
   token.pop_back();
-  v.set_name(token);
+  if (name.empty())
+    name = token;
 }
 
-void ConfigParser::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseMaxBodySize(std::string& max_size,
+                                    std::stringstream& ss) {
   std::regex format("0;|((0|[1-9][0-9]{0,5}|1000000)K;)"
                       "|((0|[1-9][0-9]{0,2}|1000)M;)");
 
@@ -150,10 +128,11 @@ void ConfigParser::ParseMaxBodySize(VirtualHost& v, std::stringstream& ss) {
   if (!std::regex_match(token, format))
     throw "client_max_body_size " + token;
   token.pop_back();
-  v.set_size(token);
+  if (max_size.empty())
+    max_size = token;
 }
 
-void ConfigParser::ParseErrorPage(VirtualHost& v, std::stringstream& ss) {
+void ConfigParser::ParseErrorPage(StringMap& errors, std::stringstream& ss) {
   static std::regex code_format("404|505"); //input all possible error codes here
   static std::regex path_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+\\.html;");
 
@@ -165,23 +144,70 @@ void ConfigParser::ParseErrorPage(VirtualHost& v, std::stringstream& ss) {
       || !std::regex_match(path, path_format))
     throw "error_page " + code + " " + path;
   path.pop_back();
-  v.set_error_page(code, path);
+  if (!errors.contains(code))
+    errors.insert({code, path});
 }
 
-void ConfigParser::ParseAllowedMethods(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseLocation(LocationMap& locations,
+                                 std::stringstream& ss) {
+  static std::regex location_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+");
+
+  std::string location;
+  ss >> location;
+  if (!std::regex_match(location, location_format))
+    throw "location " + location;
+
+  std::string methods;
+  std::pair<std::string, std::string>  redirection;
+  std::string root;
+  std::string autoindex;
+  std::string index;
+
+  std::string token;
+  ss >> token;
+  if (token != "{")
+    throw token;
+  while (true) { //what if location is in format location / {} ?
+    ss >> token;
+    logDebug(token);
+    if (token == "limit_except")
+      ParseAllowedMethods(methods, ss);
+    else if (token == "return")
+      ParseRedirection(redirection, ss);
+    else if (token == "root")
+      ParseRoot(root, ss);
+    else if (token == "autoindex")
+      ParseAutoindex(autoindex, ss);
+    else if (token == "index")
+      ParseIndex(index, ss);
+    else if (token == "}")
+      break;
+    else
+      throw token;
+  }
+  if (!locations.contains(location))
+    locations.insert({location, Location(methods, redirection, root, autoindex,
+                     index)});
+}
+
+void ConfigParser::ParseAllowedMethods(std::string& methods,
+                                       std::stringstream& ss) {
   static std::regex format("\\s*((GET|HEAD|POST|DELETE)\\s+)*"
                                 "(GET|HEAD|POST|DELETE)\\s*"); 
   std::string line;
   std::getline(ss, line);
   if (!std::regex_match(line, format))
     throw "limit_except " + line;
-  l.set_allowed_methods(line);
+  if (methods.empty())
+    methods = line;
 }
 
-void ConfigParser::ParseRedirection(Location& l, std::stringstream& ss) {
+void ConfigParser::ParseRedirection(StringPair& redirection,
+                                     std::stringstream& ss) {
   static std::regex code_format("30[0-478]");
   static std::regex path_format("(/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+\\.html)|"
-                                "((https?://)?(www\\.)?([a-zA-Z0-9_-]+\\.)+[a-zA-Z]{2,});");
+                                "((https?://)?(www\\.)?([a-zA-Z0-9_-]+\\.)+"
+                                "[a-zA-Z]{2,});");
   std::string code;
   std::string path;
   ss >> code;
@@ -190,35 +216,43 @@ void ConfigParser::ParseRedirection(Location& l, std::stringstream& ss) {
       || !std::regex_match(path, path_format))
     throw "return " + code + " " + path;
   path.pop_back();
-  l.set_redirection(code, path);
+  if (redirection.first.empty())
+    redirection = {code, path};
 }
 
-void ConfigParser::ParseRoot(Location& l, std::stringstream& ss) {
-  static std::regex format("(/[a-zA-Z0-9_-]+)+;"); 
+void ConfigParser::ParseRoot(std::string& root, std::stringstream& ss) {
+  static std::regex format("(/[a-zA-Z0-9_-]+)+;");
+
   std::string token;
   ss >> token;
   if (!std::regex_match(token, format))
     throw "root " + token;
   token.pop_back();
-  l.set_root(token);
+  if (root.empty())
+    root = token;
 }
 
-void ConfigParser::ParseAutoindex(Location& l, std::stringstream& ss) {
-  static std::regex format("(on|off);"); 
+void ConfigParser::ParseAutoindex(std::string& autoindex,
+                                  std::stringstream& ss) {
+  static std::regex format("(on|off);");
+
   std::string token;
   ss >> token;
   if (!std::regex_match(token, format))
     throw "autoindex " + token;
   token.pop_back();
-  l.set_auto_index(token);
+  if (autoindex.empty())
+    autoindex = token;
 }
 
-void ConfigParser::ParseIndex(Location& l, std::stringstream& ss) {
-  static std::regex format("[a-zA-Z0-9_-]+\\.html;"); 
+void ConfigParser::ParseIndex(std::string& index, std::stringstream& ss) {
+  static std::regex format("([a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\\.html;");
+
   std::string token;
   ss >> token;
   if (!std::regex_match(token, format))
     throw "index " + token;
   token.pop_back();
-  l.set_index(token);
+  if (index.empty())
+    index = token;
 }
