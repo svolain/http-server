@@ -22,15 +22,24 @@ void ConnectInfo::InitInfo(int fd, Socket *sock) {
 }
 
 void ConnectInfo::AssignVHost() {
-  std::map<std::string, VirtualHost>*v_hosts_ = &get_socket()->get_v_hosts();
+  std::map<std::string, VirtualHost>&v_hosts_ = get_socket()->get_v_hosts();
   std::map<std::string, std::string>&headers = parser_.get_headers();
-  std::map<std::string, VirtualHost>::iterator vhosts_it = (*v_hosts_).find(headers.at("Host"));
-  if (vhosts_it != (*v_hosts_).end()){
-    logDebug("found " + vhosts_it->first);
+  std::map<std::string, VirtualHost>::iterator vhosts_it;
+  try {
+    /* Find the value of the Host key in the headers map */
+    vhosts_it = v_hosts_.find(headers.at("Host"));
+  }
+  catch(const std::out_of_range& e) {
+    logDebug("AssignVHost: map at() except: No host field in the provided header", true);
+    vhosts_it = v_hosts_.end();
+  }
+  
+  if (vhosts_it != v_hosts_.end()){
+    logDebug("Found requested host: " + vhosts_it->first);
     set_vhost(&vhosts_it->second);
   }
   else {
-    vhosts_it = (*v_hosts_).begin();
+    vhosts_it = v_hosts_.begin();
     set_vhost(&vhosts_it->second);
   }
 }

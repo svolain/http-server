@@ -34,7 +34,7 @@ int WebServ::init() {
     if (parser.ParseConfig(this->sockets_))
       return 1;
   }
-  logDebug(ToString());
+  logDebug(ToString(), true);
   int i = 0;
   for (auto it = sockets_.begin(); it != sockets_.end(); it ++, i ++) {
     if (sockets_[i].InitServer(pollFDs_))
@@ -62,7 +62,7 @@ void WebServ::run() {
         close(pollFDs_[i].fd);
         pollFDs_.erase(pollFDs_.begin() + i);
       }	
-      client_info_map_.clear();
+      client_info_map_.clear(); 
     }
     else 
       PollAvailableFDs();
@@ -120,19 +120,32 @@ void WebServ::PollAvailableFDs(void) {
     /* for readability */
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
+    ConnectInfo* fd_info = nullptr;
     /* If fd is not a server fd */
     if (i < sockets_.size())
       CheckForNewConnection(fd, revents, i);
     else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
-      ConnectInfo* fd_info = &client_info_map_.at(fd);
-      if (!fd_info) /* we should never get this error */
+      try {
+        fd_info = &client_info_map_.at(fd);
+      }
+      catch(const std::out_of_range& e) { /* we should never get this error */
+        std::cerr << e.what() << '\n';
         std::cerr << "error: couldnt find the fd in the client_info_map_" << std::endl;
+      }
+      if (revents & POLLERR) {
+        logDebug("error or read end has been closed", true);
+        CloseConnection(fd, i);
+      }
       else if (revents & POLLHUP) {
-        std::cout << "hang up: " << fd << std::endl;
+        std::ostringstream stream;
+        stream << "hang up: " << fd << std::endl;
+        logDebug(stream.str(), true);
         CloseConnection(fd, i);
       }
       else if (revents & POLLNVAL) {
-        std::cout << "invalid fd: " << fd << std::endl;
+        std::ostringstream stream;
+        stream << "invalid fd: " << fd << std::endl;
+        logDebug(stream.str(), true);
         CloseConnection(fd, i);
       }
       else if (revents & POLLIN)
