@@ -43,6 +43,7 @@ class VirtualHost {
   int         ParseHeader(ConnectInfo* fd_info, pollfd& poll);
   int         WriteBody(ConnectInfo* fd_info, pollfd& poll);
   void        OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll);
+  bool        ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std::string, std::string> headers);
   std::string ToString() const;
   
  private:

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/03 13:05:54 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/02 17:48:05 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
 
   char                buf[MAXBYTES]{};
   int                 bytesIn;
-  size_t              request_size = 0;
+  HttpParser*         parser = fd_info->get_parser();
 
   int fd = fd_info->get_fd();
   bytesIn = recv(fd, buf, MAXBYTES, 0);
@@ -48,40 +48,38 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
   else if (bytesIn == MAXBYTES)
     std::cout << "MAXBYTES on recv. Check if the header is too long" << std::endl;
 
-  request_size += bytesIn;
   
   if (show_request)
     std::cout << "\nthe whole request is:\n" << buf << std::endl;
-    
-  if (!fd_info->get_parser()->ParseRequest(buf))
+  
+  if (!parser->ParseRequest(buf))
     std::cout << "false on ParseRequest returned" << std::endl;
-  if (request_size > SIZE_MAX)
-    /* TODO: add body too long check in the parser */ ;
+
   if (fd_info->get_vhost() == nullptr)
     fd_info->AssignVHost();
   
   /* If the message didnt fit into MAXBYTES then dont set the POLLOUT yet,
     let the WriteBody do that */
-  poll.events = POLLOUT;
+  if (parser->get_is_chunked() == true)
+    fd_info->set_is_parsing_body(true);
+  else
+    poll.events = POLLOUT;
   /* Set to true if we want to read the body 
     If the whole message fit into MAXBYTES then dont set it to true*/
-  fd_info->set_is_parsing_body(false);
-  
+
   return 0;
 }
 
 int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
 
-  std::string&        request_body = fd_info->get_parser()->get_request_body();
+  std::array<char, MAXBYTES>
+    &request_body = fd_info->get_parser()->get_request_body();
   size_t              body_size = request_body.size();
-  // std::vector<char>   buf(body_size + MAXBYTES);
-  // buf.insert(buf.end(), request_body.begin(), request_body.end());
-
   int                 bytesIn;
   size_t              request_size = 0;
 
   int fd = fd_info->get_fd();
-  bytesIn = recv(fd, &request_size + body_size, MAXBYTES, 0);
+  bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
   else if (bytesIn == 0) {
@@ -93,9 +91,86 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
     std::cout << "the header is too long! handle this" << std::endl;
 
   request_size += bytesIn;
-  
   poll.events = POLLOUT;
   return 0;
+}
+
+bool VirtualHost::ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std::string, std::string> headers) {
+  if (headers["transfer-encoding"] == "chunked") {
+      ;
+    }
+    (void)bytesIn;
+    (void)buf;
+		/*std::string eoc = "0\r\n\r\n";
+    check if the chunk is received in whole, if not return to receiving next chunk
+    if (!oss.find(eoc));
+      return;
+    when all the chunks are received, the chunk characters need to be removed
+    UnChunkBody();
+	}*/
+	// if (/*check if content-length fully read*/)
+	// 	return ;
+	// else if (headers["content-type"].find("multipart/form-data") != std::string::npos){
+	// }
+
+	return true;        
+}
+
+bool UnChunkBody(std::vector<char>& buf) {
+  std::size_t readIndex = 0;
+  std::size_t writeIndex = 0;
+
+  while(readIndex < buf.size()) {
+    std::size_t chunkSizeStart = readIndex;
+
+    // First row is the chunk size, iterating until the ending "\r\n"
+    while (readIndex < buf.size() && !(buf[readIndex] == '\r' && buf[readIndex + 1] == '\n')) {
+      readIndex++;
+    }
+
+    if (readIndex >= buf.size()) {
+      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      return false;
+    }
+
+    // Extract the hexadecimals to get the size of actual content of body
+    std::string chunkSizeStr(buf.begin() + chunkSizeStart, buf.begin() + readIndex);
+    std::size_t chunkSize;
+    std::stringstream ss;
+    ss << std::hex << chunkSizeStr;
+    ss >> chunkSize;
+
+    // Move readIndex past another "\r\n" after the chunk size row
+    readIndex += 2;
+
+    // check if reached final chunk which's size is always 0 
+    if (chunkSize == 0) {
+            break;
+        }
+
+    // Copy chunk data to the write position
+    if (readIndex + chunkSize > buf.size()) {
+      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      return false;
+    }
+
+    for (std::size_t i = 0; i < chunkSize; ++i) {
+      buf[writeIndex++] = buf[readIndex++];
+    }
+
+    // Skip the \r\n after the chunk data
+    if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
+      readIndex += 2;
+    } else {
+      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      return false;
+    }
+
+
+    // Remove everything after the unchunked data (i.e., resize the vector)
+    buf.resize(writeIndex);
+  } 
+  return true;
 }
 
 void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
