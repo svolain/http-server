@@ -3,29 +3,40 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/09/30 13:53:56 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 14:25:34 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Socket.hpp"
 
-
-Socket::Socket(std::string& socket, VirtualHost& v) : v_hosts_({{v.get_name(), v}}) {
-  size_t colon = socket.find(':');
-  address_ = socket.substr(0, colon);
-  port_ = socket.substr(colon + 1);
-
+Socket::Socket(std::string& listen,
+         std::string& name,
+         std::string& max_size,
+         StringMap& errors,
+         LocationMap& locations) {
+  if (!listen.empty()) {
+    size_t colon = listen.find(':');
+    address_ = listen.substr(0, colon);
+    port_ = listen.substr(colon + 1);
+  }
+  if (name.empty())
+    name = "localhost"; //Or leave it emty may be
+  v_hosts_.insert({name, VirtualHost(max_size, errors, locations)});
 }
 
-std::string Socket::get_socket() {
+std::string Socket::getSocket() {
   return address_ + ":" + port_;
 }
 
-void  Socket::AddVirtualHost(VirtualHost& v) {
-  v_hosts_[v.get_name()] = v;
+void  Socket::AddVirtualHost(std::string& name,
+                             std::string& max_size,
+                             StringMap&   errors,
+                             LocationMap& locations) {
+  if (!v_hosts_.contains(name))
+    v_hosts_.insert({name, VirtualHost(max_size, errors, locations)});
 }
 
 
@@ -81,4 +92,15 @@ pollfd Socket::get_listening() const{
 
 std::map<std::string, VirtualHost>& Socket::get_v_hosts(){
     return v_hosts_;
+}
+
+std::string Socket::ToString() const {
+  std::string out;
+  out += std::string(7, ' ') + "Address: " + address_ + "\n";
+  out += std::string(7, ' ') + "Port: " + port_ + "\n";
+  for (const auto& [name, vh] : v_hosts_) {
+    out += std::string(7, ' ') + "Virtual host: " + name + "\n";
+    out += vh.ToString() + "\n";
+  }
+  return out;
 }

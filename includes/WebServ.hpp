@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/01 15:06:23 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 09:57:26 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 #include "Socket.hpp"
 #include "ConnectInfo.hpp"
 
-#define DEFAULT_CONF "./conf/default.conf"
+#define DEFAULT_CONF "conf/default.conf"
 
 class WebServ {
  public:
@@ -34,17 +34,18 @@ class WebServ {
   int   init();
 
  private:
-  std::string                   conf_;
+  const std::string             conf_;
   std::deque<Socket>            sockets_;
   std::vector<pollfd>           pollFDs_;
   std::map<int, ConnectInfo>    client_info_map_;
   
-  void PollAvailableFDs(void);
-  void CheckForNewConnection(int fd, short revents, int i);
-  void CloseConnection(int sock, size_t& i);
-  void CloseAllConnections(void);
-  void RecvFromClient(ConnectInfo* fd_info, size_t& i);
-  void SendToClient(ConnectInfo* fd_info, pollfd& poll);
+  void        PollAvailableFDs(void);
+  void        CheckForNewConnection(int fd, short revents, int i);
+  void        CloseConnection(int sock, size_t& i);
+  void        CloseAllConnections(void);
+  void        RecvFromClient(ConnectInfo* fd_info, size_t& i);
+  void        SendToClient(ConnectInfo* fd_info, pollfd& poll);
+  std::string ToString() const;
 
   struct EventFlag {
       short flag;

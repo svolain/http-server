@@ -13,7 +13,7 @@ EC						:=	\033[0m
 # SOURCE_FILES
 
 
-WEBSERV_NAME	:=	WebServ.cpp HttpParser.cpp \
+WEBSERV_NAME	:=	WebServ.cpp Logger.cpp HttpParser.cpp \
 	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp ConfigParser.cpp ConnectInfo.cpp
 
 WEBSERV_PATH	:=	Webserv/
