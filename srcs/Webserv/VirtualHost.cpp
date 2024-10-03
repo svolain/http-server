@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/03 18:11:33 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:57:34 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,13 +33,13 @@ VirtualHost::VirtualHost(std::string& max_size,
   }
 }
 
-int VirtualHost::ParseHeader(ClientInfo* fd_info, pollfd& poll) {
+int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
 
   char                buf[MAXBYTES]{};
   int                 bytesIn;
-  HttpParser*         parser = fd_info->get_parser();
+  HttpParser&         parser = fd_info.getParser();
 
-  int fd = fd_info->get_fd();
+  int fd = fd_info.getFd();
   bytesIn = recv(fd, buf, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
@@ -55,16 +55,16 @@ int VirtualHost::ParseHeader(ClientInfo* fd_info, pollfd& poll) {
   std::cout << buf;
   std::cout << "\n";
   
-  if (!parser->ParseRequest(buf))
+  if (!parser.ParseRequest(buf))
     logDebug("false on ParseRequest returned", true);
 
-  if (fd_info->get_vhost() == nullptr)
-    fd_info->AssignVHost();
+  if (fd_info.getVhost() == nullptr)
+    fd_info.AssignVHost();
   
   /* If the message didnt fit into MAXBYTES then dont set the POLLOUT yet,
     let the WriteBody do that */
-  if (parser->get_is_chunked() == true)
-    fd_info->set_is_parsing_body(true);
+  if (parser.getIsChunked() == true)
+    fd_info.setIsParsingBody(true);
   else
     poll.events = POLLOUT;
   /* Set to true if we want to read the body 
@@ -73,15 +73,15 @@ int VirtualHost::ParseHeader(ClientInfo* fd_info, pollfd& poll) {
   return 0;
 }
 
-int VirtualHost::WriteBody(ClientInfo* fd_info, pollfd& poll) {
+int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
 
   std::array<char, MAXBYTES>
-    &request_body = fd_info->get_parser()->get_request_body();
+    &request_body = fd_info.getParser().getRequestBody();
   size_t              body_size = request_body.size();
   int                 bytesIn;
   size_t              request_size = 0;
 
-  int fd = fd_info->get_fd();
+  int fd = fd_info.getFd();
   bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
@@ -176,13 +176,13 @@ bool UnChunkBody(std::vector<char>& buf) {
   return true;
 }
 
-void VirtualHost::OnMessageRecieved(ClientInfo *fd_info, pollfd &poll){
+void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll){
 
   logDebug("--- entering OnMessageRecieved ---", false);
 
-  if (fd_info->get_is_sending() == false){
+  if (fd_info.getIsSending() == false){
       SendHeader(fd_info);
-      fd_info->set_is_sending(true);
+      fd_info.setIsSending(true);
   }
   else
     SendChunkedBody(fd_info, poll);
@@ -190,40 +190,40 @@ void VirtualHost::OnMessageRecieved(ClientInfo *fd_info, pollfd &poll){
   logDebug("----- leaving OnMessageRecieved -----", false);
 }
 
-void VirtualHost::SendHeader(ClientInfo *fd_info){
-  HttpParser *parser = fd_info->get_parser();
-  std::string resource_path = parser->get_resource_path();
+void VirtualHost::SendHeader(ClientInfo& fd_info){
+  HttpParser& parser = fd_info.getParser();
+  std::string resource_path = parser.getResourcePath();
 
   logDebug("the resource path is " + resource_path);
-  logDebug("the error code from parser is " + std::to_string(parser->get_error_code()));
+  logDebug("the error code from parser is " + std::to_string(parser.getErrorCode()));
   
   HttpResponse response;
-  response.set_error_code_(parser->get_error_code());
-  response.AssignContType(parser->get_resource_path());
-  std::ifstream& file = fd_info->get_file();
+  response.setErrorCode(parser.getErrorCode());
+  response.AssignContType(parser.getResourcePath());
+  std::ifstream& file = fd_info.getFile();
   response.OpenFile(resource_path, file);
   response.ComposeHeader();
 
   logDebug("\n------response header------\n" + \
-            response.get_header_() + "\n" +\
+            response.getHeader() + "\n" +\
             "-----end of response header------\n", false);
   
-  SendToClient(fd_info->get_fd(), response.get_header_().c_str(), response.get_header_().size());
+  SendToClient(fd_info.getFd(), response.getHeader().c_str(), response.getHeader().size());
 }
 
-void VirtualHost::SendChunkedBody(ClientInfo* fd_info, pollfd &poll)
+void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd &poll)
 {
   /* Nginx will not try to save the state of the previous transmission and retry later. 
       It handles each request-response transaction independently. 
       If the connection breaks, a client would need to send a new request to get the content again. 
       Return the file position back to 0*/
 
-  HttpParser *parser = fd_info->get_parser();    
-  std::string resource_path = parser->get_resource_path();
-  std::ifstream& file = fd_info->get_file();
+  HttpParser& parser = fd_info.getParser();
+  std::string resource_path = parser.getResourcePath();
+  std::ifstream& file = fd_info.getFile();
   HttpResponse response;
   response.OpenFile(resource_path, file);
-  int client_socket = fd_info->get_fd();
+  int client_socket = fd_info.getFd();
   if (file.is_open()){
     if (SendOneChunk(client_socket, file) == 0){
       return ;
@@ -236,7 +236,7 @@ void VirtualHost::SendChunkedBody(ClientInfo* fd_info, pollfd &poll)
       perror("send 3:");
   file.close();
   poll.events = POLLIN;
-  fd_info->set_is_sending(false);
+  fd_info.setIsSending(false);
   
   logDebug("\n-----response sent-----\n", false);
 }
@@ -278,7 +278,7 @@ int VirtualHost::SendToClient(const int client_socket, const char *msg, int leng
   return bytes_sent;
 }
 
-size_t VirtualHost::get_max_body_size(){
+size_t VirtualHost::getMaxBodySize(){
   return client_max_body_size_;
 }
 

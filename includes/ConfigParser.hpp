@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:56:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/02 12:31:10 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:35:27 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ class ConfigParser
   ConfigParser(const std::string& conf);
   ~ConfigParser() = default;
 
-  int ParseConfig(std::deque<Socket> &sockets_);
+  int ParseConfig(std::deque<Socket>& sockets_);
 
  private:
   using StringMap = std::map<std::string, std::string>;

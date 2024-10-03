@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 17:33:20 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:53:29 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
     }
     if (!file.is_open()){
       logDebug("couldnt open file " + resource_path + ", opening 404", true);
-      set_error_code_(404);
+      setErrorCode(404);
       file.open("./www/404.html");
       return ;
     }
@@ -93,7 +93,7 @@ void HttpResponse::ComposeHeader(void){
   lookupErrMessage();
   
   std::ostringstream oss;
-	oss << "HTTP/1.1 " << this->get_error_codeMessage() << "\r\n";
+	oss << "HTTP/1.1 " << this->getErrorCodeMessage() << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
   /* Content length should be used when sends not in chunks */
 	// oss << "Content-Length: " << (*content).size()  << "\r\n";
@@ -149,21 +149,21 @@ void HttpResponse::InitContMap(void){
 }
 
 
-void  HttpResponse::set_error_code_(int error_code_){
+void  HttpResponse::setErrorCode(int error_code_){
   this->error_code_ = error_code_;
 }
 
 
-std::string HttpResponse::get_cont_type_(void) const{
+std::string HttpResponse::getContType(void) const{
   return (cont_type_);
 }
 
 
-std::string HttpResponse::get_header_(void) const{
+std::string HttpResponse::getHeader(void) const{
   return (header_);
 }
 
-std::string HttpResponse::get_error_codeMessage() const
+std::string HttpResponse::getErrorCodeMessage() const
 {
   return (error_code_message_);
 }

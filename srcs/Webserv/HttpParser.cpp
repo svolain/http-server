@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/03 17:40:07 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:26:12 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,39 +118,39 @@ bool HttpParser::ParseRequest(const std::string request) {
 
 }
 
-size_t HttpParser::get_chunk_size() const {
+size_t HttpParser::getChunkSize() const {
     return chunk_size_;
 }
         
-std::string HttpParser::get_method() const {
+std::string HttpParser::getMethod() const {
     return method_;
 }
 
-std::string HttpParser::get_resource_path() const {
+std::string HttpParser::getResourcePath() const {
     return resource_path_;
 }
 
-std::string HttpParser::get_query_string() const {
+std::string HttpParser::getQueryString() const {
     return query_string_;
 }
 
-std::string HttpParser::get_http_version() const{
+std::string HttpParser::getHttpVersion() const{
     return http_version_;
 }
 
-std::array<char, MAXBYTES>& HttpParser::get_request_body() {
+std::array<char, MAXBYTES>& HttpParser::getRequestBody() {
     return request_body_;
 }
 
-std::map<std::string, std::string>& HttpParser::get_headers() {
+std::map<std::string, std::string>& HttpParser::getHeaders() {
     return headers_;
 }
 
-int HttpParser::get_error_code() const {
+int HttpParser::getErrorCode() const {
     return error_code_;   
 }
 
-bool HttpParser::get_is_chunked() const {
+bool HttpParser::getIsChunked() const {
     return is_chunked_;
 }
 

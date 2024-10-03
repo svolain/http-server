@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/03 17:37:19 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:56:08 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ Socket::Socket(std::string& listen,
   }
   if (name.empty())
     name = "localhost"; //Or leave it emty may be
-  v_hosts_.insert({name, VirtualHost(max_size, errors, locations)});
+  v_hosts_.emplace(name, VirtualHost(max_size, errors, locations));
 }
 
 std::string Socket::getSocket() {
@@ -37,7 +37,7 @@ void  Socket::AddVirtualHost(std::string& name,
                              StringMap&   errors,
                              LocationMap& locations) {
   if (!v_hosts_.contains(name))
-    v_hosts_.insert({name, VirtualHost(max_size, errors, locations)});
+    v_hosts_.emplace(name, VirtualHost(max_size, errors, locations));
 }
 
 
@@ -87,11 +87,11 @@ int Socket::InitServer(std::vector<pollfd> &pollFDs)
 }
 
 
-pollfd Socket::get_listening() const{
+pollfd Socket::getListening() const{
   return listening_;
 }
 
-std::map<std::string, VirtualHost>& Socket::get_v_hosts(){
+std::map<std::string, VirtualHost>& Socket::getVirtualHosts(){
     return v_hosts_;
 }
 

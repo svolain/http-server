@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 18:06:22 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:21:19 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,35 +22,34 @@ class VirtualHost;
 
 class ClientInfo
 {
-  public:
-    ClientInfo() = default;
-    ClientInfo(int fd, Socket* sock);
-    ~ClientInfo() = default;
+ public:
+  ClientInfo() = default;
+  ClientInfo(int fd, Socket* sock);
+  ~ClientInfo() = default;
 
-    void            InitInfo(int fd, Socket *sock);
-    void            AssignVHost();
+  void            InitInfo(int fd, Socket *sock);
+  void            AssignVHost();
 
-    void            set_vhost(VirtualHost *vhost);
-    void            set_is_sending(bool boolean);
-    void            set_is_parsing_body(bool boolean);
-    HttpParser*     get_parser();
-    Socket*         get_socket();
-    VirtualHost*    get_vhost();
-    int             get_fd();
-    bool            get_is_sending();
-    bool            get_is_parsing_body();
-    std::ifstream&  get_file();
-    
-  private:
-    int                       fd_;
-    Socket*                   sock_;
-    VirtualHost*              vhost_;
-    HttpParser                parser_;
-    std::ofstream             postfile_;
-    std::ifstream             getfile_;
-    bool                      is_sending_chunks_;
-    bool                      is_parsing_body_;
+  void            setVhost(VirtualHost *vhost);
+  void            setIsSending(bool boolean);
+  void            setIsParsingBody(bool boolean);
+  HttpParser&     getParser();
+  Socket*         getSocket();
+  VirtualHost*    getVhost();
+  int             getFd();
+  bool            getIsSending();
+  bool            getIsParsingBody();
+  std::ifstream&  getFile();
+
+private:
+  int            fd_;
+  Socket*        sock_;
+  VirtualHost*   vhost_;
+  HttpParser     parser_;
+  std::ofstream  postfile_;
+  std::ifstream  getfile_;
+  bool           is_sending_chunks_;
+  bool           is_parsing_body_;
 };
-
 
 #endif

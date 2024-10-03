@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 18:06:26 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:56:08 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,64 +25,63 @@ void ClientInfo::InitInfo(int fd, Socket *sock) {
 }
 
 void ClientInfo::AssignVHost() {
-  std::map<std::string, VirtualHost>&v_hosts_ = get_socket()->get_v_hosts();
-  std::map<std::string, std::string>&headers = parser_.get_headers();
+  std::map<std::string, VirtualHost>&v_hosts_ = getSocket()->getVirtualHosts();
+  std::map<std::string, std::string>&headers = parser_.getHeaders();
   std::map<std::string, VirtualHost>::iterator vhosts_it;
   try {
     /* Find the value of the Host key in the headers map */
     vhosts_it = v_hosts_.find(headers.at("Host"));
-  }
-  catch(const std::out_of_range& e) {
+  } catch (const std::out_of_range& e) {
     logDebug("AssignVHost: map at() except: No host field in the provided header", true);
     vhosts_it = v_hosts_.end();
   }
-  
+
   if (vhosts_it != v_hosts_.end()){
     logDebug("Found requested host: " + vhosts_it->first);
-    set_vhost(&vhosts_it->second);
+    setVhost(&vhosts_it->second);
   }
   else {
     vhosts_it = v_hosts_.begin();
-    set_vhost(&vhosts_it->second);
+    setVhost(&vhosts_it->second);
   }
 }
 
-void ClientInfo::set_vhost(VirtualHost *vhost) {
+void ClientInfo::setVhost(VirtualHost *vhost) {
   vhost_ = vhost;
 }
 
-void ClientInfo::set_is_parsing_body(bool boolean) {
+void ClientInfo::setIsParsingBody(bool boolean) {
   is_parsing_body_ = boolean;
 }
 
-void ClientInfo::set_is_sending(bool boolean) {
+void ClientInfo::setIsSending(bool boolean) {
   is_sending_chunks_ = boolean;
 }
 
-bool ClientInfo::get_is_sending() {
+bool ClientInfo::getIsSending() {
   return is_sending_chunks_;
 }
 
-bool ClientInfo::get_is_parsing_body() {
+bool ClientInfo::getIsParsingBody() {
   return is_parsing_body_;
 }
 
-VirtualHost*  ClientInfo::get_vhost() {
+VirtualHost*  ClientInfo::getVhost() {
   return vhost_;
 }
 
-HttpParser* ClientInfo::get_parser() {
-  return &parser_;
+HttpParser& ClientInfo::getParser() {
+  return parser_;
 }
 
-Socket* ClientInfo::get_socket() {
+Socket* ClientInfo::getSocket() {
   return sock_;
 }
 
-int ClientInfo::get_fd() {
+int ClientInfo::getFd() {
   return fd_;
 }
 
-std::ifstream& ClientInfo::get_file() {
+std::ifstream& ClientInfo::getFile() {
   return getfile_;
 }

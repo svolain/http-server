@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/02 15:28:14 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/03 14:22:05 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:56:08 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,12 +35,12 @@ class Socket {
          StringMap& errors,
          LocationMap& locations);
   Socket(const Socket& other)            = default;
-  Socket& operator=(const Socket& other) = default;
-  ~Socket() = default;
+  Socket& operator=(const Socket& other) = delete;
+  ~Socket()                              = default;
 
   std::string                         getSocket();
-  pollfd                              get_listening() const;
-  std::map<std::string, VirtualHost>& get_v_hosts();
+  pollfd                              getListening() const;
+  std::map<std::string, VirtualHost>& getVirtualHosts();
   void                                AddVirtualHost(std::string& name,
                                                      std::string& max_size,
                                                      StringMap&   errors,
@@ -49,8 +49,8 @@ class Socket {
   std::string                         ToString() const;
 
  private:
-  std::string                         address_ = "127.0.0.0";
-  std::string                         port_ = "8080";
+  std::string                         address_ = "127.0.0.0"; //Is it correct?
+  std::string                         port_ = "8080"; //Is it correct?
   pollfd                              listening_;
   std::map<std::string, VirtualHost>  v_hosts_;
 

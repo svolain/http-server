@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 17:33:20 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 23:53:29 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,30 +22,27 @@ class ClientInfo;
 
 class HttpResponse
 {
-    private:
-        
-        int                            error_code_;
-        std::map
-            <std::string, std::string> cont_type_map_;
-        std::string                    cont_type_;
-        std::string                    error_code_message_;
-        std::string                    header_;
+ public:
+  HttpResponse();
+  ~HttpResponse();
 
-        void InitContMap(void);
-        void lookupErrMessage(void);
+  void            AssignContType(std::string resourcePath);
+  void            OpenFile(std::string& resource_path, std::ifstream& file);
+  void            ComposeHeader(void);
+  std::string     getContType() const;
+  std::string     getHeader() const;
+  std::string     getErrorCodeMessage() const;
+  void            setErrorCode(int error_code_);
 
-    public:
+ private:
+  int                                error_code_;
+  std::map<std::string, std::string> cont_type_map_;
+  std::string                        cont_type_;
+  std::string                        error_code_message_;
+  std::string                        header_;
 
-        HttpResponse();
-        ~HttpResponse();
-        
-        void            AssignContType(std::string resourcePath);
-        void            OpenFile(std::string& resource_path, std::ifstream& file);
-        void            ComposeHeader(void);
-        std::string     get_cont_type_() const;
-        std::string     get_header_() const;
-        std::string     get_error_codeMessage() const;
-        void            set_error_code_(int error_code_);
+  void InitContMap(void);
+  void lookupErrMessage(void);
 };
 
 #endif

@@ -3,21 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/03 17:20:33 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 21:40:04 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "WebServ.hpp"
-
-#include "WebServ.hpp"
 #include <iostream>
+#include "Logger.h"
+#include "WebServ.hpp"
 
-int main(int ac, char **av){
+int main(int ac, char **av) {
   if (ac > 2) {
-    std::cerr << "Usage: /webserv [configuration file]\n";
+    logError("Usage: /webserv [configuration file]");
     return 1;
   }
 

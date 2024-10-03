@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 18:13:49 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 21:55:43 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,7 +142,7 @@ void ConfigParser::ParseErrorPage(StringMap& errors, std::stringstream& ss) {
     throw "error_page " + code + " " + path;
   path.pop_back();
   if (!errors.contains(code))
-    errors.insert({code, path});
+    errors.emplace(code, path);
 }
 
 void ConfigParser::ParseLocation(LocationMap& locations,
@@ -183,8 +183,8 @@ void ConfigParser::ParseLocation(LocationMap& locations,
       throw token;
   }
   if (!locations.contains(location))
-    locations.insert(
-      {location, Location(methods, redirection, root, autoindex, index)});
+    locations.emplace(
+      location, Location(methods, redirection, root, autoindex, index));
 }
 
 void ConfigParser::ParseAllowedMethods(std::string& methods,
