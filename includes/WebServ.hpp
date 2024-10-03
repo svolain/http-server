@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/03 09:57:26 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 16:31:23 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,8 +30,8 @@ class WebServ {
 
   ~WebServ() = default;
 
-  void  run();
-  int   init();
+  void  Run();
+  int   Init();
 
  private:
   const std::string             conf_;

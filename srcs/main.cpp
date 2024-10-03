@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/01 17:05:56 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 16:31:06 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,18 +20,15 @@ bool show_response = 0;
 #include <iostream>
 
 int main(int ac, char **av){
-	if (ac > 2) {
-		std::cerr << "Usage: /webserv [configuration file]\n";
-		return 1;
+  if (ac > 2) {
+    std::cerr << "Usage: /webserv [configuration file]\n";
+    return 1;
   }
-	WebServ webServ(av[1]);
-	
-	if (webServ.init())
-		return (1);
-	std::cout << "Initialized a server" << std::endl;
-	
-	webServ.run();
 
-	return  0;
+  WebServ webServ(av[1]);
+  if (webServ.Init())
+    return (1);
+  webServ.Run();
+  return  0;
 }
 

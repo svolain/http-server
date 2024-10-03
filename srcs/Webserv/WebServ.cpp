@@ -27,27 +27,26 @@ WebServ::WebServ(const char* conf)
 }
 
 
-int WebServ::init() {
-  
+int WebServ::Init() {
   {
     ConfigParser parser(conf_);
     if (parser.ParseConfig(this->sockets_))
       return 1;
   }
-  logDebug(ToString(), true);
+  logDebug(ToString());
   int i = 0;
-  for (auto it = sockets_.begin(); it != sockets_.end(); it ++, i ++) {
-    if (sockets_[i].InitServer(pollFDs_))
+  for (Socket& socket : sockets_) {
+    if (socket.InitServer(pollFDs_))
       return 2;
-    std::cout << "init the server on socket " << sockets_[i].getSocket() << std::endl; 
+    logInfo("Init the server on socket: " + socket.getSocket());
   }
+  logInfo("Servers are ready.");
   return (0);
 }
 
 #define TIMEOUT   5000
 
-void WebServ::run() {
-  std::cout << "Servers are ready.\n";
+void WebServ::Run() {
   int socketsReady = 0;
   while (1) {
     /* the socketsReady from poll() 
