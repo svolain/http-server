@@ -3,13 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 17:48:05 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/03 15:18:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <sys/stat.h>
 #include "VirtualHost.hpp"
 #include "ConnectInfo.hpp"
 
@@ -26,8 +27,11 @@ VirtualHost::VirtualHost(std::string& max_size,
     client_max_body_size_ = std::stoi(max_size);
     client_max_body_size_ *= (max_size.back() == 'M' ? 1048576 : 1024);
   }
-  for (const auto& [key, value] : errors)
+  for (const auto& [key, value] : errors) {
+    if (access(value.c_str(), R_OK) == -1)
+      continue;
     error_pages_[key] = value;
+  }
 }
 
 int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
