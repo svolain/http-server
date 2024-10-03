@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/02 15:28:14 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/02 17:01:45 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 14:22:05 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,10 +46,11 @@ class Socket {
                                                      StringMap&   errors,
                                                      LocationMap& locations);
   int                                 InitServer(std::vector<pollfd> &pollFDs);
+  std::string                         ToString() const;
 
  private:
-  std::string                         address_;
-  std::string                         port_;
+  std::string                         address_ = "127.0.0.0";
+  std::string                         port_ = "8080";
   pollfd                              listening_;
   std::map<std::string, VirtualHost>  v_hosts_;
 

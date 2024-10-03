@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/02 17:30:35 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 14:40:19 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,7 @@ int ConfigParser::ParseConfig(std::deque<Socket>& sockets) {
       return 1;
     }
   }
+  //add protection in case of empty file or empty server
   return 0;
 }
 
@@ -84,7 +85,7 @@ auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
   });
   if (it != sockets_.end())
   {
-    (*it).AddVirtualHost(server_name, max_size, errors, locations);
+    it->AddVirtualHost(server_name, max_size, errors, locations);
     /* Why it doesnt assign a name with the default config? */
   }
   else

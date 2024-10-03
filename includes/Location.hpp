@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:09:33 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 17:02:55 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 10:44:47 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@ class Location {
   Location& operator=(const Location& other) = delete;
 
   ~Location() = default;
+
+  std::string ToString() const;
 
  private:
   void SetAllowedMethods(std::string& line);

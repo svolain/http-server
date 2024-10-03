@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/02 17:08:55 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 13:05:54 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ VirtualHost::VirtualHost(std::string& max_size,
     client_max_body_size_ = std::stoi(max_size);
     client_max_body_size_ *= (max_size.back() == 'M' ? 1048576 : 1024);
   }
-  for (auto const& [key, value] : errors)
+  for (const auto& [key, value] : errors)
     error_pages_[key] = value;
 }
 
@@ -209,4 +209,18 @@ int VirtualHost::SendToClient(const int client_socket, const char *msg, int leng
 
 size_t VirtualHost::get_max_body_size(){
   return client_max_body_size_;
+}
+
+std::string VirtualHost::ToString() const {
+  std::string out;
+  out += std::string(21, ' ') + "Error Pages:\n";
+  for (const auto& [code, path] : error_pages_)
+    out += std::string(34, ' ') + "Error " + code + ": " + path + "\n";
+  out += std::string(21, ' ') + "Client_max_body_size: ";
+  out += std::to_string(client_max_body_size_) + " bytes\n";
+  for (const auto& [path, location] : locations_) {
+    out += std::string(21, ' ') + "Location: " + path + "\n";
+    out += location.ToString() + "\n";
+  }
+  return out;
 }
