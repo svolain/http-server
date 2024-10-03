@@ -3,17 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/02 14:45:08 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/03 17:40:07 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
-
-extern bool show_request;
-extern bool show_response;
+#include "Logger.h"
 
 HttpParser::HttpParser(const std::string request): error_code_(0), is_chunked_(false) {
   ParseRequest(request);
@@ -24,7 +22,7 @@ bool HttpParser::ParseRequest(const std::string request) {
     std::string line;
     
     if (!std::getline(requestStream, line)) {
-        std::cerr << "Error: getline failed to read request" << std::endl;
+        logError("Error: getline failed to read request");
         //respond with 500 Internal Server Error
         error_code_ = 500;
         return false;
@@ -34,7 +32,7 @@ bool HttpParser::ParseRequest(const std::string request) {
     linestream >> method_ >> resource_path_ >> http_version_;
 
     if (method_.empty() || resource_path_.empty() || http_version_.empty()) {
-        std::cerr << "Error: bad request 400" << std::endl;
+        logError("Error: bad request 400");
         //respond with HTTP 400 Bad Request
         error_code_ = 400;
         return false;
@@ -43,7 +41,7 @@ bool HttpParser::ParseRequest(const std::string request) {
     std::string allowedMethods[] = {"GET", "POST", "DELETE", "HEAD"};
     if (std::find(std::begin(allowedMethods), std::end(allowedMethods), method_) ==
     std::end(allowedMethods)) {
-        std::cerr << "Error: not supported method requested" << std::endl;
+        logError("Error: not supported method requested");
         //respond with HTTP 405 Method Not Allowed Error
         error_code_ = 405;
         return false;
@@ -64,7 +62,7 @@ bool HttpParser::ParseRequest(const std::string request) {
     while (std::getline(requestStream, line) && line != "\r") {
         size_t delim = line.find(":");
         if (delim == std::string::npos) {
-            std::cerr << "Error: wrong header line format" << std::endl;
+            logError("Error: wrong header line format");
             //respond with http 400 Bad Request
             error_code_ = 400;
             return false;
@@ -81,7 +79,7 @@ bool HttpParser::ParseRequest(const std::string request) {
             is_chunked_ = true;
         int contentLength = 0;
         if (headers_.find("Content-Length") == headers_.end() && is_chunked_ == false) {
-            std::cerr << "Error: content-lenght missing for request body" << std::endl;
+            logError("Error: content-lenght missing for request body");
             //respond with http 411 Length Required or general http 400 Bad Request?
             error_code_ = 411;
             return false;
@@ -95,11 +93,11 @@ bool HttpParser::ParseRequest(const std::string request) {
                 }
                 // Continue reading body as before
             } catch (const std::invalid_argument& e) {
-                std::cerr << "Error: invalid Content-Length" << std::endl;
+                logError("Error: invalid Content-Length");
                 error_code_ = 400; // Bad Request for invalid Content-Length
                 return false;
             } catch (const std::out_of_range& e) {
-                std::cerr << "Error: Content-Length out of range" << std::endl;
+                logError("Error: Content-Length out of range");
                 error_code_ = 400; // Bad Request for excessively large Content-Length
                 return false;
             }
@@ -163,7 +161,7 @@ bool HttpParser::CheckValidPath(std::string path) {
     in short this searches the asked path either directory or file
     within the root directory*/
     if (path.at(0) != '/') {
-        std::cerr << "Error: wrong path" << std::endl;
+        logError("Error: wrong path");
         error_code_ = 404; // or 400?
         return false;
     }
@@ -172,14 +170,15 @@ bool HttpParser::CheckValidPath(std::string path) {
     std::string rootPath = "";
      try {
         rootPath = std::filesystem::current_path().string() + "/www" + path;
-        if (show_request)
-        std::cout << "root path: " << rootPath << std::endl;
+        logDebug("root path: " + rootPath);
     } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Filesystem error: " << e.what() << std::endl;
+        logError("Filesystem error: ");
+        std::cerr << e.what() << std::endl;
         error_code_ = 500;
         return false;
     } catch (const std::exception& e) {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
+        logError("Unexpected error: "); 
+        std::cerr << e.what() << std::endl;
         error_code_ = 500;
         return false;
     }
@@ -190,36 +189,37 @@ bool HttpParser::CheckValidPath(std::string path) {
     try {
         if (rootPath.back() == '/') {
             if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)){
-                std::cout << "valid path" << std::endl;
+                logDebug("valid path");
                 return true;
             } else {
                 error_code_ = 404;
-                std::cout << "no valid path" << std::endl;
+                logDebug("no valid path");
                 return false;
             }
         } else {
             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)){
                 if (access(rootPath.c_str(), R_OK) == 0) {
-                    if (show_request)
-                      std::cout << "file found" << std::endl;
+                    logDebug("file found");
                     return true;
                 } else {
-                    std::cout << "permission denied" << std::endl;
+                    logDebug("permission denied");
                     error_code_ = 403;
                     return false;
                 } 
             } else {
-                std::cout << "file not found" << std::endl;
+                logDebug("file not found");
                 error_code_ = 404;
                 return false;
             }
         }
     } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Filesystem error: " << e.what() << std::endl;
+        logError("Filesystem error: ");
+        std::cerr << e.what() << std::endl;
         error_code_ = 500;
         return false;
     } catch (const std::exception& e) {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
+        logError("Unexpected error: "); 
+        std::cerr << e.what() << std::endl;
         error_code_ = 500;
         return false;
     }

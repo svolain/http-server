@@ -1,27 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ConnectInfo.cpp                                     :+:      :+:    :+:   */
+/*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/24 17:39:21 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 18:06:26 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ConnectInfo.hpp"
+#include "ClientInfo.hpp"
 #include "Socket.hpp"
 #include "Logger.h"
 
-void ConnectInfo::InitInfo(int fd, Socket *sock) {
+ClientInfo::ClientInfo(int fd, Socket* sock)
+  : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
+
+void ClientInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
   sock_ = sock;
   vhost_ = nullptr;
   is_sending_chunks_ = false;
 }
 
-void ConnectInfo::AssignVHost() {
+void ClientInfo::AssignVHost() {
   std::map<std::string, VirtualHost>&v_hosts_ = get_socket()->get_v_hosts();
   std::map<std::string, std::string>&headers = parser_.get_headers();
   std::map<std::string, VirtualHost>::iterator vhosts_it;
@@ -44,42 +47,42 @@ void ConnectInfo::AssignVHost() {
   }
 }
 
-void ConnectInfo::set_vhost(VirtualHost *vhost) {
+void ClientInfo::set_vhost(VirtualHost *vhost) {
   vhost_ = vhost;
 }
 
-void ConnectInfo::set_is_parsing_body(bool boolean) {
+void ClientInfo::set_is_parsing_body(bool boolean) {
   is_parsing_body_ = boolean;
 }
 
-void ConnectInfo::set_is_sending(bool boolean) {
+void ClientInfo::set_is_sending(bool boolean) {
   is_sending_chunks_ = boolean;
 }
 
-bool ConnectInfo::get_is_sending() {
+bool ClientInfo::get_is_sending() {
   return is_sending_chunks_;
 }
 
-bool ConnectInfo::get_is_parsing_body() {
+bool ClientInfo::get_is_parsing_body() {
   return is_parsing_body_;
 }
 
-VirtualHost*  ConnectInfo::get_vhost() {
+VirtualHost*  ClientInfo::get_vhost() {
   return vhost_;
 }
 
-HttpParser* ConnectInfo::get_parser() {
+HttpParser* ClientInfo::get_parser() {
   return &parser_;
 }
 
-Socket* ConnectInfo::get_socket() {
+Socket* ClientInfo::get_socket() {
   return sock_;
 }
 
-int ConnectInfo::get_fd() {
+int ClientInfo::get_fd() {
   return fd_;
 }
 
-std::ifstream& ConnectInfo::get_file() {
+std::ifstream& ClientInfo::get_file() {
   return getfile_;
 }

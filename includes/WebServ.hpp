@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/03 16:31:23 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 18:05:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 #include <poll.h>
 #include <deque>
 #include "Socket.hpp"
-#include "ConnectInfo.hpp"
+#include "ClientInfo.hpp"
 
 #define DEFAULT_CONF "conf/default.conf"
 
@@ -37,14 +37,14 @@ class WebServ {
   const std::string             conf_;
   std::deque<Socket>            sockets_;
   std::vector<pollfd>           pollFDs_;
-  std::map<int, ConnectInfo>    client_info_map_;
+  std::map<int, ClientInfo>     client_info_map_;
   
   void        PollAvailableFDs(void);
   void        CheckForNewConnection(int fd, short revents, int i);
   void        CloseConnection(int sock, size_t& i);
   void        CloseAllConnections(void);
-  void        RecvFromClient(ConnectInfo* fd_info, size_t& i);
-  void        SendToClient(ConnectInfo* fd_info, pollfd& poll);
+  void        RecvFromClient(ClientInfo* fd_info, size_t& i);
+  void        SendToClient(ClientInfo* fd_info, pollfd& poll);
   std::string ToString() const;
 
   struct EventFlag {

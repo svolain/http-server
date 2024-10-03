@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ConnectInfo.hpp                                     :+:      :+:    :+:   */
+/*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/09/24 17:39:32 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 18:06:22 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONNECTINFO_HPP
-#define CONNECTINFO_HPP
+#ifndef ClientInfo_HPP
+#define ClientInfo_HPP
 
 #include "HttpParser.hpp"
 #include <poll.h>
@@ -20,11 +20,12 @@
 class Socket;
 class VirtualHost;
 
-class ConnectInfo
+class ClientInfo
 {
   public:
-    ConnectInfo() = default;
-    ~ConnectInfo() = default;
+    ClientInfo() = default;
+    ClientInfo(int fd, Socket* sock);
+    ~ClientInfo() = default;
 
     void            InitInfo(int fd, Socket *sock);
     void            AssignVHost();

@@ -6,16 +6,14 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/01 17:05:56 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/03 17:33:20 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
-#include "ConnectInfo.hpp"
-#include <map>
-
-extern bool show_request;
-extern bool show_response;
+#include "ClientInfo.hpp"
+#include "Logger.h"
+// #include <map>
 
 HttpResponse::HttpResponse()
   :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
@@ -30,19 +28,18 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
   
   if (!file.is_open())
   {
-    if (show_response)
-      std::cout << "the file wasnt opened previously" << std::endl;
+    logDebug("the file wasnt opened previously");
     if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
       file.open("./www/" + resource_path, std::ios::binary);
     else{
       if (resource_path == "/") {
         resource_path = "index.html";
-        std::cout << "return index html for the '/'" << std::endl;
+       logDebug("return index html for the '/'");
       }
       file.open("./www/" + resource_path);
     }
     if (!file.is_open()){
-      std::cout << "couldnt open file " << resource_path << ", opening 404" << std::endl;
+      logDebug("couldnt open file " + resource_path + ", opening 404", true);
       set_error_code_(404);
       file.open("./www/404.html");
       return ;
@@ -58,7 +55,7 @@ void HttpResponse::AssignContType(std::string resource_path){
     }
   }
   catch (const std::out_of_range &e){
-    std::cout << "no '.' found, cont type out of range caught" << std::endl;;
+    logDebug("no '.' found, cont type out of range caught");
   }
 }
 

@@ -13,11 +13,9 @@
 
 #include "WebServ.hpp"
 #include "ConfigParser.hpp"
+#include <string>
 
 #define TODO 123
-
-extern bool show_request;
-extern bool show_response;
 
 WebServ::WebServ(const char* conf)
     : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
@@ -28,25 +26,26 @@ WebServ::WebServ(const char* conf)
 
 
 int WebServ::Init() {
+  
   {
     ConfigParser parser(conf_);
     if (parser.ParseConfig(this->sockets_))
       return 1;
   }
-  logDebug(ToString());
+  logDebug(ToString(), true);
   int i = 0;
-  for (Socket& socket : sockets_) {
-    if (socket.InitServer(pollFDs_))
+  for (auto it = sockets_.begin(); it != sockets_.end(); it ++, i ++) {
+    if (sockets_[i].InitServer(pollFDs_))
       return 2;
-    logInfo("Init the server on socket: " + socket.getSocket());
+    logDebug("init the server on socket " + sockets_[i].getSocket()); 
   }
-  logInfo("Servers are ready.");
   return (0);
 }
 
 #define TIMEOUT   5000
 
 void WebServ::Run() {
+  logInfo("Servers are ready");
   int socketsReady = 0;
   while (1) {
     /* the socketsReady from poll() 
@@ -56,7 +55,7 @@ void WebServ::Run() {
       perror("poll: ");
     else if (!socketsReady) {
       /* TODO: individual timer for the timeout close */
-      std::cout << "poll() is closing connections on timeout..." << std::endl;
+      logInfo("poll() is closing connections on timeout...");
       for (size_t i = sockets_.size(); i < pollFDs_.size(); i ++) {
         close(pollFDs_[i].fd);
         pollFDs_.erase(pollFDs_.begin() + i);
@@ -67,7 +66,7 @@ void WebServ::Run() {
       PollAvailableFDs();
   }
   CloseAllConnections();
-  std::cout << "--- Shutting down the server ---" << std::endl;
+  logInfo("--- Shutting down the server ---");
 }
 
 void WebServ::CheckForNewConnection(int fd, short revents, int i) {
@@ -80,12 +79,13 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
       pollFDs_.push_back(new_client);
+      // client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd, &(sockets_[i])))
       client_info_map_[new_client.fd].InitInfo(new_client.fd, &(sockets_[i]));
     }
   }
 }
 
-void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
+void WebServ::RecvFromClient(ClientInfo* fd_info, size_t& i) {
   
   // std::vector<char>   oss;
   
@@ -110,7 +110,7 @@ void WebServ::RecvFromClient(ConnectInfo* fd_info, size_t& i) {
 
 }
 
-void WebServ::SendToClient(ConnectInfo* fd_info, pollfd& poll) {
+void WebServ::SendToClient(ClientInfo* fd_info, pollfd& poll) {
   fd_info->get_vhost()->OnMessageRecieved(fd_info, poll);
 }
 
@@ -119,18 +119,12 @@ void WebServ::PollAvailableFDs(void) {
     /* for readability */
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
-    ConnectInfo* fd_info = nullptr;
+    ClientInfo* fd_info = nullptr;
     /* If fd is not a server fd */
     if (i < sockets_.size())
       CheckForNewConnection(fd, revents, i);
     else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
-      try {
-        fd_info = &client_info_map_.at(fd);
-      }
-      catch(const std::out_of_range& e) { /* we should never get this error */
-        std::cerr << e.what() << '\n';
-        std::cerr << "error: couldnt find the fd in the client_info_map_" << std::endl;
-      }
+      fd_info = &client_info_map_.at(fd);
       if (revents & POLLERR) {
         logDebug("error or read end has been closed", true);
         CloseConnection(fd, i);
@@ -170,7 +164,7 @@ void WebServ::CloseConnection(int sock, size_t& i) {
 
   std::string WebServ::ToString() const {
     std::string out("***Webserv configuration***\n");
-    out += "Configuguration file used: " + conf_ + "\n";
+    out += "Configuuration file used: " + conf_ + "\n";
     for (const auto& socket : sockets_) {
       out += "Server\n";
       out += socket.ToString() + "\n";

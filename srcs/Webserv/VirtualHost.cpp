@@ -3,19 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/03 15:18:46 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 18:11:33 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sys/stat.h>
 #include "VirtualHost.hpp"
-#include "ConnectInfo.hpp"
-
-extern bool show_request;
-extern bool show_response;
+#include "ClientInfo.hpp"
+#include "Logger.h"
+#include <string>
 
 #define MAXBYTES  8192
 
@@ -34,7 +33,7 @@ VirtualHost::VirtualHost(std::string& max_size,
   }
 }
 
-int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
+int VirtualHost::ParseHeader(ClientInfo* fd_info, pollfd& poll) {
 
   char                buf[MAXBYTES]{};
   int                 bytesIn;
@@ -50,14 +49,14 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
     return 2;
   }
   else if (bytesIn == MAXBYTES)
-    std::cout << "MAXBYTES on recv. Check if the header is too long" << std::endl;
-
+    logDebug("MAXBYTES on recv. Check if the header is too long");
   
-  if (show_request)
-    std::cout << "\nthe whole request is:\n" << buf << std::endl;
+  logDebug("request is:");
+  std::cout << buf;
+  std::cout << "\n";
   
   if (!parser->ParseRequest(buf))
-    std::cout << "false on ParseRequest returned" << std::endl;
+    logDebug("false on ParseRequest returned", true);
 
   if (fd_info->get_vhost() == nullptr)
     fd_info->AssignVHost();
@@ -74,7 +73,7 @@ int VirtualHost::ParseHeader(ConnectInfo* fd_info, pollfd& poll) {
   return 0;
 }
 
-int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
+int VirtualHost::WriteBody(ClientInfo* fd_info, pollfd& poll) {
 
   std::array<char, MAXBYTES>
     &request_body = fd_info->get_parser()->get_request_body();
@@ -92,7 +91,7 @@ int VirtualHost::WriteBody(ConnectInfo* fd_info, pollfd& poll) {
     return 2;
   }
   else if (bytesIn == MAXBYTES)
-    std::cout << "the header is too long! handle this" << std::endl;
+    logDebug("bytesIn == MAXBYTES, more data to recieve");
 
   request_size += bytesIn;
   poll.events = POLLOUT;
@@ -133,7 +132,7 @@ bool UnChunkBody(std::vector<char>& buf) {
     }
 
     if (readIndex >= buf.size()) {
-      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      logDebug("Error: chunked encoding: chunked request in wrong format");
       return false;
     }
 
@@ -154,7 +153,7 @@ bool UnChunkBody(std::vector<char>& buf) {
 
     // Copy chunk data to the write position
     if (readIndex + chunkSize > buf.size()) {
-      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      logDebug("Error: chunked encoding: chunked request in wrong format");
       return false;
     }
 
@@ -166,7 +165,7 @@ bool UnChunkBody(std::vector<char>& buf) {
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
     } else {
-      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
+      logDebug("Error: chunked encoding: chunked request in wrong format");
       return false;
     }
 
@@ -177,10 +176,9 @@ bool UnChunkBody(std::vector<char>& buf) {
   return true;
 }
 
-void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
+void VirtualHost::OnMessageRecieved(ClientInfo *fd_info, pollfd &poll){
 
-  if (show_response)
-    std::cout << "--- entering OnMessageRecieved ---" << std::endl;
+  logDebug("--- entering OnMessageRecieved ---", false);
 
   if (fd_info->get_is_sending() == false){
       SendHeader(fd_info);
@@ -189,19 +187,16 @@ void VirtualHost::OnMessageRecieved(ConnectInfo *fd_info, pollfd &poll){
   else
     SendChunkedBody(fd_info, poll);
     
-  if (show_response)
-    std::cout << "----- leaving OnMessageRecieved -----" << std::endl;
+  logDebug("----- leaving OnMessageRecieved -----", false);
 }
 
-void VirtualHost::SendHeader(ConnectInfo *fd_info){
+void VirtualHost::SendHeader(ClientInfo *fd_info){
   HttpParser *parser = fd_info->get_parser();
   std::string resource_path = parser->get_resource_path();
 
-  if (show_request)
-    std::cout << "the resource path is " << resource_path << std::endl;
-  if (show_response)
-    std::cout << "the error code from parser is " << parser->get_error_code() << std::endl;
-    
+  logDebug("the resource path is " + resource_path);
+  logDebug("the error code from parser is " + std::to_string(parser->get_error_code()));
+  
   HttpResponse response;
   response.set_error_code_(parser->get_error_code());
   response.AssignContType(parser->get_resource_path());
@@ -209,16 +204,14 @@ void VirtualHost::SendHeader(ConnectInfo *fd_info){
   response.OpenFile(resource_path, file);
   response.ComposeHeader();
 
-  if (show_response){
-    std::cout << "\n------response header------" << std::endl;
-    std::cout << response.get_header_() << std::endl;
-    std::cout << "-----end of response header------\n" << std::endl;
-  }
+  logDebug("\n------response header------\n" + \
+            response.get_header_() + "\n" +\
+            "-----end of response header------\n", false);
   
   SendToClient(fd_info->get_fd(), response.get_header_().c_str(), response.get_header_().size());
 }
 
-void VirtualHost::SendChunkedBody(ConnectInfo* fd_info, pollfd &poll)
+void VirtualHost::SendChunkedBody(ClientInfo* fd_info, pollfd &poll)
 {
   /* Nginx will not try to save the state of the previous transmission and retry later. 
       It handles each request-response transaction independently. 
@@ -245,8 +238,7 @@ void VirtualHost::SendChunkedBody(ConnectInfo* fd_info, pollfd &poll)
   poll.events = POLLIN;
   fd_info->set_is_sending(false);
   
-  if (show_response)
-    std::cout << "\n-----response sent-----\n" << std::endl;
+  logDebug("\n-----response sent-----\n", false);
 }
 
 int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
@@ -258,7 +250,7 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
   file.read(buffer, chunk_size);
   bytes_read = file.gcount(); 
   if (bytes_read == -1){
-    std::cout << "bytes_read returned -1" << std::endl;
+    logDebug("bytes_read returned -1");
     return 1;
   }
   std::ostringstream chunk_size_hex;
@@ -270,8 +262,8 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
       perror("send :");
       return 1;
   }
-  if (show_response)
-    std::cout << "sent " << bytes_read  << std::endl;
+
+  logDebug("sent " + std::to_string(bytes_read), false);
   if (bytes_read < chunk_size)
     return 1;
   return 0;

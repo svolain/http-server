@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 14:40:19 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/03 18:13:49 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,6 @@ void ConfigParser::ParseServer(std::stringstream& ss,
 
   while (true) {
     ss >> token;
-    logDebug(token);
     if (token == "listen")
       ParseListen(listen, ss);
     else if (token == "server_name")
@@ -167,7 +166,7 @@ void ConfigParser::ParseLocation(LocationMap& locations,
     throw token;
   while (true) { //what if location is in format location / {} ?
     ss >> token;
-    logDebug(token);
+    logDebug(token, false);
     if (token == "limit_except")
       ParseAllowedMethods(methods, ss);
     else if (token == "return")
