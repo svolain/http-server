@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/01 14:01:10 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/03 17:50:45 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/04 12:24:24 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include <string>
 
 void logInfo(const std::string& message);
-void logDebug(const std::string& message, bool flag = true);
+void logDebug(const std::string& message, bool flag = false);
 void logError(const std::string& message);
 
 #endif // LOGGER_H

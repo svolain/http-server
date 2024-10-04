@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/03 23:26:12 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/04 12:19:22 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -188,7 +188,7 @@ bool HttpParser::CheckValidPath(std::string path) {
     more when we get the root from confiq*/
     try {
         if (rootPath.back() == '/') {
-            if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)){
+            if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)) {
                 logDebug("valid path");
                 return true;
             } else {
@@ -197,7 +197,7 @@ bool HttpParser::CheckValidPath(std::string path) {
                 return false;
             }
         } else {
-            if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)){
+            if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)) {
                 if (access(rootPath.c_str(), R_OK) == 0) {
                     logDebug("file found");
                     return true;

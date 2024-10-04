@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 23:56:08 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/04 12:18:33 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ void ClientInfo::AssignVHost() {
     vhosts_it = v_hosts_.end();
   }
 
-  if (vhosts_it != v_hosts_.end()){
+  if (vhosts_it != v_hosts_.end()) {
     logDebug("Found requested host: " + vhosts_it->first);
     setVhost(&vhosts_it->second);
   }

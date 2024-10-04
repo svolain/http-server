@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 23:53:29 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/04 12:19:33 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,11 @@ HttpResponse::HttpResponse()
   InitContMap();
 }
 
-HttpResponse::~HttpResponse(){
+HttpResponse::~HttpResponse() {
     ;
 }
 
-void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
+void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file) {
   
   if (!file.is_open())
   {
@@ -38,7 +38,7 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
       }
       file.open("./www/" + resource_path);
     }
-    if (!file.is_open()){
+    if (!file.is_open()) {
       logDebug("couldnt open file " + resource_path + ", opening 404", true);
       setErrorCode(404);
       file.open("./www/404.html");
@@ -47,19 +47,19 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file){
   }
 }
 
-void HttpResponse::AssignContType(std::string resource_path){
+void HttpResponse::AssignContType(std::string resource_path) {
   try{
     auto it = cont_type_map_.find(resource_path.substr(resource_path.find_last_of('.')));
-    if (it != cont_type_map_.end()){
+    if (it != cont_type_map_.end()) {
       cont_type_ = it->second;
     }
   }
-  catch (const std::out_of_range &e){
+  catch (const std::out_of_range &e) {
     logDebug("no '.' found, cont type out of range caught");
   }
 }
 
-void HttpResponse::lookupErrMessage(void){
+void HttpResponse::lookupErrMessage(void) {
   //TODO do some kind of a pair lookup for error codes with the parser?
   switch (error_code_)
   {
@@ -89,7 +89,7 @@ void HttpResponse::lookupErrMessage(void){
   }
 }
 
-void HttpResponse::ComposeHeader(void){
+void HttpResponse::ComposeHeader(void) {
   lookupErrMessage();
   
   std::ostringstream oss;
@@ -104,7 +104,7 @@ void HttpResponse::ComposeHeader(void){
 }
 
 
-void HttpResponse::InitContMap(void){
+void HttpResponse::InitContMap(void) {
   this->cont_type_map_ = {
     {".mp3", "audio/mpeg"},
     {".wma", "audio/x-ms-wma"},
@@ -149,7 +149,7 @@ void HttpResponse::InitContMap(void){
 }
 
 
-void  HttpResponse::setErrorCode(int error_code_){
+void  HttpResponse::setErrorCode(int error_code_) {
   this->error_code_ = error_code_;
 }
 

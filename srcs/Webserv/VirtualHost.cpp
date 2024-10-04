@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 12:11:26 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/04 12:20:19 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,10 +51,8 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
   else if (bytesIn == MAXBYTES)
     logDebug("MAXBYTES on recv. Check if the header is too long");
   
-  logDebug("request is:");
-  std::cout << buf;
-  std::cout << "\n";
-  
+  logDebug("request is:" + std::string(buf));
+
   if (!parser.ParseRequest(buf))
     logDebug("false on ParseRequest returned", true);
 
@@ -113,7 +111,7 @@ bool VirtualHost::ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std:
 	}*/
 	// if (/*check if content-length fully read*/)
 	// 	return ;
-	// else if (headers["content-type"].find("multipart/form-data") != std::string::npos){
+	// else if (headers["content-type"].find("multipart/form-data") != std::string::npos) {
 	// }
 
 	return true;        
@@ -166,11 +164,11 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
 }
 
 
-void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll){
+void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll) {
 
   logDebug("--- entering OnMessageRecieved ---", false);
 
-  if (fd_info.getIsSending() == false){
+  if (fd_info.getIsSending() == false) {
       SendHeader(fd_info);
       fd_info.setIsSending(true);
   }
@@ -180,7 +178,7 @@ void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll){
   logDebug("----- leaving OnMessageRecieved -----", false);
 }
 
-void VirtualHost::SendHeader(ClientInfo& fd_info){
+void VirtualHost::SendHeader(ClientInfo& fd_info) {
   HttpParser& parser = fd_info.getParser();
   std::string resource_path = parser.getResourcePath();
 
@@ -214,8 +212,8 @@ void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd &poll)
   HttpResponse response;
   response.OpenFile(resource_path, file);
   int client_socket = fd_info.getFd();
-  if (file.is_open()){
-    if (SendOneChunk(client_socket, file) == 0){
+  if (file.is_open()) {
+    if (SendOneChunk(client_socket, file) == 0) {
       return ;
     } 
     if (SendToClient(client_socket, "0\r\n\r\n", 5) == -1)
@@ -239,7 +237,7 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
 
   file.read(buffer, chunk_size);
   bytes_read = file.gcount(); 
-  if (bytes_read == -1){
+  if (bytes_read == -1) {
     logDebug("bytes_read returned -1");
     return 1;
   }
@@ -248,7 +246,7 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
   if (SendToClient(client_socket, chunk_size_hex.str().c_str(), 
     chunk_size_hex.str().length()) == -1 || 
     SendToClient(client_socket, buffer, bytes_read) == -1 ||
-    SendToClient(client_socket, "\r\n", 2) == -1){
+    SendToClient(client_socket, "\r\n", 2) == -1) {
       perror("send :");
       return 1;
   }
@@ -259,7 +257,7 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
   return 0;
 }
 
-int VirtualHost::SendToClient(const int client_socket, const char *msg, int length){
+int VirtualHost::SendToClient(const int client_socket, const char *msg, int length) {
   int bytes_sent;
   /* https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly */
   bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
@@ -268,7 +266,7 @@ int VirtualHost::SendToClient(const int client_socket, const char *msg, int leng
   return bytes_sent;
 }
 
-size_t VirtualHost::getMaxBodySize(){
+size_t VirtualHost::getMaxBodySize() {
   return client_max_body_size_;
 }
 

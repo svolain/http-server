@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/03 23:56:08 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/04 12:19:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ int Socket::InitServer(std::vector<pollfd> &pollFDs)
   hints.ai_socktype = SOCK_STREAM;
 
   int status = getaddrinfo(address_.c_str(), port_.c_str(), &hints, &servinfo);
-  if (status  != 0){
+  if (status  != 0) {
     logError(gai_strerror(status));
     return 1;
   }
@@ -68,7 +68,7 @@ int Socket::InitServer(std::vector<pollfd> &pollFDs)
     return 3;
   }
 
-  if (bind(listening_.fd, servinfo->ai_addr, servinfo->ai_addrlen) == -1){
+  if (bind(listening_.fd, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
     close(listening_.fd);
     logError("server: bind() error");
     return 4;
@@ -77,7 +77,7 @@ int Socket::InitServer(std::vector<pollfd> &pollFDs)
   
   #define BACKLOG 10
   /* TODO: DEFINED IN THE BACKLOG PARAMETER */
-  if (listen(listening_.fd, BACKLOG) == -1){
+  if (listen(listening_.fd, BACKLOG) == -1) {
     logError("server: listen() error");
     return 5;
   }
@@ -91,7 +91,7 @@ pollfd Socket::getListening() const{
   return listening_;
 }
 
-std::map<std::string, VirtualHost>& Socket::getVirtualHosts(){
+std::map<std::string, VirtualHost>& Socket::getVirtualHosts() {
     return v_hosts_;
 }
 

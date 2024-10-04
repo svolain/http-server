@@ -71,27 +71,25 @@ void WebServ::PollAvailableFDs(void) {
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
     /* If fd is not a server fd */
-    if (i < sockets_.size())
+    if (i < sockets_.size()) {
       CheckForNewConnection(fd, revents, i);
-    else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
-      ClientInfo& fd_info = client_info_map_.at(fd);
-      if (revents & POLLERR) {
-        logDebug("error or read end has been closed", true);
-        CloseConnection(fd, i);
-      }
-      else if (revents & POLLHUP) { 
-        logDebug("Hang up: " + std::to_string(fd), true);
-        CloseConnection(fd, i);
-      }
-      else if (revents & POLLNVAL) {
-        logDebug("Invalid fd: " + std::to_string(fd));
-        CloseConnection(fd, i);
-      }
-      else if (revents & POLLIN)
-        RecvFromClient(fd_info, i);
-      else if (revents & POLLOUT)
-        SendToClient(fd_info, pollFDs_[i]);
+      continue;
     }
+    // else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
+    ClientInfo& fd_info = client_info_map_.at(fd);
+    if (revents & POLLERR) {
+      logDebug("error or read end has been closed", true);
+      CloseConnection(fd, i);
+    } else if (revents & POLLHUP) { 
+      logDebug("Hang up: " + std::to_string(fd), true);
+      CloseConnection(fd, i);
+    } else if (revents & POLLNVAL) {
+      logDebug("Invalid fd: " + std::to_string(fd));
+      CloseConnection(fd, i);
+    } else if (revents & POLLIN) {
+      RecvFromClient(fd_info, i);
+    } else if (revents & POLLOUT)
+      SendToClient(fd_info, pollFDs_[i]);
   }
 }
 
