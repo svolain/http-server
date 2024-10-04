@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/04 12:19:22 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/04 14:36:14 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,7 +138,7 @@ std::string HttpParser::getHttpVersion() const{
     return http_version_;
 }
 
-std::array<char, MAXBYTES>& HttpParser::getRequestBody() {
+std::vector<char>& HttpParser::getRequestBody() {
     return request_body_;
 }
 
@@ -148,6 +148,10 @@ std::map<std::string, std::string>& HttpParser::getHeaders() {
 
 int HttpParser::getErrorCode() const {
     return error_code_;   
+}
+
+void  HttpParser::setErrorCode(int error) {
+    error_code_ = error;
 }
 
 bool HttpParser::getIsChunked() const {

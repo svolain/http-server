@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 12:20:19 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/04 16:33:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,12 +73,47 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
 
 int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
 
-  std::array<char, MAXBYTES>
-    &request_body = fd_info.getParser().getRequestBody();
+  std::ofstream       &posftile = fd_info.getPostfile();
+  HttpParser&         parser = fd_info.getParser();
+  std::vector<char>&  request_body = parser.getRequestBody();
   size_t              body_size = request_body.size();
+  
+  //open the file
+  if (!posftile.is_open() && !fd_info.getIsFileOpened()) {
+    std::string filename = "./www/upload" + fd_info.getParser().getHeaders().at("POST") + 
+      std::to_string(fd_info.getFd()) + "__temp__";
+    posftile.open(filename, std::ios::binary);
+    if (!posftile.is_open()) {
+      parser.setErrorCode(500);
+      poll.events = POLLOUT;
+      return 1;
+    }
+    fd_info.setIsFileOpened(true);
+  }
+  else if (!posftile.is_open()) {
+    //file close sometime during the write
+    parser.setErrorCode(500);
+    poll.events = POLLOUT;
+    return 1;
+  }
+  //clear the chunk
+  if (!UnChunkBody(request_body)) {
+    parser.setErrorCode(400);
+    if (fd_info.getPostfile().is_open()) {
+      // fd_info.getPostfile().
+      // std::remove (filename)
+      // close the Postfile;
+    }
+    poll.events = POLLOUT;
+    return 2;
+  }
+
+  posftile.write(request_body.data(), body_size);
+
+
+
   int                 bytesIn;
   size_t              request_size = 0;
-
   int fd = fd_info.getFd();
   bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
   if (bytesIn < 0)
@@ -96,27 +131,6 @@ int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
   return 0;
 }
 
-bool VirtualHost::ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std::string, std::string> headers) {
-  if (headers["transfer-encoding"] == "chunked") {
-      ;
-    }
-    (void)bytesIn;
-    (void)buf;
-		/*std::string eoc = "0\r\n\r\n";
-    check if the chunk is received in whole, if not return to receiving next chunk
-    if (!oss.find(eoc));
-      return;
-    when all the chunks are received, the chunk characters need to be removed
-    UnChunkBody();
-	}*/
-	// if (/*check if content-length fully read*/)
-	// 	return ;
-	// else if (headers["content-type"].find("multipart/form-data") != std::string::npos) {
-	// }
-
-	return true;        
-}
-
 bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
   std::size_t readIndex = 0;
   std::size_t writeIndex = 0;
@@ -129,6 +143,7 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
     }
 
     if (readIndex >= buf.size()) {
+      logError("UnChunkBody: \\r\\n missing");
       return false;
     }
 
@@ -145,6 +160,7 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
         }
 
     if (readIndex + chunkSize > buf.size()) {
+      logError("UnChunkBody: empty line missing");
       return false;
     }
 
@@ -155,6 +171,7 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
     } else {
+      logError("UnChunkBody: \\r\\n missing");
       return false;
     }
 
@@ -188,7 +205,7 @@ void VirtualHost::SendHeader(ClientInfo& fd_info) {
   HttpResponse response;
   response.setErrorCode(parser.getErrorCode());
   response.AssignContType(parser.getResourcePath());
-  std::ifstream& file = fd_info.getFile();
+  std::ifstream& file = fd_info.getGetfile();
   response.OpenFile(resource_path, file);
   response.ComposeHeader();
 
@@ -208,7 +225,7 @@ void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd &poll)
 
   HttpParser& parser = fd_info.getParser();
   std::string resource_path = parser.getResourcePath();
-  std::ifstream& file = fd_info.getFile();
+  std::ifstream& file = fd_info.getGetfile();
   HttpResponse response;
   response.OpenFile(resource_path, file);
   int client_socket = fd_info.getFd();
