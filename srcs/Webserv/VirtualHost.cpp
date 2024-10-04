@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 11:55:24 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/04 12:11:26 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,7 +131,6 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
     }
 
     if (readIndex >= buf.size()) {
-      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
       return false;
     }
 
@@ -148,7 +147,6 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
         }
 
     if (readIndex + chunkSize > buf.size()) {
-      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
       return false;
     }
 
@@ -159,7 +157,6 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
     } else {
-      std::cout << "Error: chunked encoding: chunked request in wrong format" << std::endl;
       return false;
     }
 
