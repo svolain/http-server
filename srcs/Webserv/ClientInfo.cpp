@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/04 12:18:33 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/07 08:33:54 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,17 +14,16 @@
 #include "Socket.hpp"
 #include "Logger.h"
 
-ClientInfo::ClientInfo(int fd, Socket* sock)
-  : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
+// ClientInfo::ClientInfo(int fd, Socket* sock)
+//   : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
 
 void ClientInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
   sock_ = sock;
-  vhost_ = nullptr;
-  is_sending_chunks_ = false;
 }
 
 void ClientInfo::AssignVHost() {
+  
   std::map<std::string, VirtualHost>&v_hosts_ = getSocket()->getVirtualHosts();
   std::map<std::string, std::string>&headers = parser_.getHeaders();
   std::map<std::string, VirtualHost>::iterator vhosts_it;
@@ -46,6 +45,13 @@ void ClientInfo::AssignVHost() {
   }
 }
 
+int ClientInfo::RecvRequest(pollfd& poll) {
+  if (!is_parsing_body_)
+    return vhost_->ParseHeader(*this, poll);
+  else
+    return vhost_->WriteBody(*this, poll);
+}
+
 void ClientInfo::setVhost(VirtualHost *vhost) {
   vhost_ = vhost;
 }
@@ -60,10 +66,6 @@ void ClientInfo::setIsSending(bool boolean) {
 
 bool ClientInfo::getIsSending() {
   return is_sending_chunks_;
-}
-
-bool ClientInfo::getIsParsingBody() {
-  return is_parsing_body_;
 }
 
 VirtualHost*  ClientInfo::getVhost() {

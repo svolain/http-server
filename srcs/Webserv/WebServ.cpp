@@ -109,25 +109,26 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
-  // std::vector<char>   oss;
-  if (fd_info.getIsParsingBody() == false) {
-    if (fd_info.getVhost()->ParseHeader(fd_info, pollFDs_[i]) != 0) {
-      CloseConnection(fd_info.getFd(), i);
-      perror("recv: ");
-    }
-  } else
-      fd_info.getVhost()->WriteBody(fd_info, pollFDs_[i]);
   /* find the host with the parser
     check if the permissions are good (Location)
     assign the vhost to the ConnecInfo class
     set bool to send body if all is good
     get back and try to read the body
     read for MAXBYTES and go back and continue next time
-     */
-
+  */
+void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
+  if (fd_info.RecvRequest(pollFDs_[i]))
+    CloseConnection(pollFDs_[i].fd, i);
+  // // std::vector<char>   oss;
+  // if (fd_info.getIsParsingBody() == false) {
+  //   if (fd_info.getVhost()->ParseHeader(fd_info, pollFDs_[i]) != 0) {
+  //     CloseConnection(fd_info.getFd(), i);
+  //     perror("recv: ");
+  //   }
+  // } else
+  //     fd_info.getVhost()->WriteBody(fd_info, pollFDs_[i]);
   /* ASSIGN THIS AFTER BODY WAS READ*/
-  pollFDs_[i].events = POLLOUT;
+  // pollFDs_[i].events = POLLOUT;
 }
 
 void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {

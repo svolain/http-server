@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 23:21:19 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/07 08:29:56 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,15 @@ class ClientInfo
 {
  public:
   ClientInfo() = default;
-  ClientInfo(int fd, Socket* sock);
+  // ClientInfo(int fd, Socket* sock);
+  ClientInfo(const ClientInfo& other) = delete;
+  ClientInfo& operator=(const ClientInfo& other) = delete;
   ~ClientInfo() = default;
 
   void            InitInfo(int fd, Socket *sock);
   void            AssignVHost();
+
+  int             RecvRequest(pollfd& poll);
 
   void            setVhost(VirtualHost *vhost);
   void            setIsSending(bool boolean);
@@ -38,18 +42,17 @@ class ClientInfo
   VirtualHost*    getVhost();
   int             getFd();
   bool            getIsSending();
-  bool            getIsParsingBody();
   std::ifstream&  getFile();
 
 private:
   int            fd_;
-  Socket*        sock_;
-  VirtualHost*   vhost_;
+  Socket*        sock_ = nullptr;
+  VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   std::ofstream  postfile_;
   std::ifstream  getfile_;
-  bool           is_sending_chunks_;
-  bool           is_parsing_body_;
+  bool           is_sending_chunks_ = false;
+  bool           is_parsing_body_ = false;
 };
 
 #endif
