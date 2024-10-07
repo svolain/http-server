@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/07 08:29:56 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/07 10:25:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,9 +25,9 @@ class ClientInfo
  public:
   ClientInfo() = default;
   // ClientInfo(int fd, Socket* sock);
-  ClientInfo(const ClientInfo& other) = delete;
-  ClientInfo& operator=(const ClientInfo& other) = delete;
-  ~ClientInfo() = default;
+  ClientInfo(const ClientInfo& other)             = delete;
+  ClientInfo& operator=(const ClientInfo& other)  = delete;
+  ~ClientInfo()                                   = default;
 
   void            InitInfo(int fd, Socket *sock);
   void            AssignVHost();

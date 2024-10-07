@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/03 23:28:29 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/07 10:21:58 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,13 +41,13 @@ class HttpParser {
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
 
-  bool ParseRequest(const std::string buffer);
+  bool ParseRequest(const std::string& buffer);
   bool CheckValidPath(std::string path);
   // void ClearMemory();
 
 
  private:
-  int                                 error_code_;
+  int                                 error_code_ = 0;
   size_t                              chunk_size_;
   std::string                         method_;
   std::string                         resource_path_;
@@ -55,7 +55,7 @@ class HttpParser {
   std::string                         http_version_;
   std::array<char, MAXBYTES>          request_body_;
   std::map<std::string, std::string>  headers_ = {};
-  bool                                is_chunked_;
+  bool                                is_chunked_ = false;
 };
 
 #endif

@@ -75,7 +75,6 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    // else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
     ClientInfo& fd_info = client_info_map_.at(fd);
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
