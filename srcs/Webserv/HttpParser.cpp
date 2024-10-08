@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/08 15:16:46 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 17:24:32 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,16 +20,20 @@ HttpParser::HttpParser(const std::string request) //We don't use it yet
 
 bool HttpParser::ParseHeader(const std::string& request) {
   std::istringstream  request_stream(request);
-  request_stream >> method_ >> resource_path_ >> http_version_; //what if http_version is incorrect?
+  std::string         line;
 
-  if (method_.empty() || resource_path_.empty() || http_version_.empty()) {
+  request_stream >> method_ >> resource_path_ >> http_version_;
+  std::getline(request_stream, line);
+   //what if http_version is incorrect?
+  if (method_.empty() || resource_path_.empty()
+      || http_version_.empty() || line != "\r") {
     logError("Error: bad request 400");
     //respond with HTTP 400 Bad Request
     error_code_ = 400;
     return false;
   }
 
-  std::array<std::string, 4> allowed_methods = {
+  static std::array<std::string, 4> allowed_methods = {
       "GET", "POST", "DELETE", "HEAD"};
   if (std::find(allowed_methods.begin(), allowed_methods.end(), method_) ==
       allowed_methods.end()) {
@@ -48,17 +52,16 @@ bool HttpParser::ParseHeader(const std::string& request) {
                         // if (!CheckValidPath(resource_path_)) {      //Path directories'll be checked later
                         //   return false;
                         // }
-  error_code_ = 200;                   //remove me                                    
 
-  std::string line;
   while (std::getline(request_stream, line) && line != "\r") {
     size_t delim = line.find(":");
-    if (delim == std::string::npos) {
+    if (delim == std::string::npos || line.back() != '\r') {
       logError("Error: wrong header line format");
       //respond with http 400 Bad Request
       error_code_ = 400;
-      return false;
+      return false; 
     }
+    line.pop_back();
     std::string header = line.substr(0, delim);
     std::string header_value = line.substr(delim + 1);
     header_value.erase(0, header_value.find_first_not_of(" \t"));
@@ -138,7 +141,7 @@ std::string HttpParser::getHttpVersion() const{
   return http_version_;
 }
 
-std::array<char, MAXBYTES>& HttpParser::getRequestBody() {
+ std::vector<char>& HttpParser::getRequestBody()  {
   return request_body_;
 }
 
