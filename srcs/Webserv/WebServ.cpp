@@ -75,7 +75,7 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    ClientInfo& fd_info = client_info_map_.at(fd);
+    ClientInfo& fd_info = client_info_map_.at(fd); //sometimes it throws an exception
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
       CloseConnection(fd, i);

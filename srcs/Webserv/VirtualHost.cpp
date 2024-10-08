@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/07 10:06:08 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/08 22:52:15 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
     logDebug("MAXBYTES on recv. Check if the header is too long");
 
   logDebug("request is:" + std::string(buf));
-  if (!parser.ParseRequest(buf))
+  if (!parser.ParseHeader(buf))
     logDebug("false on ParseRequest returned", true);
 
   if (fd_info.getVhost() == nullptr)
@@ -70,11 +70,11 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
 
 int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
 
-  std::array<char, MAXBYTES>
-    &request_body = fd_info.getParser().getRequestBody();
-  size_t              body_size = request_body.size();
-  int                 bytesIn;
-  size_t              request_size = 0;
+  std::array<char, MAXBYTES>&
+          request_body = fd_info.getParser().getRequestBody();
+  size_t  body_size = request_body.size();
+  int     bytesIn;
+  size_t  request_size = 0;
 
   int fd = fd_info.getFd();
   bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);

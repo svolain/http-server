@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/07 08:33:54 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/08 23:03:24 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,6 @@ void ClientInfo::InitInfo(int fd, Socket *sock) {
 }
 
 void ClientInfo::AssignVHost() {
-  
   std::map<std::string, VirtualHost>&v_hosts_ = getSocket()->getVirtualHosts();
   std::map<std::string, std::string>&headers = parser_.getHeaders();
   std::map<std::string, VirtualHost>::iterator vhosts_it;
@@ -46,10 +45,28 @@ void ClientInfo::AssignVHost() {
 }
 
 int ClientInfo::RecvRequest(pollfd& poll) {
-  if (!is_parsing_body_)
-    return vhost_->ParseHeader(*this, poll);
-  else
+  char  buf[MAXBYTES]{0};
+  int   bytesIn;
+
+  bytesIn = recv(fd_, buf, MAXBYTES, 0);
+  if (bytesIn < 0)
+    return 1;
+  if (bytesIn == 0) //When a stream socket peer has performed an orderly shutdown, the return value will be 0 (the traditional "end-of-file" return)
+    return 2;
+  logDebug("request is:\n" + std::string(buf), 1);
+  if (!is_parsing_body_) {
+    is_parsing_body_ = true;
+    if (parser_.ParseHeader(buf)) {
+      // poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
+      return 0;
+    }
+    vhost_ = sock_->FindVhost(parser_.getHost());
+    //check if body size it too larg here?
+  } else {
+    // parser_.ParseBody();
     return vhost_->WriteBody(*this, poll);
+  }
+  return 0;
 }
 
 void ClientInfo::setVhost(VirtualHost *vhost) {
