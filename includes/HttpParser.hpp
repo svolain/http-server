@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/07 10:21:58 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/08 15:16:56 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,9 @@ class HttpParser {
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
 
-  bool ParseRequest(const std::string& buffer);
+  const std::string&                  getHost() const;
+
+  bool ParseHeader(const std::string& buffer);
   bool CheckValidPath(std::string path);
   // void ClearMemory();
 

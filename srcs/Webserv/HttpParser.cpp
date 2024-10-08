@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/08 11:59:34 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/08 15:16:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,10 +15,10 @@
 
 HttpParser::HttpParser(const std::string request) //We don't use it yet
     : error_code_(0), is_chunked_(false) {
-  ParseRequest(request);
+  ParseHeader(request);
 }
 
-bool HttpParser::ParseRequest(const std::string& request) {
+bool HttpParser::ParseHeader(const std::string& request) {
   std::istringstream  request_stream(request);
   request_stream >> method_ >> resource_path_ >> http_version_; //what if http_version is incorrect?
 
@@ -63,12 +63,17 @@ bool HttpParser::ParseRequest(const std::string& request) {
     std::string header_value = line.substr(delim + 1);
     header_value.erase(0, header_value.find_first_not_of(" \t"));
     headers_[header] = header_value;
+    //Ideally for specific headers server should check for duplicates and send 400 if it finds them (two hosts or content-length for ex)
   }
-
+  if (!headers_.contains("Host")) {
+    logError("Error: bad request 400");
+    error_code_ = 400;
+    return false;
+  }
   if (line != "\r") {
-      logError("Error: Request Header Fields Too Large");
-     error_code_ = 431;
-        return false;
+    logError("Error: Request Header Fields Too Large");
+    error_code_ = 431;
+    return false;
   }
 
   if (method_ == "POST" || method_ == "PUT") { //           Are we planning to handle PUT?
@@ -220,4 +225,8 @@ bool HttpParser::CheckValidPath(std::string path) {
     }
 
     return true;
+}
+
+const std::string&  HttpParser::getHost() const {
+  return headers_.at("Host");
 }
