@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/03 21:40:04 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/07 06:41:58 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include "Logger.h"
 #include "WebServ.hpp"
 
-int main(int ac, char **av) {
+int main(int ac, char** av) {
   if (ac > 2) {
     logError("Usage: /webserv [configuration file]");
     return 1;
@@ -26,4 +26,3 @@ int main(int ac, char **av) {
   webServ.Run();
   return  0;
 }
-

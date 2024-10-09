@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/01 14:01:57 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/01 22:35:42 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/08 22:31:22 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,10 @@ void logInfo(const std::string& message) {
 }
 
 void logDebug(const std::string& message, bool flag) {
-  if (flag)
-    std::cout << "\033[94m[" << currentDateTime() << "] [DEBUG] " << message << "\n\033[0m";
+  if (flag) {
+    std::cout << "\033[94m[" << currentDateTime() << "] [DEBUG] ";
+    std::cout << message << "\033[0m" <<std::endl;
+  }
 }
 
 void logError(const std::string& message) {

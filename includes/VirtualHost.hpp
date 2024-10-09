@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 11:54:39 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 15:30:47 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,11 +41,7 @@ class VirtualHost {
 
   size_t      getMaxBodySize(); //Do we need this function?
   int         ParseHeader(ClientInfo& fd_info, pollfd& poll);
-  int         WriteBody(ClientInfo& fd_info, pollfd& poll);
   void        OnMessageRecieved(ClientInfo& fd_info, pollfd &poll);
-  bool        ParseBody(std::vector<char> buf, size_t bytesIn,
-                        std::map<std::string, std::string> headers);
-  bool        UnChunkBody(std::vector<char>& buf);
   std::string ToString() const;
   
  private:

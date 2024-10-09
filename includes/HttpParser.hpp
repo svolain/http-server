@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/03 23:28:29 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/09 17:14:59 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,9 @@
 # include <filesystem>
 # include <unistd.h>
 # include <fcntl.h>
+# include <vector>
 # include <array>
+# include "VirtualHost.hpp"
 
 #define MAXBYTES 8192
 
@@ -35,27 +37,33 @@ class HttpParser {
   std::string                         getResourcePath() const;
   std::string                         getQueryString() const;
   std::string                         getHttpVersion() const;
-  std::array<char, MAXBYTES>&         getRequestBody();
+  std::vector<char>&                  getRequestBody();
   int                                 getErrorCode() const;
+  void                                setErrorCode(int error) ;
   bool                                getIsChunked() const;
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
+  void                                appendBody(std::vector<char> buffer, int bytesIn);
 
-  bool ParseRequest(const std::string buffer);
+  const std::string&                  getHost() const;
+
+  bool ParseHeader(const std::string& buffer);
   bool CheckValidPath(std::string path);
+  int  WriteBody(VirtualHost* vhost,  std::vector<char> buffer, int bytesIn);
+  bool UnChunkBody(std::vector<char>& buf);
   // void ClearMemory();
 
 
  private:
-  int                                 error_code_;
+  int                                 error_code_ = 0;
   size_t                              chunk_size_;
   std::string                         method_;
   std::string                         resource_path_;
   std::string                         query_string_;
   std::string                         http_version_;
-  std::array<char, MAXBYTES>          request_body_;
+  std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_ = {};
-  bool                                is_chunked_;
+  bool                                is_chunked_ = false;
 };
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 12:20:19 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 15:29:48 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,12 +34,11 @@ VirtualHost::VirtualHost(std::string& max_size,
 }
 
 int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
+  char        buf[MAXBYTES]{0};
+  int         bytesIn;
+  HttpParser& parser = fd_info.getParser();
+  int         fd = fd_info.getFd();
 
-  char                buf[MAXBYTES]{};
-  int                 bytesIn;
-  HttpParser&         parser = fd_info.getParser();
-
-  int fd = fd_info.getFd();
   bytesIn = recv(fd, buf, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
@@ -47,13 +46,11 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
     /* When a stream socket peer has performed an orderly shutdown, the
       return value will be 0 (the traditional "end-of-file" return) */
     return 2;
-  }
-  else if (bytesIn == MAXBYTES)
+  } else if (bytesIn == MAXBYTES)
     logDebug("MAXBYTES on recv. Check if the header is too long");
-  
-  logDebug("request is:" + std::string(buf));
 
-  if (!parser.ParseRequest(buf))
+  logDebug("request is:" + std::string(buf));
+  if (!parser.ParseHeader(buf))
     logDebug("false on ParseRequest returned", true);
 
   if (fd_info.getVhost() == nullptr)
@@ -70,99 +67,6 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
 
   return 0;
 }
-
-int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
-
-  std::array<char, MAXBYTES>
-    &request_body = fd_info.getParser().getRequestBody();
-  size_t              body_size = request_body.size();
-  int                 bytesIn;
-  size_t              request_size = 0;
-
-  int fd = fd_info.getFd();
-  bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
-  if (bytesIn < 0)
-    return 1;
-  else if (bytesIn == 0) {
-    /* When a stream socket peer has performed an orderly shutdown, the
-      return value will be 0 (the traditional "end-of-file" return) */
-    return 2;
-  }
-  else if (bytesIn == MAXBYTES)
-    logDebug("bytesIn == MAXBYTES, more data to recieve");
-
-  request_size += bytesIn;
-  poll.events = POLLOUT;
-  return 0;
-}
-
-bool VirtualHost::ParseBody(std::vector<char> buf, size_t bytesIn, std::map<std::string, std::string> headers) {
-  if (headers["transfer-encoding"] == "chunked") {
-      ;
-    }
-    (void)bytesIn;
-    (void)buf;
-		/*std::string eoc = "0\r\n\r\n";
-    check if the chunk is received in whole, if not return to receiving next chunk
-    if (!oss.find(eoc));
-      return;
-    when all the chunks are received, the chunk characters need to be removed
-    UnChunkBody();
-	}*/
-	// if (/*check if content-length fully read*/)
-	// 	return ;
-	// else if (headers["content-type"].find("multipart/form-data") != std::string::npos) {
-	// }
-
-	return true;        
-}
-
-bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
-  std::size_t readIndex = 0;
-  std::size_t writeIndex = 0;
-
-  while(readIndex < buf.size()) {
-    std::size_t chunkSizeStart = readIndex;
-
-    while (readIndex < buf.size() && !(buf[readIndex] == '\r' && buf[readIndex + 1] == '\n')) {
-      readIndex++;
-    }
-
-    if (readIndex >= buf.size()) {
-      return false;
-    }
-
-    std::string chunkSizeStr(buf.begin() + chunkSizeStart, buf.begin() + readIndex);
-    std::size_t chunkSize;
-    std::stringstream ss;
-    ss << std::hex << chunkSizeStr;
-    ss >> chunkSize;
-
-    readIndex += 2;
-
-    if (chunkSize == 0) {
-            break;
-        }
-
-    if (readIndex + chunkSize > buf.size()) {
-      return false;
-    }
-
-    for (std::size_t i = 0; i < chunkSize; ++i) {
-      buf[writeIndex++] = buf[readIndex++];
-    }
-
-    if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
-      readIndex += 2;
-    } else {
-      return false;
-    }
-
-  }
-  buf.resize(writeIndex); 
-  return true;
-}
-
 
 void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll) {
 
@@ -188,7 +92,7 @@ void VirtualHost::SendHeader(ClientInfo& fd_info) {
   HttpResponse response;
   response.setErrorCode(parser.getErrorCode());
   response.AssignContType(parser.getResourcePath());
-  std::ifstream& file = fd_info.getFile();
+  std::ifstream& file = fd_info.getGetfile();
   response.OpenFile(resource_path, file);
   response.ComposeHeader();
 
@@ -208,7 +112,7 @@ void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd &poll)
 
   HttpParser& parser = fd_info.getParser();
   std::string resource_path = parser.getResourcePath();
-  std::ifstream& file = fd_info.getFile();
+  std::ifstream& file = fd_info.getGetfile();
   HttpResponse response;
   response.OpenFile(resource_path, file);
   int client_socket = fd_info.getFd();

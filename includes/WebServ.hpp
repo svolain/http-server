@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/03 23:51:31 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/08 22:44:22 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,10 +34,10 @@ class WebServ {
   void  Run();
 
  private:
-  const std::string             conf_;
-  std::deque<Socket>            sockets_;
-  std::vector<pollfd>           pollFDs_;
-  std::map<int, ClientInfo>     client_info_map_;
+  const std::string         conf_;
+  std::deque<Socket>        sockets_;
+  std::vector<pollfd>       pollFDs_;
+  std::map<int, ClientInfo> client_info_map_;
 
   void        PollAvailableFDs(void);
   void        CheckForNewConnection(int fd, short revents, int i);

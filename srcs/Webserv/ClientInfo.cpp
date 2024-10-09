@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/04 12:18:33 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 16:47:51 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,12 @@
 #include "Socket.hpp"
 #include "Logger.h"
 
-ClientInfo::ClientInfo(int fd, Socket* sock)
-  : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
+// ClientInfo::ClientInfo(int fd, Socket* sock)
+//   : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
 
 void ClientInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
   sock_ = sock;
-  vhost_ = nullptr;
-  is_sending_chunks_ = false;
 }
 
 void ClientInfo::AssignVHost() {
@@ -46,6 +44,31 @@ void ClientInfo::AssignVHost() {
   }
 }
 
+int ClientInfo::RecvRequest(pollfd& poll) {
+  char  buf[MAXBYTES]{0};
+  int   bytesIn;
+
+  bytesIn = recv(fd_, buf, MAXBYTES, 0);
+  if (bytesIn < 0)
+    return 1;
+  if (bytesIn == 0) //When a stream socket peer has performed an orderly shutdown, the return value will be 0 (the traditional "end-of-file" return)
+    return 2;
+  logDebug("request is:\n" + std::string(buf), 1);
+  if (!is_parsing_body_) {
+    parser_.ParseHeader(buf);
+    vhost_ = sock_->FindVhost(parser_.getHost());
+    if (parser_.getMethod() != "POST") {
+      poll.events = POLLOUT; 
+      return 0;
+    }
+    is_parsing_body_ = true;
+    //check if body size it too larg here?
+  } else {
+    WriteBody(*this, poll);
+  }
+  return 0;
+}
+
 void ClientInfo::setVhost(VirtualHost *vhost) {
   vhost_ = vhost;
 }
@@ -58,12 +81,16 @@ void ClientInfo::setIsSending(bool boolean) {
   is_sending_chunks_ = boolean;
 }
 
-bool ClientInfo::getIsSending() {
-  return is_sending_chunks_;
+std::ofstream& ClientInfo::getPostfile() {
+  return postfile_;
 }
 
-bool ClientInfo::getIsParsingBody() {
-  return is_parsing_body_;
+std::ifstream& ClientInfo::getGetfile() {
+  return getfile_;
+}
+
+bool ClientInfo::getIsSending() {
+  return is_sending_chunks_;
 }
 
 VirtualHost*  ClientInfo::getVhost() {
@@ -80,8 +107,4 @@ Socket* ClientInfo::getSocket() {
 
 int ClientInfo::getFd() {
   return fd_;
-}
-
-std::ifstream& ClientInfo::getFile() {
-  return getfile_;
 }
