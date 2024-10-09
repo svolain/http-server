@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 17:24:21 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 18:16:03 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,8 @@
 
 #define MAXBYTES 8192
 
+class VirtualHost;
+
 class HttpParser {
  public:
   HttpParser() = default;
@@ -44,6 +46,7 @@ class HttpParser {
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
   void                                appendBody(std::vector<char> buffer, int bytesIn);
+  bool                                IsBodySizeValid(VirtualHost* vhost) ;
 
   const std::string&                  getHost() const;
 

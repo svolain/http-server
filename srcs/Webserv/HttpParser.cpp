@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 17:24:32 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 18:21:02 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -245,17 +245,17 @@ const std::string&  HttpParser::getHost() const {
 
 int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char> buffer, int bytesIn) {
 
-    std::string eoc = "0\r\n";
+    std::string eoc = "0\r\n\r\n";
 
-    if (!std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
+    if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
       logDebug("bytesIn == MAXBYTES, more data to recieve");
       appendBody(buffer, bytesIn);
+      if (!IsBodySizeValid(vhost))
+        return 1;
       return 0;
     }
-    
-    if (!UnChunkBody(request_body_))
-      return (3);
-    return 0;
+    UnChunkBody(request_body_);
+    return 1;
 }
 
 bool HttpParser::UnChunkBody(std::vector<char>& buf) {
@@ -307,5 +307,14 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
 
   }
   buf.resize(writeIndex); 
+  return true;
+}
+
+bool  HttpParser::IsBodySizeValid(VirtualHost* vhost) {
+  if (vhost->getMaxBodySize() < request_body_.size()) {
+    logError("Error: Request Header Fields Too Large");
+    error_code_ = 431;
+    return false;
+  }
   return true;
 }
