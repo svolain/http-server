@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/09 15:41:31 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 16:47:51 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,101 +55,18 @@ int ClientInfo::RecvRequest(pollfd& poll) {
     return 2;
   logDebug("request is:\n" + std::string(buf), 1);
   if (!is_parsing_body_) {
-    is_parsing_body_ = true;
-    if (parser_.ParseHeader(buf)) {
-      // poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
+    parser_.ParseHeader(buf);
+    vhost_ = sock_->FindVhost(parser_.getHost());
+    if (parser_.getMethod() != "POST") {
+      poll.events = POLLOUT; 
       return 0;
     }
-    vhost_ = sock_->FindVhost(parser_.getHost());
+    is_parsing_body_ = true;
     //check if body size it too larg here?
   } else {
-    // parser_.ParseBody();
     WriteBody(*this, poll);
   }
-  logDebug("here");
   return 0;
-}
-
-int ClientInfo::WriteBody(ClientInfo& fd_info, pollfd& poll) {
-
-    int                 bytesIn;
-
-    int fd = fd_info.getFd();
-    std::vector<char> buffer(MAXBYTES);
-
-    bytesIn = recv(fd, buffer.data(), MAXBYTES, 0);
-    if (bytesIn < 0)
-      return 1;
-    else if (bytesIn == 0) {
-      /* When a stream socket peer has performed an orderly shutdown, the
-        return value will be 0 (the traditional "end-of-file" return) */
-      return 2;
-    }
-    else if (bytesIn == MAXBYTES) {
-      logDebug("bytesIn == MAXBYTES, more data to recieve");
-      parser_.appendBody(buffer, bytesIn);
-      return 0;
-    }
-       
-    parser_.appendBody(buffer, bytesIn);
-    if (!UnChunkBody(parser_.getRequestBody())) {
-      return (3);
-    }
-    poll.events = POLLOUT;
-    is_parsing_body_ = false;
-    return 0;
-}
-
-bool ClientInfo::UnChunkBody(std::vector<char>& buf) {
-  std::size_t readIndex = 0;
-  std::size_t writeIndex = 0;
-
-  while(readIndex < buf.size()) {
-    std::size_t chunkSizeStart = readIndex;
-
-    while (readIndex < buf.size() && !(buf[readIndex] == '\r' && buf[readIndex + 1] == '\n')) {
-      readIndex++;
-    }
-
-    if (readIndex >= buf.size()) {
-      logError("UnChunkBody: \\r\\n missing");
-      //parser.setErrorCode(400);
-      return false;
-    }
-
-    std::string chunkSizeStr(buf.begin() + chunkSizeStart, buf.begin() + readIndex);
-    std::size_t chunkSize;
-    std::stringstream ss;
-    ss << std::hex << chunkSizeStr;
-    ss >> chunkSize;
-
-    readIndex += 2;
-
-    if (chunkSize == 0) {
-            break;
-        }
-
-    if (readIndex + chunkSize > buf.size()) {
-      logError("UnChunkBody: empty line missing");
-      //parser.setErrorCode(400);
-      return false;
-    }
-
-    for (std::size_t i = 0; i < chunkSize; ++i) {
-      buf[writeIndex++] = buf[readIndex++];
-    }
-
-    if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
-      readIndex += 2;
-    } else {
-      //parser.setErrorCode(400);
-      logError("UnChunkBody: \\r\\n missing");
-      return false;
-    }
-
-  }
-  buf.resize(writeIndex); 
-  return true;
 }
 
 void ClientInfo::setVhost(VirtualHost *vhost) {

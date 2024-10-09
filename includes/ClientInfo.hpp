@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/09 15:31:04 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 16:46:41 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,6 @@ class ClientInfo
   void            AssignVHost();
 
   int             RecvRequest(pollfd& poll);
-  int         WriteBody(ClientInfo& fd_info, pollfd& poll);
-  bool        UnChunkBody(std::vector<char>& buf);
 
   void            setVhost(VirtualHost *vhost);
   void            setIsSending(bool boolean);

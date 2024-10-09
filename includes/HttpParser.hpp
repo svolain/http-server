@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 15:19:50 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 17:14:59 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 # include <fcntl.h>
 # include <vector>
 # include <array>
+# include "VirtualHost.hpp"
 
 #define MAXBYTES 8192
 
@@ -48,6 +49,8 @@ class HttpParser {
 
   bool ParseHeader(const std::string& buffer);
   bool CheckValidPath(std::string path);
+  int  WriteBody(VirtualHost* vhost,  std::vector<char> buffer, int bytesIn);
+  bool UnChunkBody(std::vector<char>& buf);
   // void ClearMemory();
 
 
