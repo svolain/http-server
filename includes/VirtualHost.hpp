@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 14:47:04 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/09 15:30:47 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,9 +41,7 @@ class VirtualHost {
 
   size_t      getMaxBodySize(); //Do we need this function?
   int         ParseHeader(ClientInfo& fd_info, pollfd& poll);
-  int         WriteBody(ClientInfo& fd_info, pollfd& poll);
   void        OnMessageRecieved(ClientInfo& fd_info, pollfd &poll);
-  bool        UnChunkBody(std::vector<char>& buf);
   std::string ToString() const;
   
  private:
