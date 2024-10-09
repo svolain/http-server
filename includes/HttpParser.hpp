@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 17:14:59 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 17:24:21 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ class HttpParser {
 
 
  private:
-  int                                 error_code_ = 0;
+  int                                 error_code_ = 200;
   size_t                              chunk_size_;
   std::string                         method_;
   std::string                         resource_path_;

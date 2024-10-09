@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 17:20:48 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 17:24:32 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,6 @@ bool HttpParser::ParseHeader(const std::string& request) {
                         // if (!CheckValidPath(resource_path_)) {      //Path directories'll be checked later
                         //   return false;
                         // }
-  error_code_ = 200;                   //remove me                                    
 
   while (std::getline(request_stream, line) && line != "\r") {
     size_t delim = line.find(":");
@@ -141,6 +140,7 @@ std::string HttpParser::getQueryString() const {
 std::string HttpParser::getHttpVersion() const{
   return http_version_;
 }
+
 
 std::vector<char>& HttpParser::getRequestBody() {
     return request_body_;
