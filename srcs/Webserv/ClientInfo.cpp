@@ -81,8 +81,24 @@ void ClientInfo::setIsSending(bool boolean) {
   is_sending_chunks_ = boolean;
 }
 
+std::ofstream& ClientInfo::getPostfile() {
+  return postfile_;
+}
+
 bool ClientInfo::getIsSending() {
   return is_sending_chunks_;
+}
+
+bool ClientInfo::getIsParsingBody() {
+  return is_parsing_body_;
+}
+
+bool ClientInfo::getIsFileOpened() {
+  return is_file_opened_;
+}
+
+void ClientInfo::setIsFileOpened(bool boolean) {
+  is_file_opened_ = boolean;
 }
 
 VirtualHost*  ClientInfo::getVhost() {
@@ -101,6 +117,6 @@ int ClientInfo::getFd() {
   return fd_;
 }
 
-std::ifstream& ClientInfo::getFile() {
+std::ifstream& ClientInfo::getGetfile() {
   return getfile_;
 }

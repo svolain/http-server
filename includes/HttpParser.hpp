@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/08 15:16:56 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 14:55:25 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@
 # include <filesystem>
 # include <unistd.h>
 # include <fcntl.h>
-# include <array>
+# include <vector>
 
 #define MAXBYTES 8192
 
@@ -35,11 +35,13 @@ class HttpParser {
   std::string                         getResourcePath() const;
   std::string                         getQueryString() const;
   std::string                         getHttpVersion() const;
-  std::array<char, MAXBYTES>&         getRequestBody();
+  std::vector<char>&                  getRequestBody();
   int                                 getErrorCode() const;
+  void                                setErrorCode(int error) ;
   bool                                getIsChunked() const;
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
+  void                                appendBody(std::vector<char> buffer, int bytesIn);
 
   const std::string&                  getHost() const;
 
@@ -55,7 +57,7 @@ class HttpParser {
   std::string                         resource_path_;
   std::string                         query_string_;
   std::string                         http_version_;
-  std::array<char, MAXBYTES>          request_body_;
+  std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_ = {};
   bool                                is_chunked_ = false;
 };

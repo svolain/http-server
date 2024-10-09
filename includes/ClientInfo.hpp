@@ -37,6 +37,7 @@ class ClientInfo
   void            setVhost(VirtualHost *vhost);
   void            setIsSending(bool boolean);
   void            setIsParsingBody(bool boolean);
+  void            setIsFileOpened(bool boolean);
   HttpParser&     getParser();
   Socket*         getSocket();
   VirtualHost*    getVhost();

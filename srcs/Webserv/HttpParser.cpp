@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 12:26:26 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/09 14:56:02 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,8 +142,8 @@ std::string HttpParser::getHttpVersion() const{
   return http_version_;
 }
 
-std::array<char, MAXBYTES>& HttpParser::getRequestBody() {
-  return request_body_;
+std::vector<char>& HttpParser::getRequestBody() {
+    return request_body_;
 }
 
 std::map<std::string, std::string>& HttpParser::getHeaders() {
@@ -154,8 +154,16 @@ int HttpParser::getErrorCode() const {
   return error_code_;
 }
 
+void  HttpParser::setErrorCode(int error) {
+    error_code_ = error;
+}
+
 bool HttpParser::getIsChunked() const {
   return is_chunked_;
+}
+
+void HttpParser::appendBody(std::vector<char> buffer, int bytesIn) {
+    request_body_.insert(request_body_.end(), buffer.begin(), buffer.begin() + bytesIn);
 }
 
 bool HttpParser::CheckValidPath(std::string path) {

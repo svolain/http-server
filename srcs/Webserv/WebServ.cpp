@@ -102,7 +102,7 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
       pollFDs_.push_back(new_client);
-      // client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd, &(sockets_[i])))
+      // client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd, &(sockets_[i])));
       client_info_map_[new_client.fd].InitInfo(new_client.fd, &(sockets_[i]));
     }
   }
@@ -127,7 +127,6 @@ void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
   // } else
   //     fd_info.getVhost()->WriteBody(fd_info, pollFDs_[i]);
   /* ASSIGN THIS AFTER BODY WAS READ*/
-  // pollFDs_[i].events = POLLOUT;
 }
 
 void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {
