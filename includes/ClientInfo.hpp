@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/04 15:42:31 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/07 10:25:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,15 @@ class ClientInfo
 {
  public:
   ClientInfo() = default;
-  ClientInfo(int fd, Socket* sock);
-  ~ClientInfo() = default;
+  // ClientInfo(int fd, Socket* sock);
+  ClientInfo(const ClientInfo& other)             = delete;
+  ClientInfo& operator=(const ClientInfo& other)  = delete;
+  ~ClientInfo()                                   = default;
 
   void            InitInfo(int fd, Socket *sock);
   void            AssignVHost();
+
+  int             RecvRequest(pollfd& poll);
 
   void            setVhost(VirtualHost *vhost);
   void            setIsSending(bool boolean);
@@ -39,21 +43,17 @@ class ClientInfo
   VirtualHost*    getVhost();
   int             getFd();
   bool            getIsSending();
-  bool            getIsParsingBody();
-  bool            getIsFileOpened();
-  std::ifstream&  getGetfile();
-  std::ofstream&  getPostfile();
+  std::ifstream&  getFile();
 
 private:
   int            fd_;
-  Socket*        sock_;
-  VirtualHost*   vhost_;
+  Socket*        sock_ = nullptr;
+  VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   std::ofstream  postfile_;
   std::ifstream  getfile_;
-  bool           is_sending_chunks_;
-  bool           is_parsing_body_;
-  bool           is_file_opened_;
+  bool           is_sending_chunks_ = false;
+  bool           is_parsing_body_ = false;
 };
 
 #endif

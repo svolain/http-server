@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/04 12:19:46 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/08 17:14:30 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,10 +26,7 @@ Socket::Socket(std::string& listen,
   if (name.empty())
     name = "localhost"; //Or leave it emty may be
   v_hosts_.emplace(name, VirtualHost(max_size, errors, locations));
-}
-
-std::string Socket::getSocket() {
-  return address_ + ":" + port_;
+  first_vhost_ = name;
 }
 
 void  Socket::AddVirtualHost(std::string& name,
@@ -40,9 +37,7 @@ void  Socket::AddVirtualHost(std::string& name,
     v_hosts_.emplace(name, VirtualHost(max_size, errors, locations));
 }
 
-
-int Socket::InitServer(std::vector<pollfd> &pollFDs)
-{
+int Socket::InitServer(std::vector<pollfd> &pollFDs) {
   struct addrinfo hints{}, *servinfo;
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
@@ -86,13 +81,13 @@ int Socket::InitServer(std::vector<pollfd> &pollFDs)
   return 0;
 }
 
-
-pollfd Socket::getListening() const{
-  return listening_;
-}
-
-std::map<std::string, VirtualHost>& Socket::getVirtualHosts() {
-    return v_hosts_;
+VirtualHost*  Socket::FindVhost(const std::string& host) {
+  if (host.size() == 0 )
+    return &v_hosts_.at(first_vhost_); //substitute first_vhost_ with pointer to VH if possible (pointer invalidation?)
+  if (auto it = v_hosts_.find(host); it == v_hosts_.end())
+    return &it->second;
+  else
+    return &v_hosts_.at(first_vhost_);
 }
 
 std::string Socket::ToString() const {
@@ -104,4 +99,17 @@ std::string Socket::ToString() const {
     out += vh.ToString() + "\n";
   }
   return out;
+}
+
+
+std::string Socket::getSocket() const{
+  return address_ + ":" + port_;
+}
+
+pollfd Socket::getListening() const{
+  return listening_;
+}
+
+std::map<std::string, VirtualHost>& Socket::getVirtualHosts() {
+    return v_hosts_;
 }

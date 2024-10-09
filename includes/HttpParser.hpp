@@ -43,13 +43,15 @@ class HttpParser {
   size_t                              getChunkSize() const;
   void                                appendBody(std::vector<char> buffer, int bytesIn);
 
-  bool ParseRequest(const std::string buffer);
+  const std::string&                  getHost() const;
+
+  bool ParseHeader(const std::string& buffer);
   bool CheckValidPath(std::string path);
   // void ClearMemory();
 
 
  private:
-  int                                 error_code_;
+  int                                 error_code_ = 0;
   size_t                              chunk_size_;
   std::string                         method_;
   std::string                         resource_path_;
@@ -57,7 +59,7 @@ class HttpParser {
   std::string                         http_version_;
   std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_ = {};
-  bool                                is_chunked_;
+  bool                                is_chunked_ = false;
 };
 
 #endif

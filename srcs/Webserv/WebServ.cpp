@@ -75,8 +75,7 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    // else if (i >= sockets_.size() && client_info_map_.find(fd) != client_info_map_.end()) {
-    ClientInfo& fd_info = client_info_map_.at(fd);
+    ClientInfo& fd_info = client_info_map_.at(fd); //sometimes it throws an exception
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
       CloseConnection(fd, i);
@@ -109,23 +108,24 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
-  // std::vector<char>   oss;
-  if (fd_info.getIsParsingBody() == false) {
-    if (fd_info.getVhost()->ParseHeader(fd_info, pollFDs_[i]) != 0) {
-      CloseConnection(fd_info.getFd(), i);
-      perror("recv: ");
-    }
-  } else
-      fd_info.getVhost()->WriteBody(fd_info, pollFDs_[i]);
   /* find the host with the parser
     check if the permissions are good (Location)
     assign the vhost to the ConnecInfo class
     set bool to send body if all is good
     get back and try to read the body
     read for MAXBYTES and go back and continue next time
-     */
-
+  */
+void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
+  if (fd_info.RecvRequest(pollFDs_[i]))
+    CloseConnection(pollFDs_[i].fd, i);
+  // // std::vector<char>   oss;
+  // if (fd_info.getIsParsingBody() == false) {
+  //   if (fd_info.getVhost()->ParseHeader(fd_info, pollFDs_[i]) != 0) {
+  //     CloseConnection(fd_info.getFd(), i);
+  //     perror("recv: ");
+  //   }
+  // } else
+  //     fd_info.getVhost()->WriteBody(fd_info, pollFDs_[i]);
   /* ASSIGN THIS AFTER BODY WAS READ*/
 }
 

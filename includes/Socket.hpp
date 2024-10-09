@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/02 15:28:14 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/03 23:56:08 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/08 15:53:01 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,22 +38,24 @@ class Socket {
   Socket& operator=(const Socket& other) = delete;
   ~Socket()                              = default;
 
-  std::string                         getSocket();
+  void          AddVirtualHost(std::string& name,
+                               std::string& max_size,
+                               StringMap&   errors,
+                               LocationMap& locations);
+  int           InitServer(std::vector<pollfd> &pollFDs);
+  VirtualHost*  FindVhost(const std::string& host);
+  std::string   ToString() const;
+
+  std::string                         getSocket() const;
   pollfd                              getListening() const;
   std::map<std::string, VirtualHost>& getVirtualHosts();
-  void                                AddVirtualHost(std::string& name,
-                                                     std::string& max_size,
-                                                     StringMap&   errors,
-                                                     LocationMap& locations);
-  int                                 InitServer(std::vector<pollfd> &pollFDs);
-  std::string                         ToString() const;
 
  private:
   std::string                         address_ = "127.0.0.0"; //Is it correct?
   std::string                         port_ = "8080"; //Is it correct?
   pollfd                              listening_;
   std::map<std::string, VirtualHost>  v_hosts_;
-
+  std::string                         first_vhost_;
 };
 
 #endif

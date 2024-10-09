@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/04 15:42:14 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/08 23:03:24 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,12 @@
 #include "Socket.hpp"
 #include "Logger.h"
 
-ClientInfo::ClientInfo(int fd, Socket* sock)
-  : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
+// ClientInfo::ClientInfo(int fd, Socket* sock)
+//   : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
 
 void ClientInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
   sock_ = sock;
-  vhost_ = nullptr;
-  is_sending_chunks_ = false;
 }
 
 void ClientInfo::AssignVHost() {
@@ -44,6 +42,31 @@ void ClientInfo::AssignVHost() {
     vhosts_it = v_hosts_.begin();
     setVhost(&vhosts_it->second);
   }
+}
+
+int ClientInfo::RecvRequest(pollfd& poll) {
+  char  buf[MAXBYTES]{0};
+  int   bytesIn;
+
+  bytesIn = recv(fd_, buf, MAXBYTES, 0);
+  if (bytesIn < 0)
+    return 1;
+  if (bytesIn == 0) //When a stream socket peer has performed an orderly shutdown, the return value will be 0 (the traditional "end-of-file" return)
+    return 2;
+  logDebug("request is:\n" + std::string(buf), 1);
+  if (!is_parsing_body_) {
+    is_parsing_body_ = true;
+    if (parser_.ParseHeader(buf)) {
+      // poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
+      return 0;
+    }
+    vhost_ = sock_->FindVhost(parser_.getHost());
+    //check if body size it too larg here?
+  } else {
+    // parser_.ParseBody();
+    return vhost_->WriteBody(*this, poll);
+  }
+  return 0;
 }
 
 void ClientInfo::setVhost(VirtualHost *vhost) {

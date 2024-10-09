@@ -34,12 +34,11 @@ VirtualHost::VirtualHost(std::string& max_size,
 }
 
 int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
+  char        buf[MAXBYTES]{0};
+  int         bytesIn;
+  HttpParser& parser = fd_info.getParser();
+  int         fd = fd_info.getFd();
 
-  char                buf[MAXBYTES]{};
-  int                 bytesIn;
-  HttpParser&         parser = fd_info.getParser();
-
-  int fd = fd_info.getFd();
   bytesIn = recv(fd, buf, MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
@@ -47,13 +46,11 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
     /* When a stream socket peer has performed an orderly shutdown, the
       return value will be 0 (the traditional "end-of-file" return) */
     return 2;
-  }
-  else if (bytesIn == MAXBYTES)
+  } else if (bytesIn == MAXBYTES)
     logDebug("MAXBYTES on recv. Check if the header is too long");
-  
-  logDebug("request is:" + std::string(buf));
 
-  if (!parser.ParseRequest(buf))
+  logDebug("request is:" + std::string(buf));
+  if (!parser.ParseHeader(buf))
     logDebug("false on ParseRequest returned", true);
 
   if (fd_info.getVhost() == nullptr)
