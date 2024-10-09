@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/04 16:33:56 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/09 12:42:42 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,44 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
 
 int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
 
+   std::vector<char> &request_body = fd_info.getParser().getRequestBody();
+
+    size_t body_size = request_body.size();
+    int bytesIn = 0;
+    size_t request_size = 0;
+
+    int fd = fd_info.getFd();
+    std::array<char, MAXBYTES> buffer;
+    bytesIn = recv(fd, buffer.data(), MAXBYTES, 0);
+
+    if (bytesIn < 0) {
+        return 1;
+    } else if (bytesIn == 0) {
+        return 2;
+    } else {
+        // Append the new chunk to the body already received
+        request_body.insert(request_body.end(), buffer.begin(), buffer.begin() + bytesIn);
+        request_size += bytesIn;
+        
+        if (bytesIn == MAXBYTES) {
+            logDebug("bytesIn == MAXBYTES, more data to receive");
+        }
+
+        // If the request is multipart, process the multipart data
+        if (fd_info.isMultipart()) {
+            std::string boundary = fd_info.getBoundary();
+            handleMultipartData(request_body, boundary);
+        }
+
+        // If the request is chunked transfer encoding, unchunk the body
+        unchunkData(request_body);
+
+        // Set the poll event to POLLOUT if we are ready to write data
+        poll.events = POLLOUT;
+    }
+
+    return 0;
+  /*
   std::ofstream       &posftile = fd_info.getPostfile();
   HttpParser&         parser = fd_info.getParser();
   std::vector<char>&  request_body = parser.getRequestBody();
@@ -121,14 +159,14 @@ int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
   else if (bytesIn == 0) {
     /* When a stream socket peer has performed an orderly shutdown, the
       return value will be 0 (the traditional "end-of-file" return) */
-    return 2;
+  /*  return 2;
   }
   else if (bytesIn == MAXBYTES)
     logDebug("bytesIn == MAXBYTES, more data to recieve");
 
   request_size += bytesIn;
   poll.events = POLLOUT;
-  return 0;
+  return 0;*/
 }
 
 bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
