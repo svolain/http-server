@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
 /*   Updated: 2024/10/09 17:24:32 by dshatilo         ###   ########.fr       */
@@ -141,8 +141,9 @@ std::string HttpParser::getHttpVersion() const{
   return http_version_;
 }
 
- std::vector<char>& HttpParser::getRequestBody()  {
-  return request_body_;
+
+std::vector<char>& HttpParser::getRequestBody() {
+    return request_body_;
 }
 
 std::map<std::string, std::string>& HttpParser::getHeaders() {
@@ -153,8 +154,16 @@ int HttpParser::getErrorCode() const {
   return error_code_;
 }
 
+void  HttpParser::setErrorCode(int error) {
+    error_code_ = error;
+}
+
 bool HttpParser::getIsChunked() const {
   return is_chunked_;
+}
+
+void HttpParser::appendBody(std::vector<char> buffer, int bytesIn) {
+    request_body_.insert(request_body_.end(), buffer.begin(), buffer.begin() + bytesIn);
 }
 
 bool HttpParser::CheckValidPath(std::string path) {
@@ -232,4 +241,71 @@ bool HttpParser::CheckValidPath(std::string path) {
 
 const std::string&  HttpParser::getHost() const {
   return headers_.at("Host");
+}
+
+int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char> buffer, int bytesIn) {
+
+    std::string eoc = "0\r\n";
+
+    if (!std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
+      logDebug("bytesIn == MAXBYTES, more data to recieve");
+      appendBody(buffer, bytesIn);
+      return 0;
+    }
+    
+    if (!UnChunkBody(request_body_))
+      return (3);
+    return 0;
+}
+
+bool HttpParser::UnChunkBody(std::vector<char>& buf) {
+  std::size_t readIndex = 0;
+  std::size_t writeIndex = 0;
+
+  while(readIndex < buf.size()) {
+    std::size_t chunkSizeStart = readIndex;
+
+    while (readIndex < buf.size() && !(buf[readIndex] == '\r' && buf[readIndex + 1] == '\n')) {
+      readIndex++;
+    }
+
+    if (readIndex >= buf.size()) {
+      logError("UnChunkBody: \\r\\n missing");
+      setErrorCode(400);
+      return false;
+    }
+
+    std::string chunkSizeStr(buf.begin() + chunkSizeStart, buf.begin() + readIndex);
+    std::size_t chunkSize;
+    std::stringstream ss;
+    ss << std::hex << chunkSizeStr;
+    ss >> chunkSize;
+
+    readIndex += 2;
+
+    if (chunkSize == 0) {
+            break;
+        }
+
+    if (readIndex + chunkSize > buf.size()) {
+      logError("UnChunkBody: empty line missing");
+      setErrorCode(400);
+      return false;
+    }
+
+    for (std::size_t i = 0; i < chunkSize; ++i) {
+      buf[writeIndex++] = buf[readIndex++];
+    }
+
+    if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
+      readIndex += 2;
+    } else {
+      setErrorCode(400);
+      logError("UnChunkBody: \\r\\n missing");
+      return false;
+    }
+
+  }
+  buf.resize(writeIndex); 
+  return true;
 }

@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
 /*   Updated: 2024/10/09 17:24:21 by dshatilo         ###   ########.fr       */
@@ -23,6 +23,7 @@
 # include <fcntl.h>
 # include <vector>
 # include <array>
+# include "VirtualHost.hpp"
 
 #define MAXBYTES 8192
 
@@ -38,14 +39,18 @@ class HttpParser {
   std::string                         getHttpVersion() const;
   std::vector<char>&                  getRequestBody();
   int                                 getErrorCode() const;
+  void                                setErrorCode(int error) ;
   bool                                getIsChunked() const;
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
+  void                                appendBody(std::vector<char> buffer, int bytesIn);
 
   const std::string&                  getHost() const;
 
   bool ParseHeader(const std::string& buffer);
   bool CheckValidPath(std::string path);
+  int  WriteBody(VirtualHost* vhost,  std::vector<char> buffer, int bytesIn);
+  bool UnChunkBody(std::vector<char>& buf);
   // void ClearMemory();
 
 

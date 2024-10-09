@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
 /*   Updated: 2024/10/09 17:27:41 by dshatilo         ###   ########.fr       */
@@ -83,6 +83,14 @@ void ClientInfo::setIsSending(bool boolean) {
   is_sending_chunks_ = boolean;
 }
 
+std::ofstream& ClientInfo::getPostfile() {
+  return postfile_;
+}
+
+std::ifstream& ClientInfo::getGetfile() {
+  return getfile_;
+}
+
 bool ClientInfo::getIsSending() {
   return is_sending_chunks_;
 }
@@ -101,8 +109,4 @@ Socket* ClientInfo::getSocket() {
 
 int ClientInfo::getFd() {
   return fd_;
-}
-
-std::ifstream& ClientInfo::getFile() {
-  return getfile_;
 }
