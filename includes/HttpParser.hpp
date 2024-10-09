@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/04 14:36:08 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/09 14:55:25 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ class HttpParser {
   bool                                getIsChunked() const;
   std::map<std::string, std::string>& getHeaders();
   size_t                              getChunkSize() const;
+  void                                appendBody(std::vector<char> buffer, int bytesIn);
 
   bool ParseRequest(const std::string buffer);
   bool CheckValidPath(std::string path);

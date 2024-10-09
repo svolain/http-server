@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/04 14:36:14 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/09 14:56:02 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,6 +156,10 @@ void  HttpParser::setErrorCode(int error) {
 
 bool HttpParser::getIsChunked() const {
     return is_chunked_;
+}
+
+void HttpParser::appendBody(std::vector<char> buffer, int bytesIn) {
+    request_body_.insert(request_body_.end(), buffer.begin(), buffer.begin() + bytesIn);
 }
 
 bool HttpParser::CheckValidPath(std::string path) {

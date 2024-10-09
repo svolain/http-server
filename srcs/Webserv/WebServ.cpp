@@ -127,7 +127,6 @@ void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
      */
 
   /* ASSIGN THIS AFTER BODY WAS READ*/
-  pollFDs_[i].events = POLLOUT;
 }
 
 void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {

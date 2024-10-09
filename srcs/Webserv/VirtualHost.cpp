@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/09 12:42:42 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 15:09:01 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,100 +73,33 @@ int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
 
 int VirtualHost::WriteBody(ClientInfo& fd_info, pollfd& poll) {
 
-   std::vector<char> &request_body = fd_info.getParser().getRequestBody();
-
-    size_t body_size = request_body.size();
-    int bytesIn = 0;
-    size_t request_size = 0;
+    std::vector<char>& request_body = fd_info.getParser().getRequestBody();
+    size_t              body_size = request_body.size();
+    int                 bytesIn;
 
     int fd = fd_info.getFd();
-    std::array<char, MAXBYTES> buffer;
+    std::vector<char> buffer(MAXBYTES);
+
     bytesIn = recv(fd, buffer.data(), MAXBYTES, 0);
-
-    if (bytesIn < 0) {
-        return 1;
-    } else if (bytesIn == 0) {
-        return 2;
-    } else {
-        // Append the new chunk to the body already received
-        request_body.insert(request_body.end(), buffer.begin(), buffer.begin() + bytesIn);
-        request_size += bytesIn;
-        
-        if (bytesIn == MAXBYTES) {
-            logDebug("bytesIn == MAXBYTES, more data to receive");
-        }
-
-        // If the request is multipart, process the multipart data
-        if (fd_info.isMultipart()) {
-            std::string boundary = fd_info.getBoundary();
-            handleMultipartData(request_body, boundary);
-        }
-
-        // If the request is chunked transfer encoding, unchunk the body
-        unchunkData(request_body);
-
-        // Set the poll event to POLLOUT if we are ready to write data
-        poll.events = POLLOUT;
-    }
-
-    return 0;
-  /*
-  std::ofstream       &posftile = fd_info.getPostfile();
-  HttpParser&         parser = fd_info.getParser();
-  std::vector<char>&  request_body = parser.getRequestBody();
-  size_t              body_size = request_body.size();
-  
-  //open the file
-  if (!posftile.is_open() && !fd_info.getIsFileOpened()) {
-    std::string filename = "./www/upload" + fd_info.getParser().getHeaders().at("POST") + 
-      std::to_string(fd_info.getFd()) + "__temp__";
-    posftile.open(filename, std::ios::binary);
-    if (!posftile.is_open()) {
-      parser.setErrorCode(500);
-      poll.events = POLLOUT;
+    if (bytesIn < 0)
       return 1;
+    else if (bytesIn == 0) {
+      /* When a stream socket peer has performed an orderly shutdown, the
+        return value will be 0 (the traditional "end-of-file" return) */
+      return 2;
     }
-    fd_info.setIsFileOpened(true);
-  }
-  else if (!posftile.is_open()) {
-    //file close sometime during the write
-    parser.setErrorCode(500);
-    poll.events = POLLOUT;
-    return 1;
-  }
-  //clear the chunk
-  if (!UnChunkBody(request_body)) {
-    parser.setErrorCode(400);
-    if (fd_info.getPostfile().is_open()) {
-      // fd_info.getPostfile().
-      // std::remove (filename)
-      // close the Postfile;
+    else if (bytesIn == MAXBYTES) {
+      logDebug("bytesIn == MAXBYTES, more data to recieve");
+      fd_info.getParser().appendBody(buffer, bytesIn);
+      return 0;
+    }
+       
+    fd_info.getParser().appendBody(buffer, bytesIn);
+    if (!UnChunkBody(fd_info.getParser().getRequestBody())) {
+      return (3);
     }
     poll.events = POLLOUT;
-    return 2;
-  }
-
-  posftile.write(request_body.data(), body_size);
-
-
-
-  int                 bytesIn;
-  size_t              request_size = 0;
-  int fd = fd_info.getFd();
-  bytesIn = recv(fd, request_body.data() + body_size, MAXBYTES, 0);
-  if (bytesIn < 0)
-    return 1;
-  else if (bytesIn == 0) {
-    /* When a stream socket peer has performed an orderly shutdown, the
-      return value will be 0 (the traditional "end-of-file" return) */
-  /*  return 2;
-  }
-  else if (bytesIn == MAXBYTES)
-    logDebug("bytesIn == MAXBYTES, more data to recieve");
-
-  request_size += bytesIn;
-  poll.events = POLLOUT;
-  return 0;*/
+    return 0;
 }
 
 bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
@@ -182,6 +115,7 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
 
     if (readIndex >= buf.size()) {
       logError("UnChunkBody: \\r\\n missing");
+      //parser.setErrorCode(400);
       return false;
     }
 
@@ -199,6 +133,7 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
 
     if (readIndex + chunkSize > buf.size()) {
       logError("UnChunkBody: empty line missing");
+      //parser.setErrorCode(400);
       return false;
     }
 
@@ -209,6 +144,7 @@ bool VirtualHost::UnChunkBody(std::vector<char>& buf) {
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
     } else {
+      //parser.setErrorCode(400);
       logError("UnChunkBody: \\r\\n missing");
       return false;
     }
