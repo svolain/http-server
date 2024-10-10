@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 16:08:52 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 16:08:56 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,7 +70,7 @@ std::string HttpParser::getMethod() const {
   return method_;
 }
 
-std::string HttpParser::getResourcePath() const {
+std::string HttpParser::getResourceTarget() const {
   return request_target_;
 }
 
@@ -230,37 +230,46 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
   return true;
 }
 
-void  HttpParser::HandlePostRequest(std::vector<char> request_body, HttpParser &parser) {
-    std::string contentType = headers_.at("Content-Type");
-    parser.setErrorCode(200);
+void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
+  request_body_.insert(request_body_.end(), buffer.begin(),
+                       buffer.begin() + bytesIn);
+
+void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
+  auto it = headers_.find("Content-Type");
+
+  if (it == headers_.end())
+  {
+    error_code_ = 400;
+    return;
+  }
+
+  std::string contentType = it->second;
 
   if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
-        std::cout << "Handling URL-encoded form submission" << std::endl;
+        logDebug("Handling URL-encoded form submission");
         if (!ParseUrlEncodedData(request_body)) {
-             parser.setErrorCode(500); // Internal Server Error
+             error_code_ = 500; // Internal Server Error
             return;
         }
         
     } else if (contentType.find("multipart/form-data") != std::string::npos) {
+      logDebug("Handling multipart form data");
         if (!HandleMultipartFormData(request_body, contentType)) {
-            parser.setErrorCode(500); // Internal Server Error
+            error_code_ = 500; // Internal Server Error
             return;
         }
     } else {
-        std::cerr << "Unsupported Content-Type: " << contentType << std::endl;
-        parser.setErrorCode(415);
+        logError("Unsupported Content-Type");
+        error_code_ = 415;
     }
 }
 
-bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const std::string &contentType) {
-    std::cout << "Multipart form data received: " << body.size() << " bytes" << std::endl;
-
+bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const std::string &contentType) { 
     size_t boundaryPosition = contentType.find("boundary=");
     if (boundaryPosition == std::string::npos)
         return false;
 
     std::string boundary = "--" + contentType.substr(boundaryPosition + 9);
-    std::cout << "boundary:\n" << boundary << "\n";
 
     std::vector<char> boundaryVec(boundary.begin(), boundary.end());
     size_t boundaryLength = boundaryVec.size();
@@ -287,47 +296,12 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const st
     return true;
 }
 
-bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
-    std::string requestBody(body.begin(), body.end());
-    std::string filename = "form_bin";
-
-    std::istringstream stream(requestBody);
-    std::string pair;
-
-    std::ofstream outputFile(filename, std::ios::binary);
-    if (!outputFile) {
-        std::cerr << "Error: could not open file for writing." << std::endl;
-        return false;
-    }
-
-    while (std::getline(stream, pair, '&')) {
-        size_t delim = pair.find('=');
-        if (delim == std::string::npos) {
-            std::cerr << "Error: URL encoding has wrong format." << std::endl;
-            return false;
-        }
-        std::string key = pair.substr(0, delim);
-        std::string value = pair.substr(delim + 1);
-
-        size_t keyLength = key.size();
-        outputFile.write(reinterpret_cast<const char*>(&keyLength), sizeof(keyLength));
-        outputFile.write(key.data(), keyLength);
-
-        size_t valueLength = value.size();
-        outputFile.write(reinterpret_cast<const char*>(&valueLength), sizeof(valueLength));
-        outputFile.write(value.data(), valueLength);
-    }
-
-    outputFile.close();
-    return true;
-}
-
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
     std::vector<char> crlf = {'\r', '\n'};
     
     auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(), crlf.begin(), crlf.end());
     if (headerEndIt == bodyPart.end()) {
-        std::cerr << "Error: invalid multi part format" << std::endl;
+        logError("Error: invalid multi part format");
         return false;
     }
 
@@ -346,15 +320,15 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
             size_t posEnd = headersStr.find('"', posStart);
             std::string filename = headersStr.substr(posStart, posEnd - posStart);
 
-            std::cout << "File upload: " << filename << std::endl;
+            logDebug("File upload: " + filename);
 
             std::ofstream outFile("www/uploads/" + filename, std::ios::binary);
             if (outFile.is_open()) {
                 outFile.write(content.data(), content.size());
                 outFile.close();
-                std::cout << "File " << filename << " saved successfully." << std::endl;
+                logDebug("File " + filename + " saved successfully");
             } else {
-                std::cerr << "Error: failed to save file " << filename << std::endl;
+                logError("Error: failed to save file ");
                 return false;
             }
         } else if (posName != std::string::npos) {
@@ -364,16 +338,78 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
             std::string fieldName = headersStr.substr(posStart, posEnd - posStart);
 
             std::string contentStr(content.begin(), content.end());
-            std::cout << "Form field: " << fieldName << " = " << contentStr << std::endl;
+            logDebug("Form field: " + fieldName + " = " + contentStr);
         }
     }
 
     return true;
 }
+  
+bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
+    std::string requestBody(body.begin(), body.end());
+    std::string filename = "form_bin";
 
-void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
-  request_body_.insert(request_body_.end(), buffer.begin(),
-                       buffer.begin() + bytesIn);
+    std::istringstream stream(requestBody);
+    std::string pair;
+
+    std::ofstream outputFile(filename, std::ios::binary);
+    if (!outputFile) {
+        logError("Error: could not open file for writing.");
+        return false;
+    }
+
+    while (std::getline(stream, pair, '&')) {
+        size_t delim = pair.find('=');
+        if (delim == std::string::npos) {
+            logError("Error: URL encoding has wrong format.");
+            return false;
+        }
+        std::string key = pair.substr(0, delim);
+        std::string value = pair.substr(delim + 1);
+
+        size_t keyLength = key.size();
+        outputFile.write(reinterpret_cast<const char*>(&keyLength), sizeof(keyLength));
+        outputFile.write(key.data(), keyLength);
+
+        size_t valueLength = value.size();
+        outputFile.write(reinterpret_cast<const char*>(&valueLength), sizeof(valueLength));
+        outputFile.write(value.data(), valueLength);
+    }
+
+    outputFile.close();
+    return true;
+}
+
+bool HttpParser::IsPathSafe(const std::string& path) {
+  if (path.find(".."))
+    return false;
+
+    //this function we can add more checks to check safety
+  return true;
+}
+
+void HttpParser::HandleDeleteRequest() {
+    std::string path = resource_path_;
+    logDebug("Handling DELETE request for path: " + path);
+
+    if (!IsPathSafe(path)) {
+      error_code_= 400; 
+      return;
+    }
+
+    if (std::ifstream(path)) { 
+        if (std::remove(path.c_str()) == 0) {
+            logDebug("File deleted successfully");
+            error_code_= 204;
+        } else {
+            logError("Error: Failed to delete file");
+            error_code_= 500;
+        }
+    } else {
+        logError("Error: File not found");
+        error_code_= 404;
+    }
+
 }
 
 // bool HttpParser::CheckValidPath(std::string path) {

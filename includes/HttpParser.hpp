@@ -7,6 +7,7 @@
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
 /*   Updated: 2024/10/10 16:05:40 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 15:30:23 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,9 +42,9 @@ class HttpParser {
   bool        IsBodySizeValid(VirtualHost* vhost) ;
   std::string getHost() const;
   std::string getMethod() const;
-  std::string getResourcePath() const;
+  std::string getResourceTarget() const;
   int         getErrorCode() const;
-  void        setErrorCode(int error) ;
+  void        setErrorCode(int error);
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);
@@ -51,11 +52,14 @@ class HttpParser {
   bool  CheckPostHeaders();
   bool  UnChunkBody(std::vector<char>& buf);
   void  AppendBody(std::vector<char> buffer, int bytesIn);
-  void  HandlePostRequest(std::vector<char> request_body, HttpParser& parser);
-  bool  HandleMultipartFormData(const std::vector<char>& body,
-                                const std::string& contentType);
-  bool  ParseMultiPartData(std::vector<char>& bodyPart);
+  void  HandlePostRequest(std::vector<char> request_body);
+  bool  HandleMultipartFormData(const std::vector<char> &body,
+                                const std::string &contentType);
+  bool  ParseMultiPartData(std::vector<char> &bodyPart);
   bool  ParseUrlEncodedData(const std::vector<char>& body);
+  bool  IsPathSafe(const std::string& path);
+  void  HandleDeleteRequest();
+  
 
   int                                 error_code_ = 200;
   size_t                              content_length_ = 0;
