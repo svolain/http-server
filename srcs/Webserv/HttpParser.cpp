@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 15:35:46 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 15:39:20 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -347,6 +347,7 @@ bool HttpParser::IsPathSafe(const std::string& path) {
     return false;
 
     //this function we can add more checks to check safety
+  return true;
 }
 
 void HttpParser::handleDeleteRequest() {
