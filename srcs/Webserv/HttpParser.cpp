@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 18:26:40 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/10 22:04:15 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,9 +155,10 @@ bool  HttpParser::CheckPostHeaders() {
       std::string& content_length_str = it->second;
       try {
         size_t pos;
-        content_length_ = std::stoi(content_length_str, &pos);
-        if (pos != content_length_str.size() || content_length_ < 0)
+        int content_length = std::stoi(content_length_str, &pos);
+        if (pos != content_length_str.size() || content_length < 0)
           throw std::invalid_argument("Invalid argument");
+        content_length_ = content_length;
       } catch (const std::invalid_argument& e) {
         logError("Error: invalid Content-Length");
         status_ = 400;
