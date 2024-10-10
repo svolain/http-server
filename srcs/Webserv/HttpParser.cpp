@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 15:39:20 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 16:08:56 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -321,7 +321,15 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const st
 }
 
 void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
-  std::string contentType = headers_.at("Content-Type");
+  auto it = headers_.find("Content-Type");
+
+  if (it == headers_.end())
+  {
+    error_code_ = 400;
+    return;
+  }
+
+  std::string contentType = it->second;
 
   if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
         logDebug("Handling URL-encoded form submission");
