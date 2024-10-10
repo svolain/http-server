@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/09 16:46:41 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 10:16:38 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,28 +30,19 @@ class ClientInfo
   ~ClientInfo()                                   = default;
 
   void            InitInfo(int fd, Socket *sock);
-  void            AssignVHost();
-
   int             RecvRequest(pollfd& poll);
-
-  void            setVhost(VirtualHost *vhost);
-  void            setIsSending(bool boolean);
-  void            setIsParsingBody(bool boolean);
-  void            setIsFileOpened(bool boolean);
   HttpParser&     getParser();
-  Socket*         getSocket();
   VirtualHost*    getVhost();
   int             getFd();
   bool            getIsSending();
   std::ifstream&  getGetfile();
-  std::ofstream&  getPostfile();
+  void            setIsSending(bool boolean);
 
 private:
   int            fd_;
   Socket*        sock_ = nullptr;
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
-  std::ofstream  postfile_;
   std::ifstream  getfile_;
   bool           is_sending_chunks_ = false;
   bool           is_parsing_body_ = false;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/09 15:29:48 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 11:37:15 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,43 +33,7 @@ VirtualHost::VirtualHost(std::string& max_size,
   }
 }
 
-int VirtualHost::ParseHeader(ClientInfo& fd_info, pollfd& poll) {
-  char        buf[MAXBYTES]{0};
-  int         bytesIn;
-  HttpParser& parser = fd_info.getParser();
-  int         fd = fd_info.getFd();
-
-  bytesIn = recv(fd, buf, MAXBYTES, 0);
-  if (bytesIn < 0)
-    return 1;
-  else if (bytesIn == 0) {
-    /* When a stream socket peer has performed an orderly shutdown, the
-      return value will be 0 (the traditional "end-of-file" return) */
-    return 2;
-  } else if (bytesIn == MAXBYTES)
-    logDebug("MAXBYTES on recv. Check if the header is too long");
-
-  logDebug("request is:" + std::string(buf));
-  if (!parser.ParseHeader(buf))
-    logDebug("false on ParseRequest returned", true);
-
-  if (fd_info.getVhost() == nullptr)
-    fd_info.AssignVHost();
-  
-  /* If the message didnt fit into MAXBYTES then dont set the POLLOUT yet,
-    let the WriteBody do that */
-  if (parser.getIsChunked() == true)
-    fd_info.setIsParsingBody(true);
-  else
-    poll.events = POLLOUT;
-  /* Set to true if we want to read the body 
-    If the whole message fit into MAXBYTES then dont set it to true*/
-
-  return 0;
-}
-
 void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll) {
-
   logDebug("--- entering OnMessageRecieved ---", false);
 
   if (fd_info.getIsSending() == false) {
@@ -78,8 +42,26 @@ void VirtualHost::OnMessageRecieved(ClientInfo& fd_info, pollfd& poll) {
   }
   else
     SendChunkedBody(fd_info, poll);
-    
+
   logDebug("----- leaving OnMessageRecieved -----", false);
+}
+
+std::string VirtualHost::ToString() const {
+  std::string out;
+  out += std::string(21, ' ') + "Error Pages:\n";
+  for (const auto& [code, path] : error_pages_)
+    out += std::string(34, ' ') + "Error " + code + ": " + path + "\n";
+  out += std::string(21, ' ') + "Client_max_body_size: ";
+  out += std::to_string(client_max_body_size_) + " bytes\n";
+  for (const auto& [path, location] : locations_) {
+    out += std::string(21, ' ') + "Location: " + path + "\n";
+    out += location.ToString() + "\n";
+  }
+  return out;
+}
+
+size_t VirtualHost::getMaxBodySize() const {
+  return client_max_body_size_;
 }
 
 void VirtualHost::SendHeader(ClientInfo& fd_info) {
@@ -88,7 +70,7 @@ void VirtualHost::SendHeader(ClientInfo& fd_info) {
 
   logDebug("the resource path is " + resource_path);
   logDebug("the error code from parser is " + std::to_string(parser.getErrorCode()));
-  
+
   HttpResponse response;
   response.setErrorCode(parser.getErrorCode());
   response.AssignContType(parser.getResourcePath());
@@ -99,12 +81,12 @@ void VirtualHost::SendHeader(ClientInfo& fd_info) {
   logDebug("\n------response header------\n" + \
             response.getHeader() + "\n" +\
             "-----end of response header------\n", false);
-  
-  SendToClient(fd_info.getFd(), response.getHeader().c_str(), response.getHeader().size());
+
+  SendToClient(fd_info.getFd(), response.getHeader().c_str(),
+               response.getHeader().size());
 }
 
-void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd &poll)
-{
+void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd& poll) {
   /* Nginx will not try to save the state of the previous transmission and retry later. 
       It handles each request-response transaction independently. 
       If the connection breaks, a client would need to send a new request to get the content again. 
@@ -119,28 +101,25 @@ void VirtualHost::SendChunkedBody(ClientInfo& fd_info, pollfd &poll)
   if (file.is_open()) {
     if (SendOneChunk(client_socket, file) == 0) {
       return ;
-    } 
+    }
     if (SendToClient(client_socket, "0\r\n\r\n", 5) == -1)
       perror("send 2:");
-  }
-  else
-    if (SendToClient(client_socket, "<h1>404 Not Found</h1>", 23) == -1)
+  } else if (SendToClient(client_socket, "<h1>404 Not Found</h1>", 23) == -1)
       perror("send 3:");
   file.close();
   poll.events = POLLIN;
   fd_info.setIsSending(false);
-  
+
   logDebug("\n-----response sent-----\n", false);
 }
 
-int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
-{
+int VirtualHost::SendOneChunk(int client_socket, std::ifstream& file) {
   std::streamsize bytes_read;
   const int chunk_size = 1024;
   char buffer[chunk_size]{};
 
   file.read(buffer, chunk_size);
-  bytes_read = file.gcount(); 
+  bytes_read = file.gcount();
   if (bytes_read == -1) {
     logDebug("bytes_read returned -1");
     return 1;
@@ -161,29 +140,12 @@ int VirtualHost::SendOneChunk(int client_socket, std::ifstream &file)
   return 0;
 }
 
-int VirtualHost::SendToClient(const int client_socket, const char *msg, int length) {
+int VirtualHost::SendToClient(const int client_socket, const char* msg,
+                              int length) {
   int bytes_sent;
   /* https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly */
   bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
   if (bytes_sent != length)
     return -1;
   return bytes_sent;
-}
-
-size_t VirtualHost::getMaxBodySize() {
-  return client_max_body_size_;
-}
-
-std::string VirtualHost::ToString() const {
-  std::string out;
-  out += std::string(21, ' ') + "Error Pages:\n";
-  for (const auto& [code, path] : error_pages_)
-    out += std::string(34, ' ') + "Error " + code + ": " + path + "\n";
-  out += std::string(21, ' ') + "Client_max_body_size: ";
-  out += std::to_string(client_max_body_size_) + " bytes\n";
-  for (const auto& [path, location] : locations_) {
-    out += std::string(21, ' ') + "Location: " + path + "\n";
-    out += location.ToString() + "\n";
-  }
-  return out;
 }

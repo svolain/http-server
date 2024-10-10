@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 17:24:21 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 13:16:13 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,43 +27,40 @@
 
 #define MAXBYTES 8192
 
+class VirtualHost;
+
 class HttpParser {
  public:
   HttpParser() = default;
   HttpParser(const std::string buffer);
   ~HttpParser() = default;
 
-  std::string                         getMethod() const;
-  std::string                         getResourcePath() const;
-  std::string                         getQueryString() const;
-  std::string                         getHttpVersion() const;
-  std::vector<char>&                  getRequestBody();
-  int                                 getErrorCode() const;
-  void                                setErrorCode(int error) ;
-  bool                                getIsChunked() const;
-  std::map<std::string, std::string>& getHeaders();
-  size_t                              getChunkSize() const;
-  void                                appendBody(std::vector<char> buffer, int bytesIn);
-
-  const std::string&                  getHost() const;
-
-  bool ParseHeader(const std::string& buffer);
-  bool CheckValidPath(std::string path);
-  int  WriteBody(VirtualHost* vhost,  std::vector<char> buffer, int bytesIn);
-  bool UnChunkBody(std::vector<char>& buf);
-  // void ClearMemory();
-
+  bool        ParseHeader(const std::string& buffer);
+  int         WriteBody(VirtualHost* vhost,  std::vector<char>& buffer,
+                        int bytesIn);
+  bool        UnChunkBody(std::vector<char>& buf);
+  void        AppendBody(std::vector<char> buffer, int bytesIn);
+  bool        IsBodySizeValid(VirtualHost* vhost) ;
+  void        HandlePostRequest(std::vector<char> request_body, HttpParser &parser);
+  bool        HandleMultipartFormData(const std::vector<char> &body, const std::string &contentType);
+  bool        ParseMultiPartData(std::vector<char> &bodyPart);
+  bool        ParseUrlEncodedData(const std::vector<char>& body);
+  std::string getHost() const;
+  std::string getMethod() const;
+  std::string getResourcePath() const;
+  int         getErrorCode() const;
+  void        setErrorCode(int error) ;
 
  private:
   int                                 error_code_ = 200;
-  size_t                              chunk_size_;
+  size_t                              content_length_ = 0;
   std::string                         method_;
   std::string                         resource_path_;
   std::string                         query_string_;
   std::string                         http_version_;
   std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_ = {};
-  bool                                is_chunked_ = false;
+  bool                                is_chunked_;
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/09 17:47:36 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 12:45:54 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,13 +38,13 @@ class VirtualHost {
   VirtualHost(std::string& max_size, StringMap& errors, LocationMap& locations);
   VirtualHost(const VirtualHost& other)            = default;
   VirtualHost& operator=(const VirtualHost& other) = default;
+
   ~VirtualHost() = default;
 
-  size_t      getMaxBodySize(); //Do we need this function?
-  int         ParseHeader(ClientInfo& fd_info, pollfd& poll);
   void        OnMessageRecieved(ClientInfo& fd_info, pollfd &poll);
   std::string ToString() const;
-  
+  size_t      getMaxBodySize() const;
+
  private:
   StringMap   error_pages_ = {{"404", "www/404.html"},
                               {"500", "www/500.html"}};
