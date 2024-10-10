@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 13:16:13 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 15:30:23 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,15 +41,17 @@ class HttpParser {
   bool        UnChunkBody(std::vector<char>& buf);
   void        AppendBody(std::vector<char> buffer, int bytesIn);
   bool        IsBodySizeValid(VirtualHost* vhost) ;
-  void        HandlePostRequest(std::vector<char> request_body, HttpParser &parser);
+  void        HandlePostRequest(std::vector<char> request_body);
   bool        HandleMultipartFormData(const std::vector<char> &body, const std::string &contentType);
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
   bool        ParseUrlEncodedData(const std::vector<char>& body);
+  bool        IsPathSafe(const std::string& path);
+  void        handleDeleteRequest();
   std::string getHost() const;
   std::string getMethod() const;
   std::string getResourcePath() const;
   int         getErrorCode() const;
-  void        setErrorCode(int error) ;
+  void        setErrorCode(int error);
 
  private:
   int                                 error_code_ = 200;
