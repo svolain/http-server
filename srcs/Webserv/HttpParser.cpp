@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/09 17:24:32 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 11:09:26 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -247,7 +247,7 @@ int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char> buffer, int byte
 
     std::string eoc = "0\r\n";
 
-    if (!std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
+    if (bytesIn != 3 && !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
       logDebug("bytesIn == MAXBYTES, more data to recieve");
       appendBody(buffer, bytesIn);
       return 0;

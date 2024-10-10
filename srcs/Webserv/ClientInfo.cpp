@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/09 17:27:41 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/09 17:40:50 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,13 +63,10 @@ int ClientInfo::RecvRequest(pollfd& poll) {
       poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
       return 0;
     }
-  }
-  if (is_parsing_body_) {
-    // parser_.ParseBody();
-    return vhost_->WriteBody(*this, poll);
-  }
-  return 0;
+  } else
+    return parser_.WriteBody(vhost_, buffer, bytesIn);
 }
+
 
 void ClientInfo::setVhost(VirtualHost *vhost) {
   vhost_ = vhost;

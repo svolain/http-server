@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/09 15:30:47 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/09 17:47:36 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 #include "HttpParser.hpp"
 
 class ClientInfo;
+class HttpParser;
 
 class VirtualHost {
  private:
