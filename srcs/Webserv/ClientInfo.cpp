@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/09 18:10:41 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 10:16:43 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,31 +23,9 @@ void ClientInfo::InitInfo(int fd, Socket *sock) {
   sock_ = sock;
 }
 
-void ClientInfo::AssignVHost() {
-  std::map<std::string, VirtualHost>&v_hosts_ = getSocket()->getVirtualHosts();
-  std::map<std::string, std::string>&headers = parser_.getHeaders();
-  std::map<std::string, VirtualHost>::iterator vhosts_it;
-  try {
-    /* Find the value of the Host key in the headers map */
-    vhosts_it = v_hosts_.find(headers.at("Host"));
-  } catch (const std::out_of_range& e) {
-    logDebug("AssignVHost: map at() except: No host field in the provided header", true);
-    vhosts_it = v_hosts_.end();
-  }
-
-  if (vhosts_it != v_hosts_.end()) {
-    logDebug("Found requested host: " + vhosts_it->first);
-    setVhost(&vhosts_it->second);
-  }
-  else {
-    vhosts_it = v_hosts_.begin();
-    setVhost(&vhosts_it->second);
-  }
-}
-
 int ClientInfo::RecvRequest(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
-  int   bytesIn;
+  int               bytesIn;
 
   bytesIn = recv(fd_, buffer.data(), MAXBYTES, 0);
   if (bytesIn < 0)
@@ -58,8 +36,8 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_->FindVhost(parser_.getHost());
-    if (!header_parsed || !parser_.IsBodySizeValid(vhost_)
-        || parser_.getMethod() == "GET" || parser_.getMethod() == "HEAD" ) {
+    if (!header_parsed || parser_.getMethod() == "GET"
+        || parser_.getMethod() == "HEAD"|| !parser_.IsBodySizeValid(vhost_)) {
       poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
     }
   } else if (parser_.WriteBody(vhost_, buffer, bytesIn)){
@@ -68,42 +46,26 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   return 0;
 }
 
-void ClientInfo::setVhost(VirtualHost *vhost) {
-  vhost_ = vhost;
-}
-
-void ClientInfo::setIsParsingBody(bool boolean) {
-  is_parsing_body_ = boolean;
-}
-
-void ClientInfo::setIsSending(bool boolean) {
-  is_sending_chunks_ = boolean;
-}
-
-std::ofstream& ClientInfo::getPostfile() {
-  return postfile_;
-}
-
-std::ifstream& ClientInfo::getGetfile() {
-  return getfile_;
-}
-
-bool ClientInfo::getIsSending() {
-  return is_sending_chunks_;
+HttpParser& ClientInfo::getParser() {
+  return parser_;
 }
 
 VirtualHost*  ClientInfo::getVhost() {
   return vhost_;
 }
 
-HttpParser& ClientInfo::getParser() {
-  return parser_;
-}
-
-Socket* ClientInfo::getSocket() {
-  return sock_;
-}
-
 int ClientInfo::getFd() {
   return fd_;
+}
+
+bool ClientInfo::getIsSending() {
+  return is_sending_chunks_;
+}
+
+std::ifstream& ClientInfo::getGetfile() {
+  return getfile_;
+}
+
+void ClientInfo::setIsSending(bool boolean) {
+  is_sending_chunks_ = boolean;
 }
