@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/03 23:53:29 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/10 17:26:14 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,32 +17,39 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <poll.h>
+
 
 class ClientInfo;
 
 class HttpResponse
 {
- public:
-  HttpResponse();
-  ~HttpResponse();
+  public:
+    HttpResponse(int& status);
+    ~HttpResponse();
 
-  void            AssignContType(std::string resourcePath);
-  void            OpenFile(std::string& resource_path, std::ifstream& file);
-  void            ComposeHeader(void);
-  std::string     getContType() const;
-  std::string     getHeader() const;
-  std::string     getErrorCodeMessage() const;
-  void            setErrorCode(int error_code_);
+    void            CreateResponse(ClientInfo& fd_info, pollfd &poll);
 
- private:
-  int                                error_code_;
-  std::map<std::string, std::string> cont_type_map_;
-  std::string                        cont_type_;
-  std::string                        error_code_message_;
-  std::string                        header_;
+  private:
+    int                                &status_;
+    std::map<std::string, std::string> cont_type_map_;
+    std::string                        cont_type_;
+    std::string                        status_message_;
+    std::string                        header_;
 
-  void InitContMap(void);
-  void lookupErrMessage(void);
+    
+    void            AssignContType(std::string resourcePath);
+    void            OpenFile(std::string& resource_path, std::ifstream& file);
+    void            ComposeHeader(void);
+    // std::string     getContType() const;
+    // std::string     getResponseHeader() const;
+    // std::string     getErrorCodeMessage() const;
+    void            InitContMap(void);
+    void            LookupStatusMessage(void);
+    void            SendHeader(ClientInfo& fd_info);
+    void            SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
+    int             SendOneChunk(int client_socket, std::ifstream &file);
+    int             SendToClient(const int clientSocket, const char *msg, int length);
 };
 
 #endif

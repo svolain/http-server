@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/10 12:46:27 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/10 18:03:04 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 
 // ClientInfo::ClientInfo(int fd, Socket* sock)
 //   : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
+
+ClientInfo::ClientInfo() : status_(200), parser_(status_), response_(status_) {}
 
 void ClientInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;
@@ -48,6 +50,10 @@ int ClientInfo::RecvRequest(pollfd& poll) {
 
 HttpParser& ClientInfo::getParser() {
   return parser_;
+}
+
+HttpResponse& ClientInfo::getResponse() {
+  return response_;
 }
 
 VirtualHost*  ClientInfo::getVhost() {

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 16:51:35 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 18:26:45 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ class VirtualHost;
 
 class HttpParser {
  public:
-  HttpParser() = default;
+  HttpParser(int& status);
 
   ~HttpParser() = default;
 
@@ -42,9 +42,7 @@ class HttpParser {
   bool        IsBodySizeValid(VirtualHost* vhost) ;
   std::string getHost() const;
   std::string getMethod() const;
-  std::string getResourcePath() const;
-  int         getErrorCode() const;
-  void        setErrorCode(int error);
+  std::string getResourceTarget() const;
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);
@@ -61,7 +59,7 @@ class HttpParser {
   void  HandleDeleteRequest();
   
 
-  int                                 error_code_ = 200;
+  int&                                status_;
   size_t                              content_length_ = 0;
   std::string                         method_;
   std::string                         request_target_;

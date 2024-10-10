@@ -3,20 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/04 12:19:33 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/10 18:27:10 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 #include "ClientInfo.hpp"
 #include "Logger.h"
-// #include <map>
 
-HttpResponse::HttpResponse()
-  :  error_code_(404), cont_type_map_{}, cont_type_("text/html"), error_code_message_{}{
+HttpResponse::HttpResponse(int& status)
+  :  status_(status), cont_type_map_{}, cont_type_("text/html"), status_message_{}{
   InitContMap();
 }
 
@@ -24,23 +23,119 @@ HttpResponse::~HttpResponse() {
     ;
 }
 
+void HttpResponse::CreateResponse(ClientInfo& fd_info, pollfd& poll) {
+  if (fd_info.getIsSending() == false) {
+      SendHeader(fd_info);
+      fd_info.setIsSending(true);
+  }
+  else
+    SendChunkedBody(fd_info, poll);
+}
+
+void HttpResponse::SendHeader(ClientInfo& fd_info) {
+  HttpParser& parser = fd_info.getParser();
+  std::string resource_target = parser.getResourceTarget();
+  /* reassign the default cont type */
+  cont_type_ = "text/html";
+
+  logDebug("the resource path is " + resource_target);
+  logDebug("the error code from parser is " + std::to_string(status_));
+  // setErrorCode(parser.getErrorCode());
+  AssignContType(resource_target);
+  std::ifstream& file = fd_info.getGetfile();
+  OpenFile(resource_target, file);
+  ComposeHeader();
+
+  logDebug("\n------response header------\n" + \
+            header_ + "\n" +\
+            "-----end of response header------\n", true);
+
+  SendToClient(fd_info.getFd(), header_.c_str(), header_.size());
+}
+
+void HttpResponse::SendChunkedBody(ClientInfo& fd_info, pollfd& poll) {
+  /* Nginx will not try to save the state of the previous transmission and retry later. 
+      It handles each request-response transaction independently. 
+      If the connection breaks, a client would need to send a new request to get the content again. 
+      Return the file position back to 0*/
+
+  HttpParser& parser = fd_info.getParser();
+  std::string resource_target = parser.getResourceTarget();
+  std::ifstream& file = fd_info.getGetfile();
+  OpenFile(resource_target, file);
+  int client_socket = fd_info.getFd();
+  if (file.is_open()) {
+    if (SendOneChunk(client_socket, file) == 0) {
+      return ;
+    }
+    if (SendToClient(client_socket, "0\r\n\r\n", 5) == -1)
+      perror("send 2:");
+  } else if (SendToClient(client_socket, "<h1>404 Not Found</h1>", 23) == -1) {
+    logError("SendChunkedBody: couldn't open the file (most likely 404.html)");
+    perror("send 3:");
+  }
+      
+  file.close();
+  poll.events = POLLIN;
+  fd_info.setIsSending(false);
+
+  logDebug("\n-----response sent-----\n", true);
+}
+
+int HttpResponse::SendOneChunk(int client_socket, std::ifstream& file) {
+  std::streamsize bytes_read;
+  const int chunk_size = 1024;
+  char buffer[chunk_size]{};
+
+  file.read(buffer, chunk_size);
+  bytes_read = file.gcount();
+  if (bytes_read == -1) {
+    logDebug("bytes_read returned -1");
+    return 1;
+  }
+  std::ostringstream chunk_size_hex;
+  chunk_size_hex << std::hex << bytes_read << "\r\n";
+  if (SendToClient(client_socket, chunk_size_hex.str().c_str(), 
+    chunk_size_hex.str().length()) == -1 || 
+    SendToClient(client_socket, buffer, bytes_read) == -1 ||
+    SendToClient(client_socket, "\r\n", 2) == -1) {
+      perror("send :");
+      return 1;
+  }
+
+  logDebug("sent " + std::to_string(bytes_read), false);
+  if (bytes_read < chunk_size)
+    return 1;
+  return 0;
+}
+
+int HttpResponse::SendToClient(const int client_socket, const char* msg, int length) {
+  int bytes_sent;
+  /* https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly */
+  bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
+  if (bytes_sent != length) {
+    logError("send: amount sent != amount requested for send");
+    return -1;
+  }
+  return bytes_sent;
+}
+
 void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file) {
   
-  if (!file.is_open())
-  {
+  if (!file.is_open()) {
     logDebug("the file wasnt opened previously");
     if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
       file.open("./www/" + resource_path, std::ios::binary);
-    else{
+    else {
       if (resource_path == "/") {
         resource_path = "index.html";
-       logDebug("return index html for the '/'");
+        logDebug("return index html for the '/'");
       }
       file.open("./www/" + resource_path);
     }
     if (!file.is_open()) {
       logDebug("couldnt open file " + resource_path + ", opening 404", true);
-      setErrorCode(404);
+      status_ = 404;
       file.open("./www/404.html");
       return ;
     }
@@ -59,51 +154,50 @@ void HttpResponse::AssignContType(std::string resource_path) {
   }
 }
 
-void HttpResponse::lookupErrMessage(void) {
-  //TODO do some kind of a pair lookup for error codes with the parser?
-  switch (error_code_)
-  {
+void HttpResponse::LookupStatusMessage(void) {
+  switch (status_) {
     case 200:
-      error_code_message_ = "200 OK";
+      status_message_ = "200 OK";
       break;
     
     case 400:
-      error_code_message_ = "400 Bad Request";
+      status_message_ = "400 Bad Request";
       break;
     
     case 405:
-      error_code_message_ = "405 Method Not Allowed Error";
+      status_message_ = "405 Method Not Allowed Error";
       break;
     
     case 411:
-      error_code_message_ = "411 Length Required";
+      status_message_ = "411 Length Required";
       break;
     
     case 500:
-      error_code_message_ = "500 Internal Server Error";
+      status_message_ = "500 Internal Server Error";
+      break;
+    
+    case 404:
+      status_message_ = "404 Not Found";
       break;
     
     default:
-      error_code_message_ = "404 Not Found";
+      logError("LookupStatusMessage: couldn't find the proper status message, assigning 404");
+      status_message_ = "404 Not Found";
       break;
   }
 }
 
 void HttpResponse::ComposeHeader(void) {
-  lookupErrMessage();
-  
+  LookupStatusMessage();
   std::ostringstream oss;
-	oss << "HTTP/1.1 " << this->getErrorCodeMessage() << "\r\n";
+	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
-  /* Content length should be used when sends not in chunks */
-	// oss << "Content-Length: " << (*content).size()  << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();
-
 }
 
-
+/* Put it to the higher level */
 void HttpResponse::InitContMap(void) {
   this->cont_type_map_ = {
     {".mp3", "audio/mpeg"},
@@ -146,24 +240,4 @@ void HttpResponse::InitContMap(void) {
     {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
     {".xul", "application/vnd.mozilla.xul+xml"}
   };
-}
-
-
-void  HttpResponse::setErrorCode(int error_code_) {
-  this->error_code_ = error_code_;
-}
-
-
-std::string HttpResponse::getContType(void) const{
-  return (cont_type_);
-}
-
-
-std::string HttpResponse::getHeader(void) const{
-  return (header_);
-}
-
-std::string HttpResponse::getErrorCodeMessage() const
-{
-  return (error_code_message_);
 }
