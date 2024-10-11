@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 18:26:45 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/12 00:57:48 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,7 @@ class HttpParser {
   int         WriteBody(VirtualHost* vhost,  std::vector<char>& buffer,
                         int bytesIn);
   bool        IsBodySizeValid(VirtualHost* vhost) ;
+  void        ResetParser();
   std::string getHost() const;
   std::string getMethod() const;
   std::string getResourceTarget() const;
@@ -57,7 +58,6 @@ class HttpParser {
   bool  ParseUrlEncodedData(const std::vector<char>& body);
   bool  IsPathSafe(const std::string& path);
   void  HandleDeleteRequest();
-  
 
   int&                                status_;
   size_t                              content_length_ = 0;

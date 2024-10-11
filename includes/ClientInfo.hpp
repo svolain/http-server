@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/11 20:45:13 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/12 00:51:37 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,17 +24,18 @@ class VirtualHost;
 class ClientInfo
 {
  public:
-  ClientInfo(int fd, Socket* sock);
+  ClientInfo(int fd, Socket& sock);
   ClientInfo(const ClientInfo& other)             = delete;
   ClientInfo& operator=(const ClientInfo& other)  = delete;
   ClientInfo(ClientInfo&& other);
   ClientInfo& operator=(ClientInfo&& other)       = delete;
   ~ClientInfo()                                   = default;
 
-  void            InitInfo(int fd, Socket *sock);
+  
   int             RecvRequest(pollfd& poll);
+  void            SendResponse(pollfd& poll);
+  void            ResetClientInfo();
   HttpParser&     getParser();
-  HttpResponse&   getResponse();
   VirtualHost*    getVhost();
   int             getFd();
   std::ifstream&  getGetfile();
@@ -44,7 +45,7 @@ class ClientInfo
 private:
   int            status_ = 200;
   int            fd_;
-  Socket*        sock_;
+  Socket&        sock_;
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   HttpResponse   response_;

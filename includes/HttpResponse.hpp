@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/10 17:26:14 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/12 01:00:18 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class HttpResponse
     ~HttpResponse();
 
     void            CreateResponse(ClientInfo& fd_info, pollfd &poll);
-
+    void  ResetResponse(); //DEFINE IT OR REMOVE
   private:
     int                                &status_;
     std::map<std::string, std::string> cont_type_map_;

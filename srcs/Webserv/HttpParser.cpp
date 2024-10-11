@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/10 22:04:15 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/12 01:02:59 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,16 @@ bool  HttpParser::IsBodySizeValid(VirtualHost* vhost) {
     return false;
   }
   return true;
+}
+
+void  HttpParser::ResetParser() {
+  content_length_ = 0;
+  method_.clear();
+  request_target_.clear();
+  query_string_.clear();
+  request_body_.clear();
+  headers_.clear();
+  is_chunked_ = false;
 }
 
 std::string  HttpParser::getHost() const {

@@ -52,12 +52,12 @@ void WebServ::Run() {
       perror("poll: ");
     else if (!socketsReady) {
       /* TODO: individual timer for the timeout close */
-      logInfo("poll() is NOT closing connections on timeout...");
-      // for (size_t i = sockets_.size(); i < pollFDs_.size(); i ++) {
-      //   close(pollFDs_[i].fd);
-      //   pollFDs_.erase(pollFDs_.begin() + i);
-      // }
-      // client_info_map_.clear();
+      logInfo("poll() is closing connections on timeout...");
+      while (pollFDs_.size() != sockets_.size()) {
+        close(pollFDs_.back().fd);
+        pollFDs_.pop_back();
+      }
+      client_info_map_.clear();
     } else
         PollAvailableFDs();
   }
@@ -102,8 +102,8 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
       pollFDs_.push_back(new_client);
-      client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd, &(sockets_[i])));
-      // client_info_map_[new_client.fd].InitInfo(new_client.fd, &(sockets_[i]));
+      client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd,
+                                                         sockets_[i]));
     }
   }
 }
@@ -130,7 +130,7 @@ void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
 }
 
 void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {
-  fd_info.getResponse().CreateResponse(fd_info, poll);
+  fd_info.SendResponse(poll);
 }
 
 void WebServ::CloseConnection(int sock, size_t& i) {

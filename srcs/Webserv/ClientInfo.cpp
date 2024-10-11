@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/11 22:28:59 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/12 09:42:20 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "Logger.h"
 #include <vector>
 
-ClientInfo::ClientInfo(int fd, Socket* sock)
+ClientInfo::ClientInfo(int fd, Socket& sock)
     : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
 
 ClientInfo::ClientInfo(ClientInfo&& other) 
@@ -24,11 +24,6 @@ ClientInfo::ClientInfo(ClientInfo&& other)
       sock_(other.sock_),
       parser_(status_),
       response_(status_) {}
-
-void ClientInfo::InitInfo(int fd, Socket *sock) {
-  fd_ = fd;
-  sock_ = sock;
-}
 
 int ClientInfo::RecvRequest(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
@@ -42,7 +37,7 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   logDebug("request is:\n" + std::string(buffer.data()), 1);
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
-    vhost_ = sock_->FindVhost(parser_.getHost());
+    vhost_ = sock_.FindVhost(parser_.getHost());
     if (!header_parsed || parser_.getMethod() == "GET"
         || parser_.getMethod() == "HEAD"|| !parser_.IsBodySizeValid(vhost_)) {
       poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
@@ -53,12 +48,22 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   return 0;
 }
 
-HttpParser& ClientInfo::getParser() {
-  return parser_;
+void  ClientInfo::SendResponse(pollfd& poll) {
+  response_.CreateResponse(*this, poll);
 }
 
-HttpResponse& ClientInfo::getResponse() {
-  return response_;
+void  ClientInfo::ResetClientInfo() {
+  status_ = 200;
+  //getfile_.close(); Remove it?
+  vhost_ = nullptr;
+  parser_.ResetParser();
+  response_.ResetResponse();
+  is_sending_chunks_ = false;
+  is_parsing_body_ = false;
+}
+
+HttpParser& ClientInfo::getParser() {
+  return parser_;
 }
 
 VirtualHost*  ClientInfo::getVhost() {

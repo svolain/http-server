@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/10 18:27:10 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/12 00:59:59 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,10 @@ void HttpResponse::CreateResponse(ClientInfo& fd_info, pollfd& poll) {
   }
   else
     SendChunkedBody(fd_info, poll);
+}
+
+void HttpResponse::ResetResponse() {
+  ;//                                                      definition here         
 }
 
 void HttpResponse::SendHeader(ClientInfo& fd_info) {
