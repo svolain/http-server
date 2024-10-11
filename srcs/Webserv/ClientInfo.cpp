@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/10 18:03:04 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/11 22:28:59 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,10 +15,15 @@
 #include "Logger.h"
 #include <vector>
 
-// ClientInfo::ClientInfo(int fd, Socket* sock)
-//   : fd_(fd), sock_(sock), vhost_(nullptr), is_sending_chunks_(false) {}
+ClientInfo::ClientInfo(int fd, Socket* sock)
+    : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
 
-ClientInfo::ClientInfo() : status_(200), parser_(status_), response_(status_) {}
+ClientInfo::ClientInfo(ClientInfo&& other) 
+    : status_(other.status_),
+      fd_(other.fd_),
+      sock_(other.sock_),
+      parser_(status_),
+      response_(status_) {}
 
 void ClientInfo::InitInfo(int fd, Socket *sock) {
   fd_ = fd;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/10 17:39:42 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/11 20:45:13 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,10 +24,11 @@ class VirtualHost;
 class ClientInfo
 {
  public:
-  ClientInfo();
-  // ClientInfo(int fd, Socket* sock);
+  ClientInfo(int fd, Socket* sock);
   ClientInfo(const ClientInfo& other)             = delete;
   ClientInfo& operator=(const ClientInfo& other)  = delete;
+  ClientInfo(ClientInfo&& other);
+  ClientInfo& operator=(ClientInfo&& other)       = delete;
   ~ClientInfo()                                   = default;
 
   void            InitInfo(int fd, Socket *sock);
@@ -43,7 +44,7 @@ class ClientInfo
 private:
   int            status_ = 200;
   int            fd_;
-  Socket*        sock_ = nullptr;
+  Socket*        sock_;
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   HttpResponse   response_;
