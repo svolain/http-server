@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:09:33 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/14 09:42:40 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/14 21:27:59 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,8 @@ class Location {
            StringPair& redirection,
            std::string& root,
            std::string& autoindex,
-           std::string& index);
+           std::string& index,
+           std::string& upload);
   Location(const Location& other)             = default;
   Location(Location&& other)                  = default;
   Location& operator=(const Location& other)  = delete;
@@ -44,8 +45,7 @@ class Location {
   std::string         root_;
   bool                autoindex_ = false;
   std::string         index_;
-  //CGI
-  //UPLOAD
+  std::string         upload_;
 };
 
 #endif

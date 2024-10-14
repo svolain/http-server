@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 11:49:17 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/03 13:03:16 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/14 21:43:56 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,14 @@ Location::Location(std::string& methods,
                    StringPair&  redirection,
                    std::string& root,
                    std::string& autoindex,
-                   std::string& index)
+                   std::string& index,
+                   std::string& upload)
     : methods_{false},
       redirection_(redirection),
       root_(root),
       autoindex_(autoindex == "on" ? true : false),
-      index_(index) {
+      index_(index),
+      upload_(upload) {
   SetAllowedMethods(methods);
 }
 
@@ -56,7 +58,10 @@ std::string Location::ToString() const {
   out += std::string(31, ' ') + "Autoindex: ";
   out += autoindex_ ? "on\n" : "off\n";
   if (!index_.empty()) {
-    out += std::string(31, ' ') + "Index: " + index_;
+    out += std::string(31, ' ') + "Index: " + index_ + "\n";;
+  }
+  if (!upload_.empty()) {
+    out += std::string(31, ' ') + "Upload directory: " + upload_;
   }
   return out;
 }
