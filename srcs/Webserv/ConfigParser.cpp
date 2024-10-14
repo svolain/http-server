@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 21:43:36 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/14 22:08:00 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,15 @@ int ConfigParser::ParseConfig(std::deque<Socket>& sockets) {
     } catch (std::string& error_token) {
       logError("invalid input: \"" + error_token + "\"");
       return 1;
+    } catch (const char* e) {
+      logError(e);
+      return 1;
     }
   }
-  //add protection in case of empty file or empty server
+  if (sockets.empty()) {
+    logError("Missing servers configurations");
+    return 1;
+  }
   return 0;
 }
 
@@ -79,6 +85,9 @@ void ConfigParser::ParseServer(std::stringstream& ss,
     else
       throw token;
   }
+if (listen.empty() || locations.empty()) {
+  throw "Incomplete server configuration";
+}
 auto it = std::find_if(sockets_.begin(), sockets_.end(), [&](Socket& obj) {
       return obj.getSocket() == listen;
   });
