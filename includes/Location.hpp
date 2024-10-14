@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:09:33 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/03 23:40:47 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/14 09:42:40 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,10 @@ class Location {
            std::string& root,
            std::string& autoindex,
            std::string& index);
-  Location(const Location& other)            = default;
-  Location& operator=(const Location& other) = delete;
+  Location(const Location& other)             = default;
+  Location(Location&& other)                  = default;
+  Location& operator=(const Location& other)  = delete;
+  Location& operator=(Location& other)        = delete;
 
   ~Location() = default;
 

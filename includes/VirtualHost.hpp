@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/10 12:45:54 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/14 09:46:43 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,12 +36,13 @@ class VirtualHost {
 
  public:
   VirtualHost(std::string& max_size, StringMap& errors, LocationMap& locations);
-  VirtualHost(const VirtualHost& other)            = default;
-  VirtualHost& operator=(const VirtualHost& other) = default;
+  VirtualHost(const VirtualHost& other)             = default;
+  VirtualHost(VirtualHost&& other)                  = default;
+  VirtualHost& operator=(const VirtualHost& other)  = delete;
+  VirtualHost& operator=(VirtualHost&& other)       = delete;
 
   ~VirtualHost() = default;
 
-  void        OnMessageRecieved(ClientInfo& fd_info, pollfd &poll);
   std::string ToString() const;
   size_t      getMaxBodySize() const;
 
@@ -50,11 +51,6 @@ class VirtualHost {
                               {"500", "www/500.html"}};
   size_t      client_max_body_size_ = 1048576;
   LocationMap locations_;
-
-  void  SendHeader(ClientInfo& fd_info);
-  void  SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
-  int   SendOneChunk(int client_socket, std::ifstream &file);
-  int   SendToClient(const int clientSocket, const char *msg, int length);
 };
 
 #endif

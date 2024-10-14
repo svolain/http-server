@@ -67,15 +67,14 @@ void WebServ::Run() {
 
 void WebServ::PollAvailableFDs(void) {
   for (size_t i = 0; i < pollFDs_.size(); i++) {
-    /* for readability */
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
-    /* If fd is not a server fd */
+
     if (i < sockets_.size()) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    ClientInfo& fd_info = client_info_map_.at(fd); //sometimes it throws an exception
+    ClientInfo& fd_info = client_info_map_.at(fd);
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
       CloseConnection(fd, i);
@@ -131,6 +130,8 @@ void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
 
 void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {
   fd_info.SendResponse(poll);
+  if (poll.events == POLLIN)
+    fd_info.ResetClientInfo();
 }
 
 void WebServ::CloseConnection(int sock, size_t& i) {

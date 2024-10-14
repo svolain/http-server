@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/12 09:42:20 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/14 09:39:12 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 ClientInfo::ClientInfo(int fd, Socket& sock)
     : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
 
-ClientInfo::ClientInfo(ClientInfo&& other) 
+ClientInfo::ClientInfo(ClientInfo&& other)
     : status_(other.status_),
       fd_(other.fd_),
       sock_(other.sock_),
@@ -40,7 +40,7 @@ int ClientInfo::RecvRequest(pollfd& poll) {
     vhost_ = sock_.FindVhost(parser_.getHost());
     if (!header_parsed || parser_.getMethod() == "GET"
         || parser_.getMethod() == "HEAD"|| !parser_.IsBodySizeValid(vhost_)) {
-      poll.events = POLLOUT; //Error in header. Server can send error response skipping reading body part
+      poll.events = POLLOUT;
     }
   } else if (parser_.WriteBody(vhost_, buffer, bytesIn)){
     poll.events = POLLOUT;
