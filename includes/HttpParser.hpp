@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/12 00:57:48 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/14 10:34:18 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,13 +33,15 @@ class VirtualHost;
 class HttpParser {
  public:
   HttpParser(int& status);
+  HttpParser(const HttpParser& other)             = delete;
+  HttpParser& operator=(const HttpParser& other)  = delete;
 
   ~HttpParser() = default;
 
   bool        ParseHeader(const std::string& buffer);
   int         WriteBody(VirtualHost* vhost,  std::vector<char>& buffer,
                         int bytesIn);
-  bool        IsBodySizeValid(VirtualHost* vhost) ;
+  bool        IsBodySizeValid(VirtualHost* vhost);
   void        ResetParser();
   std::string getHost() const;
   std::string getMethod() const;

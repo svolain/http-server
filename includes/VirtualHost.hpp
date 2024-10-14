@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/14 09:46:43 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/14 10:47:21 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,9 +25,6 @@
 #include "HttpResponse.hpp"
 #include "HttpParser.hpp"
 
-class ClientInfo;
-class HttpParser;
-
 class VirtualHost {
  private:
   using StringMap = std::map<std::string, std::string>;
@@ -36,7 +33,7 @@ class VirtualHost {
 
  public:
   VirtualHost(std::string& max_size, StringMap& errors, LocationMap& locations);
-  VirtualHost(const VirtualHost& other)             = default;
+  VirtualHost(const VirtualHost& other)             = default; //Why delete doesn't work?
   VirtualHost(VirtualHost&& other)                  = default;
   VirtualHost& operator=(const VirtualHost& other)  = delete;
   VirtualHost& operator=(VirtualHost&& other)       = delete;
