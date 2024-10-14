@@ -109,10 +109,10 @@
             </div>
             <p>Welcome to our server</p>
             <div class="form">
-                <form action="/" method="POST">
-                    <input type="file" id="file" required>
+                <form action="/" method="POST" enctype="multipart/form-data">
+                    <input type="file" id="file" name="file" accept="*/*">
                     <input type="submit" value="Upload">
-                </form>
+                </form>  
             </div>
         </div>    
 </body>

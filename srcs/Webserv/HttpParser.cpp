@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/12 01:02:59 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/14 17:58:29 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,12 +22,10 @@ bool HttpParser::ParseHeader(const std::string& request) {
     return false;
   if (!ParseHeaderFields(request_stream))
     return false;
-  if (method_ == "POST" && !CheckPostHeaders())
-    return false;
-  else if (method_ == "DELETE") //CHECKS FOR DELETE METHOD IF NEEDED                  
-    ;
-  else
+  if (method_ != "POST")
     return true;
+  if (!CheckPostHeaders())
+    return false;
   std::streampos current = request_stream.tellg();
   request_stream.seekg(0, std::ios::end); /* Beware of off by 1, should be good tho */
   size_t stream_size = request_stream.tellg() - current;
@@ -40,18 +38,26 @@ bool HttpParser::ParseHeader(const std::string& request) {
 int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char>& buffer,
                           int bytesIn) {
   std::string eoc = "0\r\n\r\n";
-
-  if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
-    logDebug("bytesIn == MAXBYTES, more data to recieve");
-    AppendBody(buffer, bytesIn);
-    if (!IsBodySizeValid(vhost) || request_body_.size() > content_length_) {
-      logError("Error: Request Header Fields Too Large");
-      status_ = 431;
-      return 1;
+  (void)vhost;
+  if (is_chunked_) {
+    if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
+      logDebug("bytesIn == MAXBYTES, more data to recieve");
+      AppendBody(buffer, bytesIn);
+      /*if (!is_chunked_ &&
+          (!IsBodySizeValid(vhost) || request_body_.size() > content_length_)) {
+        logError("Error: Request Header Fields Too Large");
+        status_ = 431;
+        return 1;
+      }*/
+      return 0;
     }
-    return 0;
+    UnChunkBody(request_body_);
+  } else {
+    AppendBody(buffer, bytesIn);
+    if (bytesIn == MAXBYTES)
+      return 0;
   }
-  UnChunkBody(request_body_);
+  HandlePostRequest(request_body_);
   return 1;
 }
 
@@ -156,6 +162,7 @@ bool  HttpParser::CheckPostHeaders() {
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
+    logError(std::to_string(is_chunked_));
     auto it = headers_.find("Content-Length");
     if (it == headers_.end()) {
       logError("Error: content-lenght missing for request body");
@@ -227,8 +234,8 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
     } else {
-      status_ = 400;
       logError("UnChunkBody: \\r\\n missing");
+      status_ = 400;
       return false;
     }
   }
@@ -242,10 +249,12 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
 }
 
 void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
+
   auto it = headers_.find("Content-Type");
 
   if (it == headers_.end())
   {
+    logError("Content-Type missing");
     status_ = 400;
     return;
   }
@@ -277,20 +286,37 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const st
         return false;
 
     std::string boundary = "--" + contentType.substr(boundaryPosition + 9);
+    std::string fullBoundary = "\r\n" + boundary;
 
     std::vector<char> boundaryVec(boundary.begin(), boundary.end());
+    std::vector<char> fullBoundaryVec = {'\r', '\n'};
+    fullBoundaryVec.insert(fullBoundaryVec.end(), boundaryVec.begin(), boundaryVec.end());
+
     size_t boundaryLength = boundaryVec.size();
+    size_t fullBoundaryLength = fullBoundaryVec.size();
 
     auto pos = body.begin();
-
+    bool firstBoundary = true; 
     while (true) {
-        auto boundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
+      auto boundaryStart = body.end();
+        if (firstBoundary) {
+          boundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
+        } else {
+          boundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(), fullBoundaryVec.end());
+        }
+
         if (boundaryStart == body.end())
             break;
 
-        pos = boundaryStart + boundaryLength;
+        pos = boundaryStart + (firstBoundary ? boundaryLength : fullBoundaryLength);
 
-        auto nextBoundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
+        firstBoundary = false;
+
+        auto nextBoundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(), fullBoundaryVec.end());
+
+        if (nextBoundaryStart == body.end()) {
+            break;
+        }
 
         std::vector<char> bodyPart(pos, nextBoundaryStart);
 
@@ -304,7 +330,7 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const st
 }
 
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
-    std::vector<char> crlf = {'\r', '\n'};
+    std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
     
     auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(), crlf.begin(), crlf.end());
     if (headerEndIt == bodyPart.end()) {
@@ -313,7 +339,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
     }
 
     std::vector<char> headers(bodyPart.begin(), headerEndIt);
-    std::vector<char> content(headerEndIt + 2, bodyPart.end());
+    std::vector<char> content(headerEndIt + 4, bodyPart.end());
 
     std::string headersStr(headers.begin(), headers.end());
 
