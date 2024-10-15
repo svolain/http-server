@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 09:39:12 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/15 13:13:24 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ void  ClientInfo::SendResponse(pollfd& poll) {
 }
 
 void  ClientInfo::ResetClientInfo() {
-  status_ = 200;
+  status_ = "200";
   //getfile_.close(); Remove it?
   vhost_ = nullptr;
   parser_.ResetParser();

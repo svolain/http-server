@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 10:36:27 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/15 13:18:14 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include "ClientInfo.hpp"
 #include "Logger.h"
 
-HttpResponse::HttpResponse(int& status)
+HttpResponse::HttpResponse(std::string& status)
   :  status_(status), cont_type_map_{}, cont_type_("text/html"), status_message_{}{
   InitContMap();
 }
@@ -39,7 +39,7 @@ void HttpResponse::SendHeader(ClientInfo& fd_info) {
   cont_type_ = "text/html";
 
   logDebug("the resource path is " + resource_target);
-  logDebug("the error code from parser is " + std::to_string(status_));
+  logDebug("the error code from parser is " + status_);
   // setErrorCode(parser.getErrorCode());
   AssignContType(resource_target);
   std::ifstream& file = fd_info.getGetfile();
@@ -135,7 +135,7 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file) {
     }
     if (!file.is_open()) {
       logDebug("couldnt open file " + resource_path + ", opening 404", true);
-      status_ = 404;
+      status_ = "404";
       file.open("./www/404.html");
       return ;
     }
@@ -155,36 +155,21 @@ void HttpResponse::AssignContType(std::string resource_path) {
 }
 
 void HttpResponse::LookupStatusMessage(void) {
-  switch (status_) {
-    case 200:
-      status_message_ = "200 OK";
-      break;
-    
-    case 400:
-      status_message_ = "400 Bad Request";
-      break;
-    
-    case 405:
-      status_message_ = "405 Method Not Allowed Error";
-      break;
-    
-    case 411:
-      status_message_ = "411 Length Required";
-      break;
-    
-    case 500:
-      status_message_ = "500 Internal Server Error";
-      break;
-    
-    case 404:
-      status_message_ = "404 Not Found";
-      break;
-    
-    default:
-      logError("LookupStatusMessage: couldn't find the proper status message, assigning 404");
-      status_message_ = "404 Not Found";
-      break;
-  }
+    std::map<std::string, std::string> status_map = {
+        {"200", "200 OK"},
+        {"400", "400 Bad Request"},
+        {"405", "405 Method Not Allowed"},
+        {"411", "411 Length Required"},
+        {"500", "500 Internal Server Error"},
+    };
+
+    auto it = status_map.find(status_);
+    if (it != status_map.end()) {
+        status_message_ = it->second;
+    } else {
+        logError("LookupStatusMessage: couldn't find the proper status message, assigning 404");
+        status_message_ = "404 Not Found";
+    }
 }
 
 void HttpResponse::ComposeHeader(void) {
