@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 10:34:11 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/15 11:56:42 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ class ClientInfo;
 
 class HttpResponse {
  public:
-  HttpResponse(int& status);
+  HttpResponse(std::string& status);
   HttpResponse(const HttpResponse& other)             = delete;
   HttpResponse& operator=(const HttpResponse& other)  = delete;
 
@@ -47,11 +47,11 @@ class HttpResponse {
   int  SendOneChunk(int client_socket, std::ifstream &file);
   int  SendToClient(const int clientSocket, const char *msg, int length);
 
-  int                                &status_;
-  std::map<std::string, std::string> cont_type_map_;
-  std::string                        cont_type_;
-  std::string                        status_message_;
-  std::string                        header_;
+  std::string&                        status_;
+  std::map<std::string, std::string>  cont_type_map_;
+  std::string                         cont_type_;
+  std::string                         status_message_;
+  std::string                         header_;
 };
 
 #endif

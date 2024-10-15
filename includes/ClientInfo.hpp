@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 09:57:09 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/15 11:48:10 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ class ClientInfo
   void            setIsSending(bool boolean);
 
 private:
-  int            status_ = 200;
+  std::string    status_ = "200";
   int            fd_;
   Socket&        sock_;
   VirtualHost*   vhost_ = nullptr;
