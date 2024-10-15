@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/12 00:51:37 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/15 09:57:09 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,6 @@ class ClientInfo
   ClientInfo& operator=(ClientInfo&& other)       = delete;
   ~ClientInfo()                                   = default;
 
-  
   int             RecvRequest(pollfd& poll);
   void            SendResponse(pollfd& poll);
   void            ResetClientInfo();

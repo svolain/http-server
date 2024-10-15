@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/12 01:02:59 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/15 10:18:16 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,7 +97,7 @@ bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
 
   if (method_.empty() || request_target_.empty()
       || http_version.empty() || line != "\r") {
-    logError("Error: bad request 400");
+    logError("Error: Bad request 400");
     status_ = 400;
     return false;
   }
@@ -111,9 +111,15 @@ bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
     return false;
   }
 
-  if (request_target_[0] != '/' || http_version != "HTTP/1.1") {
-    logError("Error: bad request 400");
+  if (request_target_[0] != '/') {
+    logError("Error: Bad request 400");
     status_ = 400;
+    return false;
+  }
+
+  if (http_version != "HTTP/1.1") {
+    logError("Error: HTTP Version Not Supported 505");
+    status_ = 505;
     return false;
   }
 
@@ -140,7 +146,7 @@ bool  HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
     headers_[header] = header_value;
   }
   if (!headers_.contains("Host")) {
-    logError("Error: bad request 400");
+    logError("Error: Bad request 400");
     status_ = 400;
     return false;
   }
