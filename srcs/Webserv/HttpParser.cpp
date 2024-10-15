@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/15 13:59:03 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/15 14:05:00 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -278,7 +278,7 @@ void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
             return;
         }
         GenerateFileListHtml();
-        //std::cout << "fileist:\n" << file_list_;
+        std::cout << "fileist:\n" << file_list_;
     } else {
         logError("Unsupported Content-Type");
         status_ = 415;
