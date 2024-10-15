@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 11:49:17 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/14 21:43:56 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/15 13:11:25 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,35 +18,24 @@ Location::Location(std::string& methods,
                    std::string& autoindex,
                    std::string& index,
                    std::string& upload)
-    : methods_{false},
+    : methods_(methods),
       redirection_(redirection),
       root_(root),
       autoindex_(autoindex == "on" ? true : false),
       index_(index),
-      upload_(upload) {
-  SetAllowedMethods(methods);
-}
-
-void Location::SetAllowedMethods(std::string& line) {
-  if (line.find("GET") != std::string::npos)
-    methods_[0] = true;
-  if (line.find("HEAD") != std::string::npos)
-    methods_[1] = true;
-  if (line.find("POST") != std::string::npos)
-    methods_[2] = true;
-  if (line.find("DELETE") != std::string::npos)
-    methods_[3] = true;
-}
+      upload_(upload) {}
 
 std::string Location::ToString() const {
-  const char* methodNames[] = {"GET ", "HEAD ", "POST ", "DELETE"};
-
   std::string out;
   out += std::string(31, ' ') + "Allowed methods: ";
-  for (int i = 0; i < 4; ++i) {
-    if (methods_[i]) 
-      out += methodNames[i];
-  }
+  if (methods_.find("GET") != std::string::npos)
+    out += "GET ";
+  if (methods_.find("HEAD") != std::string::npos)
+    out += "HEAD ";
+  if (methods_.find("POST") != std::string::npos)
+    out += "POST ";
+  if (methods_.find("DELETE") != std::string::npos)
+    out += "DELETE ";
   out += "\n";
   if (!redirection_.first.empty()) {
     out += std::string(31, ' ') + "Redirection: ";

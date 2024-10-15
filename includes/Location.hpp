@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:09:33 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/14 21:27:59 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/15 11:45:04 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,12 @@
 #define LOCATION_HPP_
 
 #include <utility>
-#include <array>
 #include <string>
 
-class Location {
- private:
+struct Location {
+ public:
   using StringPair = std::pair<std::string, std::string>;
 
- public:
   Location(std::string& methods,
            StringPair& redirection,
            std::string& root,
@@ -37,15 +35,12 @@ class Location {
 
   std::string ToString() const;
 
- private:
-  void SetAllowedMethods(std::string& line);
-
-  std::array<bool, 4> methods_;
-  StringPair          redirection_;
-  std::string         root_;
-  bool                autoindex_ = false;
-  std::string         index_;
-  std::string         upload_;
+  std::string methods_;
+  StringPair  redirection_;
+  std::string root_;
+  bool        autoindex_ = false;
+  std::string index_;
+  std::string upload_;
 };
 
 #endif
