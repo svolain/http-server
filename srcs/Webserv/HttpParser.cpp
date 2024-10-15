@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/14 17:58:29 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/15 13:59:03 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,9 @@ std::string HttpParser::getResourceTarget() const {
   return request_target_;
 }
 
+std::string HttpParser::getFileList() const {
+  return file_list_;
+}
 
 bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
   std::string line;
@@ -274,6 +277,8 @@ void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
             status_ = 500; // Internal Server Error
             return;
         }
+        GenerateFileListHtml();
+        //std::cout << "fileist:\n" << file_list_;
     } else {
         logError("Unsupported Content-Type");
         status_ = 415;
@@ -443,6 +448,18 @@ void HttpParser::HandleDeleteRequest() {
         status_= 404;
     }
 
+}
+
+void HttpParser::GenerateFileListHtml() {
+    file_list_ += "<ul>";
+    for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
+        std::string filename = entry.path().filename().string();
+        file_list_ += "<li>";
+        file_list_ += "<span>" + filename + "</span>";
+        file_list_ += "<button onclick=\"deleteFile('filename.txt')\">Delete</button>";
+        file_list_ += "</li>";
+    }
+    file_list_ += "</ul>";
 }
 
 // bool HttpParser::CheckValidPath(std::string path) {
