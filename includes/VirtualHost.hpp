@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 17:08:10 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/14 10:47:21 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/15 13:43:18 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,8 +44,9 @@ class VirtualHost {
   size_t      getMaxBodySize() const;
 
  private:
-  StringMap   error_pages_ = {{"404", "www/404.html"},
-                              {"500", "www/500.html"}};
+  static const StringMap& getDefaultErrorPages();
+
+  StringMap   error_pages_;
   size_t      client_max_body_size_ = 1048576;
   LocationMap locations_;
 };

@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/15 13:22:39 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/15 14:40:48 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ class VirtualHost;
 
 class HttpParser {
  public:
-  HttpParser(int& status);
+  HttpParser(std::string& status);
   HttpParser(const HttpParser& other)             = delete;
   HttpParser& operator=(const HttpParser& other)  = delete;
 
@@ -63,14 +63,14 @@ class HttpParser {
   void  HandleDeleteRequest();
   void  GenerateFileListHtml();
 
-  int&                                status_;
+  std::string&                        status_;
   size_t                              content_length_ = 0;
   std::string                         method_;
   std::string                         request_target_;
   std::string                         query_string_;
   std::string                         file_list_;
   std::vector<char>                   request_body_;
-  std::map<std::string, std::string>  headers_ = {};
+  std::map<std::string, std::string>  headers_;
   bool                                is_chunked_ = false;
 };
 
