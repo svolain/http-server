@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 11:56:42 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/16 12:59:27 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,9 @@ class HttpResponse {
   void SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
   int  SendOneChunk(int client_socket, std::ifstream &file);
   int  SendToClient(const int clientSocket, const char *msg, int length);
+  //void CheckValidPath(VirtualHost* vhost);
+  //void ExtractStrings(std::string vhost, std::string& root, 
+                     // std::string& aindex);
 
   std::string&                        status_;
   std::map<std::string, std::string>  cont_type_map_;

@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/15 14:44:44 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/16 16:58:55 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,44 @@ bool HttpParser::ParseHeader(const std::string& request) {
   request_stream.read(request_body_.data(), stream_size);
   return true;
 }
+
+bool  HttpParser::HandleRequest(VirtualHost* vhost) {
+  if (!IsBodySizeValid(vhost)) {
+    logError("Error: body size too big");
+    status_ = "431";
+    return false;
+  }
+  
+  const std::map<std::string, Location>& locations = vhost->GetLocations();
+  std::string location;
+
+  for (const auto& it : locations) {
+    if (request_target_.find(it.first) == 0)
+      location = it.first;
+  }
+  if (location.empty() || request_target_.substr(0, location.size()) != location) {
+    logError("Error: location not found");
+    status_ = "404";
+    return false;
+  }
+  std::string allowedMethods = locations.at(location).methods_;
+  if (allowedMethods.find(method_) == std::string::npos) {
+    logError("Error: Method not allowed");
+      status_ = "405";
+      return false;
+  }
+
+  std::string root_dir = locations.at(location).root_;
+    
+  std::string relative_path = request_target_.substr(location.size());
+  std::string rootPath = root_dir + relative_path;
+
+  if (!CheckValidPath(rootPath))
+    return false;
+  
+  return true;
+}
+
 
 int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char>& buffer,
                           int bytesIn) {
@@ -81,7 +119,8 @@ void  HttpParser::ResetParser() {
 }
 
 std::string  HttpParser::getHost() const {
-  return headers_.at("Host");
+  std::string host = headers_.at("Host");
+    return host;
 }
 
 std::string HttpParser::getMethod() const {
@@ -273,14 +312,14 @@ void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
   if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
         logDebug("Handling URL-encoded form submission");
         if (!ParseUrlEncodedData(request_body)) {
-             status_ = "500"; // Internal Server Error
+             status_ = "500";// Internal Server Error
             return;
         }
         
     } else if (contentType.find("multipart/form-data") != std::string::npos) {
       logDebug("Handling multipart form data");
         if (!HandleMultipartFormData(request_body, contentType)) {
-            status_ = "500"; // Internal Server Error
+            status_ = "500";// Internal Server Error
             return;
         }
         GenerateFileListHtml();
@@ -468,75 +507,53 @@ void HttpParser::GenerateFileListHtml() {
     file_list_ += "</ul>";
 }
 
-// bool HttpParser::CheckValidPath(std::string path) {
+ bool HttpParser::CheckValidPath(std::string rootPath) {
+    std::cout << "rootpaht: " << rootPath << std::endl;
+    if (rootPath.at(0) != '/') {
+         logError("Error: wrong path");
+         status_ = "404";
+         return false;
+     }
+     /*check the directory and file existence and permissions, 
+     can take absolute and relative path, needs to be tested 
+     more when we get the root from confiq*/
+     try {
+         if (rootPath.back() == '/') {
+             if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)) {
+                 logDebug("valid path");
+                 return true;
+             } else {
+                 status_ = "404";
+                 logDebug("no valid path");
+                 return false;
+             }
+         } else {
+             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)) {
+                 if (access(rootPath.c_str(), R_OK) == 0) {
+                     logDebug("file found");
+                     return true;
+                 } else {
+                     logDebug("permission denied");
+                     status_ = "403";
+                     return false;
+                 } 
+             } else {
+                 logDebug("file not found");
+                 status_ = "404";
+                 return false;
+             }
+         }
+     } catch (const std::filesystem::filesystem_error& e) {
+         logError("Filesystem error: ");
+         std::cerr << e.what() << std::endl;
+         status_ = "500";
+         return false;
+     } catch (const std::exception& e) {
+         logError("Unexpected error: "); 
+         std::cerr << e.what() << std::endl;
+         status_ = "500";
+         return false;
+     }
 
-//     status_ = "200";
-//     /*for this function the root from confiq file is needed
-//     in short this searches the asked path either directory or file
-//     within the root directory*/
-//     if (path.at(0) != '/') {
-//         logError("Error: wrong path");
-//         status_ = "404"; // or 400?
-//         return false;
-//     }
-
-//     //untill we get root it has to be set manually for example "www" in current working directory
-//     std::string rootPath = "";
-//      try {
-//         rootPath = std::filesystem::current_path().string() + "/www" + path;
-//         logDebug("root path: " + rootPath);
-//     } catch (const std::filesystem::filesystem_error& e) {
-//         logError("Filesystem error: ");
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     } catch (const std::exception& e) {
-//         logError("Unexpected error: "); 
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     }
-
-//     /*check the directory and file existence and permissions, 
-//     can take absolute and relative path, needs to be tested 
-//     more when we get the root from confiq*/
-//     try {
-//         if (rootPath.back() == '/') {
-//             if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)) {
-//                 logDebug("valid path");
-//                 return true;
-//             } else {
-//                 status_ = "404";
-//                 logDebug("no valid path");
-//                 return false;
-//             }
-//         } else {
-//             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)) {
-//                 if (access(rootPath.c_str(), R_OK) == 0) {
-//                     logDebug("file found");
-//                     return true;
-//                 } else {
-//                     logDebug("permission denied");
-//                     status_ = "403";
-//                     return false;
-//                 } 
-//             } else {
-//                 logDebug("file not found");
-//                 status_ = "404";
-//                 return false;
-//             }
-//         }
-//     } catch (const std::filesystem::filesystem_error& e) {
-//         logError("Filesystem error: ");
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     } catch (const std::exception& e) {
-//         logError("Unexpected error: "); 
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     }
-
-//     return true;
-// }
+     return true;
+ }

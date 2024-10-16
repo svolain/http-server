@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/15 13:52:39 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/16 13:35:29 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,10 @@ std::string VirtualHost::ToString() const {
 size_t VirtualHost::getMaxBodySize() const {
   return client_max_body_size_;
 }
+
+std::map<std::string, Location> VirtualHost::GetLocations() const {
+    return locations_;
+  }
 
 const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {
   static const StringMap error_pages = {{"400", "www/error_pages/400.html"},

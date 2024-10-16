@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/15 14:40:48 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/16 15:41:06 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ class HttpParser {
   ~HttpParser() = default;
 
   bool        ParseHeader(const std::string& buffer);
+  bool        HandleRequest(VirtualHost* vhost);
   int         WriteBody(VirtualHost* vhost,  std::vector<char>& buffer,
                         int bytesIn);
   bool        IsBodySizeValid(VirtualHost* vhost);
@@ -62,6 +63,7 @@ class HttpParser {
   bool  IsPathSafe(const std::string& path);
   void  HandleDeleteRequest();
   void  GenerateFileListHtml();
+  bool  CheckValidPath(std::string root);
 
   std::string&                        status_;
   size_t                              content_length_ = 0;

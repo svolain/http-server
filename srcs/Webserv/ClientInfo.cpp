@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 14:41:24 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/16 14:38:51 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,8 +38,7 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());
-    if (!header_parsed || parser_.getMethod() == "GET"
-        || parser_.getMethod() == "HEAD"|| !parser_.IsBodySizeValid(vhost_)) {
+    if (!header_parsed || !parser_.HandleRequest(vhost_)) {
       poll.events = POLLOUT;
     }
     is_parsing_body_ = true;

@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 14:40:39 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/16 15:55:08 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,9 @@ void HttpResponse::SendHeader(ClientInfo& fd_info) {
 
   logDebug("the resource path is " + resource_target);
   logDebug("the error code from parser is " + status_);
-  // setErrorCode(parser.getErrorCode());
+
+  //setErrorCode(parser.getErrorCode());
+
   AssignContType(resource_target);
   std::ifstream& file = fd_info.getGetfile();
   OpenFile(resource_target, file);
@@ -136,7 +138,7 @@ void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file) {
     if (!file.is_open()) {
       logDebug("couldnt open file " + resource_path + ", opening 404", true);
       status_ = "404";
-      file.open("./www/404.html");
+      file.open("./www/500.html");
       return ;
     }
   }
@@ -158,6 +160,7 @@ void HttpResponse::LookupStatusMessage(void) {
     std::map<std::string, std::string> status_map = {
         {"200", "200 OK"},
         {"400", "400 Bad Request"},
+        {"404", "404 Not Found"},
         {"405", "405 Method Not Allowed"},
         {"411", "411 Length Required"},
         {"500", "500 Internal Server Error"},
