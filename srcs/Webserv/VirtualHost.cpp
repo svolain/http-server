@@ -6,13 +6,13 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/15 13:52:39 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 09:57:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sys/stat.h>
 #include "VirtualHost.hpp"
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 #include "Logger.h"
 #include <string>
 

@@ -74,7 +74,7 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    ClientInfo& fd_info = client_info_map_.at(fd);
+    ClientConnection& fd_info = client_info_map_.at(fd);
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
       CloseConnection(fd, i);
@@ -101,7 +101,7 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
       pollFDs_.push_back(new_client);
-      client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd,
+      client_info_map_.emplace(new_client.fd, ClientConnection(new_client.fd,
                                                          sockets_[i]));
     }
   }
@@ -114,8 +114,8 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
     get back and try to read the body
     read for MAXBYTES and go back and continue next time
   */
-void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
-  if (fd_info.RecvRequest(pollFDs_[i]))
+void WebServ::RecvFromClient(ClientConnection& fd_info, size_t& i) {
+  if (fd_info.ReceiveData(pollFDs_[i]))
     CloseConnection(pollFDs_[i].fd, i);
   // // std::vector<char>   oss;
   // if (fd_info.getIsParsingBody() == false) {
@@ -128,10 +128,10 @@ void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
   /* ASSIGN THIS AFTER BODY WAS READ*/
 }
 
-void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {
-  fd_info.SendResponse(poll);
+void WebServ::SendToClient(ClientConnection& fd_info, pollfd& poll) {
+  fd_info.SendData(poll);
   if (poll.events == POLLIN)
-    fd_info.ResetClientInfo();
+    fd_info.ResetClientConnection();
 }
 
 void WebServ::CloseConnection(int sock, size_t& i) {

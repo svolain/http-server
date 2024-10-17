@@ -1,39 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ClientInfo.hpp                                     :+:      :+:    :+:   */
+/*   ClientConnection.hpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 11:48:10 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 10:03:29 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef ClientInfo_HPP
-#define ClientInfo_HPP
+#ifndef CLIENTCONNECTION_HPP
+#define CLIENTCONNECTION_HPP
 
+#include "Connection.hpp"
 #include "HttpParser.hpp"
 #include "HttpResponse.hpp"
-#include <poll.h>
 #include <fstream>
 
 class Socket;
 class VirtualHost;
 
-class ClientInfo
-{
+class ClientConnection : public Connection {
  public:
-  ClientInfo(int fd, Socket& sock);
-  ClientInfo(const ClientInfo& other)             = delete;
-  ClientInfo& operator=(const ClientInfo& other)  = delete;
-  ClientInfo(ClientInfo&& other);
-  ClientInfo& operator=(ClientInfo&& other)       = delete;
-  ~ClientInfo()                                   = default;
+  ClientConnection(int fd, Socket& sock);
+  ClientConnection(const ClientConnection& other)             = delete;
+  ClientConnection& operator=(const ClientConnection& other)  = delete;
+  ClientConnection(ClientConnection&& other);
+  ClientConnection& operator=(ClientConnection&& other)       = delete;
+  ~ClientConnection() override                                = default;
 
-  int             RecvRequest(pollfd& poll);
-  void            SendResponse(pollfd& poll);
-  void            ResetClientInfo();
+  int             ReceiveData(pollfd& poll) override;
+  int            SendData(pollfd& poll) override;
+  void            ResetClientConnection();
   HttpParser&     getParser();
   VirtualHost*    getVhost();
   int             getFd();
@@ -53,4 +52,4 @@ private:
   bool           is_parsing_body_ = false;
 };
 
-#endif
+#endif //CLIENTCONNECTION_HPP

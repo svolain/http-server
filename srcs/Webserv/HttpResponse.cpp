@@ -6,12 +6,12 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 13:18:14 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 09:57:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 #include "Logger.h"
 
 HttpResponse::HttpResponse(std::string& status)
@@ -19,7 +19,7 @@ HttpResponse::HttpResponse(std::string& status)
   InitContMap();
 }
 
-void HttpResponse::CreateResponse(ClientInfo& fd_info, pollfd& poll) {
+void HttpResponse::CreateResponse(ClientConnection& fd_info, pollfd& poll) {
   if (fd_info.getIsSending() == false) {
       SendHeader(fd_info);
       fd_info.setIsSending(true);
@@ -32,7 +32,7 @@ void HttpResponse::ResetResponse() {
   ;//                                                      definition here         
 }
 
-void HttpResponse::SendHeader(ClientInfo& fd_info) {
+void HttpResponse::SendHeader(ClientConnection& fd_info) {
   HttpParser& parser = fd_info.getParser();
   std::string resource_target = parser.getResourceTarget();
   /* reassign the default cont type */
@@ -53,7 +53,7 @@ void HttpResponse::SendHeader(ClientInfo& fd_info) {
   SendToClient(fd_info.getFd(), header_.c_str(), header_.size());
 }
 
-void HttpResponse::SendChunkedBody(ClientInfo& fd_info, pollfd& poll) {
+void HttpResponse::SendChunkedBody(ClientConnection& fd_info, pollfd& poll) {
   /* Nginx will not try to save the state of the previous transmission and retry later. 
       It handles each request-response transaction independently. 
       If the connection breaks, a client would need to send a new request to get the content again. 

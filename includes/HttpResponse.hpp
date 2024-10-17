@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 11:56:42 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 09:57:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 #include <sstream>
 #include <poll.h>
 
-class ClientInfo;
+class ClientConnection;
 
 class HttpResponse {
  public:
@@ -30,7 +30,7 @@ class HttpResponse {
 
   ~HttpResponse() = default;
 
-  void  CreateResponse(ClientInfo& fd_info, pollfd& poll);
+  void  CreateResponse(ClientConnection& fd_info, pollfd& poll);
   void  ResetResponse(); //DEFINE IT OR REMOVE
 
  private:
@@ -42,8 +42,8 @@ class HttpResponse {
   // std::string     getErrorCodeMessage() const;
   void InitContMap();
   void LookupStatusMessage();
-  void SendHeader(ClientInfo& fd_info);
-  void SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
+  void SendHeader(ClientConnection& fd_info);
+  void SendChunkedBody(ClientConnection& fd_info, pollfd &poll);
   int  SendOneChunk(int client_socket, std::ifstream &file);
   int  SendToClient(const int clientSocket, const char *msg, int length);
 

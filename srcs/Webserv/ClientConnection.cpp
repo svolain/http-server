@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ClientInfo.cpp                                     :+:      :+:    :+:   */
+/*   ClientConnection.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,22 +10,23 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 #include "Socket.hpp"
 #include "Logger.h"
 #include <vector>
 
-ClientInfo::ClientInfo(int fd, Socket& sock)
-    : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
+ClientConnection::ClientConnection(int fd, Socket& sock)
+    : Connection(20), fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
 
-ClientInfo::ClientInfo(ClientInfo&& other)
-    : status_(other.status_),
+ClientConnection::ClientConnection(ClientConnection&& other)
+    : Connection(other.timeout_),
+      status_(other.status_),
       fd_(other.fd_),
       sock_(other.sock_),
       parser_(status_),
       response_(status_) {}
 
-int ClientInfo::RecvRequest(pollfd& poll) {
+int ClientConnection::ReceiveData(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
   int               bytesIn;
 
@@ -48,11 +49,12 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   return 0;
 }
 
-void  ClientInfo::SendResponse(pollfd& poll) {
+int ClientConnection::SendData(pollfd& poll) {
   response_.CreateResponse(*this, poll);
+  return 0;
 }
 
-void  ClientInfo::ResetClientInfo() {
+void  ClientConnection::ResetClientConnection() {
   status_ = "200";
   //getfile_.close(); Remove it?
   vhost_ = nullptr;
@@ -62,26 +64,26 @@ void  ClientInfo::ResetClientInfo() {
   is_parsing_body_ = false;
 }
 
-HttpParser& ClientInfo::getParser() {
+HttpParser& ClientConnection::getParser() {
   return parser_;
 }
 
-VirtualHost*  ClientInfo::getVhost() {
+VirtualHost*  ClientConnection::getVhost() {
   return vhost_;
 }
 
-int ClientInfo::getFd() {
+int ClientConnection::getFd() {
   return fd_;
 }
 
-bool ClientInfo::getIsSending() {
+bool ClientConnection::getIsSending() {
   return is_sending_chunks_;
 }
 
-std::ifstream& ClientInfo::getGetfile() {
+std::ifstream& ClientConnection::getGetfile() {
   return getfile_;
 }
 
-void ClientInfo::setIsSending(bool boolean) {
+void ClientConnection::setIsSending(bool boolean) {
   is_sending_chunks_ = boolean;
 }

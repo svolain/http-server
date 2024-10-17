@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/08 22:44:22 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/17 09:57:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 #include <poll.h>
 #include <deque>
 #include "Socket.hpp"
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 
 #define DEFAULT_CONF "conf/default.conf"
 
@@ -37,12 +37,12 @@ class WebServ {
   const std::string         conf_;
   std::deque<Socket>        sockets_;
   std::vector<pollfd>       pollFDs_;
-  std::map<int, ClientInfo> client_info_map_;
+  std::map<int, ClientConnection> client_info_map_;
 
   void        PollAvailableFDs(void);
   void        CheckForNewConnection(int fd, short revents, int i);
-  void        RecvFromClient(ClientInfo& fd_info, size_t& i);
-  void        SendToClient(ClientInfo& fd_info, pollfd& poll);
+  void        RecvFromClient(ClientConnection& fd_info, size_t& i);
+  void        SendToClient(ClientConnection& fd_info, pollfd& poll);
   void        CloseConnection(int sock, size_t& i);
   void        CloseAllConnections(void);
   std::string ToString() const;

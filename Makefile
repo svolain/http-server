@@ -13,8 +13,8 @@ EC						:=	\033[0m
 # SOURCE_FILES
 
 
-WEBSERV_NAME	:=	WebServ.cpp Logger.cpp HttpParser.cpp \
-	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp ConfigParser.cpp ClientInfo.cpp
+WEBSERV_NAME	:=	WebServ.cpp Logger.cpp HttpParser.cpp Connection.cpp\
+	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp ConfigParser.cpp ClientConnection.cpp
 
 WEBSERV_PATH	:=	Webserv/
 WEBSERV				:=	$(addprefix $(WEBSERV_PATH), $(WEBSERV_NAME))
