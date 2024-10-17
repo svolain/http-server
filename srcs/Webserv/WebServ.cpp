@@ -14,6 +14,7 @@
 #include <string>
 #include "ConfigParser.hpp"
 #include "WebServ.hpp"
+#include "ClientConnection.hpp"
 
 #define TODO 123
 
@@ -57,7 +58,7 @@ void WebServ::Run() {
         close(pollFDs_.back().fd);
         pollFDs_.pop_back();
       }
-      client_info_map_.clear();
+      connections_.clear();
     } else
         PollAvailableFDs();
   }
@@ -74,7 +75,7 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    ClientConnection& fd_info = client_info_map_.at(fd);
+    Connection& fd_info = *connections_.at(fd);
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
       CloseConnection(fd, i);
@@ -85,9 +86,9 @@ void WebServ::PollAvailableFDs(void) {
       logDebug("Invalid fd: " + std::to_string(fd));
       CloseConnection(fd, i);
     } else if (revents & POLLIN) {
-      RecvFromClient(fd_info, i);
+      ReceiveData(fd_info, i);
     } else if (revents & POLLOUT)
-      SendToClient(fd_info, pollFDs_[i]);
+      SendData(fd_info, pollFDs_[i]);
   }
 }
 
@@ -101,8 +102,9 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
       pollFDs_.push_back(new_client);
-      client_info_map_.emplace(new_client.fd, ClientConnection(new_client.fd,
-                                                         sockets_[i]));
+      connections_.emplace(new_client.fd,
+                           std::make_unique<ClientConnection>(new_client.fd,
+                                                              sockets_[i]));
     }
   }
 }
@@ -114,7 +116,7 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
     get back and try to read the body
     read for MAXBYTES and go back and continue next time
   */
-void WebServ::RecvFromClient(ClientConnection& fd_info, size_t& i) {
+void WebServ::ReceiveData(Connection& fd_info, size_t& i) {
   if (fd_info.ReceiveData(pollFDs_[i]))
     CloseConnection(pollFDs_[i].fd, i);
   // // std::vector<char>   oss;
@@ -128,16 +130,16 @@ void WebServ::RecvFromClient(ClientConnection& fd_info, size_t& i) {
   /* ASSIGN THIS AFTER BODY WAS READ*/
 }
 
-void WebServ::SendToClient(ClientConnection& fd_info, pollfd& poll) {
+void WebServ::SendData(Connection& fd_info, pollfd& poll) {
   fd_info.SendData(poll);
-  if (poll.events == POLLIN)
-    fd_info.ResetClientConnection();
+//   if (poll.events == POLLIN)
+//     fd_info.ResetClientConnection();
 }
 
 void WebServ::CloseConnection(int sock, size_t& i) {
   close(sock);
   pollFDs_.erase(pollFDs_.begin() + i);
-  client_info_map_.erase(sock);
+  connections_.erase(sock);
   i--;
 }
 
