@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/17 16:39:29 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 17:31:53 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,7 @@ class WebServ {
   void        PollAvailableFDs();
   void        CheckForNewConnection(int fd, short revents, int i);
   void        ReceiveData(Connection& connection, size_t& i);
-  void        SendData(Connection& connection, pollfd& poll);
+  void        SendData(Connection& connection, size_t& i);
   void        CloseConnection(Connection& connection, size_t& i);
   void        CloseAllConnections();
   std::string ToString() const;

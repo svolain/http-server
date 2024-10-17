@@ -86,7 +86,7 @@ void WebServ::PollAvailableFDs(void) {
     } else if (revents & POLLIN) {
       ReceiveData(connection, i);
     } else if (revents & POLLOUT)
-      SendData(connection, pollFDs_[i]);
+      SendData(connection, i);
   }
 }
 
@@ -119,10 +119,9 @@ void WebServ::ReceiveData(Connection& connection, size_t& i) {
     CloseConnection(connection, i);
 }
 
-void WebServ::SendData(Connection& fd_info, pollfd& poll) {
-  fd_info.SendData(poll);
-//   if (poll.events == POLLIN)
-//     fd_info.ResetClientConnection();
+void WebServ::SendData(Connection& connection, size_t& i) {
+  if (connection.SendData(pollFDs_[i]))
+    CloseConnection(connection, i);
 }
 
 void WebServ::CloseConnection(Connection& connection, size_t& i) {

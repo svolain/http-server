@@ -51,7 +51,9 @@ int ClientConnection::ReceiveData(pollfd& poll) {
 
 int ClientConnection::SendData(pollfd& poll) {
   response_.CreateResponse(*this, poll);
-  return 0;
+  if (poll.events == POLLIN)
+    ResetClientConnection();
+  return 0; //Add protection for send()!
 }
 
 void  ClientConnection::ResetClientConnection() {
