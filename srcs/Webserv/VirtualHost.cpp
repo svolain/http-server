@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/17 09:57:36 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/18 10:47:04 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,6 +66,5 @@ const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {
                                         {"502", "www/error_pages/502.html"},
                                         {"504", "www/error_pages/504.html"},
                                         {"505", "www/error_pages/505.html"}};
-  logError("HERE");
   return error_pages;
 }

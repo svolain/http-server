@@ -16,12 +16,14 @@
 #include <vector>
 
 ClientConnection::ClientConnection(int fd, Socket& sock)
-    : Connection(20), fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
+    : Connection(fd, 20),
+      sock_(sock),
+      parser_(status_),
+      response_(status_) {}
 
 ClientConnection::ClientConnection(ClientConnection&& other)
-    : Connection(other.timeout_),
+    : Connection(other.timeout_, other.fd_),
       status_(other.status_),
-      fd_(other.fd_),
       sock_(other.sock_),
       parser_(status_),
       response_(status_) {}

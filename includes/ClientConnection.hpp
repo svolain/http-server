@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 16:10:40 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 17:51:51 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,6 @@ class ClientConnection : public Connection {
 
 private:
   std::string    status_ = "200";
-  int            fd_;
   Socket&        sock_;
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;

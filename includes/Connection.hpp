@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 16:14:11 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 17:55:41 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ class Connection
  using sec = std::chrono::seconds;
 
  public:
-  Connection(size_t timeout);
+  Connection(int fd, size_t timeout);
   Connection(const Connection& other) = delete;
   Connection(Connection&& other)      = default;
   Connection& operator=(const Connection& other) = delete;
@@ -37,6 +37,7 @@ class Connection
   virtual int   ReceiveData(pollfd& poll) = 0;
   virtual int   SendData(pollfd& poll)    = 0;
   bool          HasTimedOut() const;
+  void          UpdateLastActive();
   virtual void  CleanupConnection() = 0;
 
   int       fd_;
