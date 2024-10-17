@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/16 15:41:06 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/17 15:53:09 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,7 @@ class HttpParser {
   std::string getMethod() const;
   std::string getResourceTarget() const;
   std::string getFileList() const;
+  bool        getAutoIndex() const;
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);
@@ -71,9 +72,11 @@ class HttpParser {
   std::string                         request_target_;
   std::string                         query_string_;
   std::string                         file_list_;
+  std::string                         index_;
   std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_;
   bool                                is_chunked_ = false;
+  bool                                auto_index_ = false;
 };
 
 #endif

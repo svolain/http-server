@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/16 15:55:08 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/17 16:36:43 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,8 +24,13 @@ void HttpResponse::CreateResponse(ClientInfo& fd_info, pollfd& poll) {
       SendHeader(fd_info);
       fd_info.setIsSending(true);
   }
-  else
-    SendChunkedBody(fd_info, poll);
+  //else {
+    //if (!fd_info.getParser().getAutoIndex()) {
+      SendChunkedBody(fd_info, poll);
+   /* } else {
+      SendDirList(fd_info, poll, "dd");
+    }
+  }*/
 }
 
 void HttpResponse::ResetResponse() {
@@ -36,16 +41,20 @@ void HttpResponse::SendHeader(ClientInfo& fd_info) {
   HttpParser& parser = fd_info.getParser();
   std::string resource_target = parser.getResourceTarget();
   /* reassign the default cont type */
+  
   cont_type_ = "text/html";
 
-  logDebug("the resource path is " + resource_target);
-  logDebug("the error code from parser is " + status_);
+  if (!parser.getAutoIndex()) {
+    logDebug("the resource path is " + resource_target);
+    logDebug("the error code from parser is " + status_);
 
-  //setErrorCode(parser.getErrorCode());
+    //setErrorCode(parser.getErrorCode());
 
-  AssignContType(resource_target);
-  std::ifstream& file = fd_info.getGetfile();
-  OpenFile(resource_target, file);
+    AssignContType(resource_target);
+    std::ifstream& file = fd_info.getGetfile();
+    OpenFile(resource_target, file);
+  } else 
+    logDebug("auto index enabled");
   ComposeHeader();
 
   logDebug("\n------response header------\n" + \
@@ -110,6 +119,33 @@ int HttpResponse::SendOneChunk(int client_socket, std::ifstream& file) {
     return 1;
   return 0;
 }
+/*
+void HttpResponse::SendDirList(ClientInfo& fd_info, pollfd& poll, const std::string& directory_path) {
+  std::string html = CreateDirListing(directory_path);
+  
+
+}
+
+std::string HttpResponse::CreateDirListing(const std::string& directory_path) {
+  std::ostringstream html;
+    html << "<html><body><h1>Index of " << directory_path << "</h1><ul>";
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(directory_path)) {
+            std::string name = entry.path().filename().string();
+            if (std::filesystem::is_directory(entry.path())) {
+                html << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+            } else {
+                html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        return "<html><body><h1>Directory not found</h1></body></html>";
+    }
+
+    html << "</ul></body></html>";
+    return html.str();
+}*/
 
 int HttpResponse::SendToClient(const int client_socket, const char* msg, int length) {
   int bytes_sent;
@@ -123,22 +159,22 @@ int HttpResponse::SendToClient(const int client_socket, const char* msg, int len
 }
 
 void HttpResponse::OpenFile(std::string& resource_path, std::ifstream& file) {
-  
   if (!file.is_open()) {
     logDebug("the file wasnt opened previously");
-    if (resource_path != "/" && resource_path.find(".html") == std::string::npos) //read bin file
-      file.open("./www/" + resource_path, std::ios::binary);
+    if (resource_path != "/" && resource_path.find(".html") == std::string::npos)//read bin file
+      file.open(resource_path, std::ios::binary);
     else {
-      if (resource_path == "/") {
+      std::cout << "2\n"; 
+      if (resource_path == "/") { 
         resource_path = "index.html";
         logDebug("return index html for the '/'");
       }
-      file.open("./www/" + resource_path);
+      file.open(resource_path);
     }
     if (!file.is_open()) {
       logDebug("couldnt open file " + resource_path + ", opening 404", true);
       status_ = "404";
-      file.open("./www/500.html");
+      file.open("./www/error_pages/404.html");
       return ;
     }
   }

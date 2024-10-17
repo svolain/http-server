@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/16 12:59:27 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/17 16:27:09 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,15 +40,15 @@ class HttpResponse {
   // std::string     getContType() const;
   // std::string     getResponseHeader() const;
   // std::string     getErrorCodeMessage() const;
-  void InitContMap();
-  void LookupStatusMessage();
-  void SendHeader(ClientInfo& fd_info);
-  void SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
-  int  SendOneChunk(int client_socket, std::ifstream &file);
-  int  SendToClient(const int clientSocket, const char *msg, int length);
-  //void CheckValidPath(VirtualHost* vhost);
-  //void ExtractStrings(std::string vhost, std::string& root, 
-                     // std::string& aindex);
+  void        InitContMap();
+  void        LookupStatusMessage();
+  void        SendHeader(ClientInfo& fd_info);
+  void        SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
+  int         SendOneChunk(int client_socket, std::ifstream &file);
+  void        SendDirList(ClientInfo& fd_info, pollfd& poll, 
+              const std::string& directory_path);
+  std::string CreateDirListing(const std::string& directory_path);
+  int         SendToClient(const int clientSocket, const char *msg, int length);
 
   std::string&                        status_;
   std::map<std::string, std::string>  cont_type_map_;

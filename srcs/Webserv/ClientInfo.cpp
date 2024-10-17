@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/16 14:38:51 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/17 14:41:19 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,6 @@ ClientInfo::ClientInfo(ClientInfo&& other)
 int ClientInfo::RecvRequest(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
   int               bytesIn;
-
   bytesIn = recv(fd_, buffer.data(), MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;

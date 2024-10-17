@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/16 16:58:55 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/17 15:53:06 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,11 +44,15 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
   
   const std::map<std::string, Location>& locations = vhost->GetLocations();
   std::string location;
-
+  bool  auto_index;
   for (const auto& it : locations) {
-    if (request_target_.find(it.first) == 0)
+    if (request_target_.find(it.first) == 0) {
       location = it.first;
-  }
+      index_ = it.second.index_;
+      auto_index = it.second.autoindex_;
+    }
+  } 
+
   if (location.empty() || request_target_.substr(0, location.size()) != location) {
     logError("Error: location not found");
     status_ = "404";
@@ -61,14 +65,21 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
       return false;
   }
 
+  if (auto_index && index_.empty()) {
+    auto_index_ = true;
+  } else {
   std::string root_dir = locations.at(location).root_;
-    
+
   std::string relative_path = request_target_.substr(location.size());
-  std::string rootPath = root_dir + relative_path;
+  std::string rootPath = root_dir.substr(1) + relative_path;
 
   if (!CheckValidPath(rootPath))
     return false;
-  
+  }
+    
+  if (method_ == "GET" || method_ == "HEAD" || method_ == "DELETE")
+    return false;
+
   return true;
 }
 
@@ -133,6 +144,10 @@ std::string HttpParser::getResourceTarget() const {
 
 std::string HttpParser::getFileList() const {
   return file_list_;
+}
+
+bool  HttpParser::getAutoIndex() const {
+  return auto_index_;
 }
 
 bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
@@ -508,8 +523,7 @@ void HttpParser::GenerateFileListHtml() {
 }
 
  bool HttpParser::CheckValidPath(std::string rootPath) {
-    std::cout << "rootpaht: " << rootPath << std::endl;
-    if (rootPath.at(0) != '/') {
+    if (request_target_.at(0) != '/') {
          logError("Error: wrong path");
          status_ = "404";
          return false;
@@ -518,31 +532,22 @@ void HttpParser::GenerateFileListHtml() {
      can take absolute and relative path, needs to be tested 
      more when we get the root from confiq*/
      try {
-         if (rootPath.back() == '/') {
-             if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)) {
-                 logDebug("valid path");
-                 return true;
-             } else {
-                 status_ = "404";
-                 logDebug("no valid path");
-                 return false;
-             }
-         } else {
-             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)) {
-                 if (access(rootPath.c_str(), R_OK) == 0) {
-                     logDebug("file found");
-                     return true;
-                 } else {
-                     logDebug("permission denied");
-                     status_ = "403";
-                     return false;
-                 } 
-             } else {
-                 logDebug("file not found");
-                 status_ = "404";
-                 return false;
-             }
-         }
+      if (std::filesystem::exists(rootPath)) {
+        if (std::filesystem::is_directory(rootPath)) {
+            if (rootPath.back() != '/')
+              request_target_ = rootPath + "/" + index_;
+            else
+              request_target_ = rootPath + index_;
+            return true; //The path is a directory
+        } else if (std::filesystem::is_regular_file(rootPath)) {
+            request_target_ = rootPath;
+            return false; //The path is a file
+        }
+        } else {
+        logError("The path does not exist" + rootPath);
+        status_ = "404";
+        return false;
+      }
      } catch (const std::filesystem::filesystem_error& e) {
          logError("Filesystem error: ");
          std::cerr << e.what() << std::endl;
