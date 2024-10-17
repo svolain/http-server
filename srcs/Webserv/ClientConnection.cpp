@@ -64,6 +64,10 @@ void  ClientConnection::ResetClientConnection() {
   is_parsing_body_ = false;
 }
 
+void  ClientConnection::CleanupConnection() {
+  //                  somenthig here;
+}
+
 HttpParser& ClientConnection::getParser() {
   return parser_;
 }

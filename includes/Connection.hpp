@@ -6,19 +6,25 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 10:44:05 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 16:14:11 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CONNECTION_HPP
 #define CONNECTION_HPP
 
+#include <chrono>
+#include <iostream>
 #include <cstddef>
 #include <poll.h>
 
 
 class Connection
 {
+ private:
+ using timepoint = std::chrono::steady_clock::time_point;
+ using sec = std::chrono::seconds;
+
  public:
   Connection(size_t timeout);
   Connection(const Connection& other) = delete;
@@ -28,15 +34,16 @@ class Connection
 
   virtual ~Connection() = 0;
 
-  virtual int ReceiveData(pollfd& poll) = 0;
-  virtual int SendData(pollfd& poll)    = 0;
+  virtual int   ReceiveData(pollfd& poll) = 0;
+  virtual int   SendData(pollfd& poll)    = 0;
+  bool          HasTimedOut() const;
+  virtual void  CleanupConnection() = 0;
 
-  size_t  last_active_;
+  int       fd_;
+  timepoint last_active_;
 
  protected:
-  size_t  timeout_;
+  const long  timeout_;
 };
-
-
 
 #endif //CONNECTION_HPP

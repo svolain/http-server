@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 10:03:29 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 16:10:40 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,8 +31,9 @@ class ClientConnection : public Connection {
   ~ClientConnection() override                                = default;
 
   int             ReceiveData(pollfd& poll) override;
-  int            SendData(pollfd& poll) override;
+  int             SendData(pollfd& poll) override;
   void            ResetClientConnection();
+  void            CleanupConnection() override;
   HttpParser&     getParser();
   VirtualHost*    getVhost();
   int             getFd();
