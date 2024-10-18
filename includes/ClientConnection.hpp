@@ -6,13 +6,14 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/18 11:48:54 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/18 13:13:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CLIENTCONNECTION_HPP
 #define CLIENTCONNECTION_HPP
 
+#include "WebServ.hpp"
 #include "Connection.hpp"
 #include "HttpParser.hpp"
 #include "HttpResponse.hpp"
@@ -31,6 +32,7 @@ class ClientConnection : public Connection {
   int             ReceiveData(pollfd& poll) override;
   int             SendData(pollfd& poll) override;
   void            ResetClientConnection();
+  void            CreateCGIConnection();
   void            CleanupConnection() override;
   HttpParser&     getParser();
   VirtualHost*    getVhost();

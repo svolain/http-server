@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 22:08:00 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/19 14:10:30 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,7 @@ void ConfigParser::ParseErrorPage(StringMap& errors, std::stringstream& ss) {
 
 void ConfigParser::ParseLocation(LocationMap& locations,
                                  std::stringstream& ss) {
-  static std::regex location_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+");
+  static std::regex location_format("/[a-zA-Z0-9_-]*");
 
   std::string location;
   ss >> location;

@@ -92,7 +92,7 @@ void WebServ::PollAvailableFDs(void) {
 
 void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   if (revents & POLLIN) {
-    pollfd new_client;
+    pollfd new_client = {0, 0, 0};
     new_client.fd = accept(fd, nullptr, nullptr);
     if (new_client.fd != -1) {
       /* O_NONBLOCK: No I/O operations on the file descriptor will cause the
