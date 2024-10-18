@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/18 13:55:18 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/18 17:55:48 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,28 +28,27 @@ class HttpResponse {
     using LocationMapIt = std::map<std::string, Location>::iterator;
 
   public:
-    HttpResponse(std::string& status);
+    HttpResponse()                                      = default;
     HttpResponse(const HttpResponse& other)             = delete;
     HttpResponse& operator=(const HttpResponse& other)  = delete;
 
 
     ~HttpResponse() = default;
 
-    void  CreateResponse(ClientInfo& fd_info, pollfd& poll);
+    void  SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
     void  ResetResponse(); //DEFINE IT OR REMOVE
 
   private:
-    void  AssignContType(std::string resourcePath);
-    void  OpenFile(ClientInfo& fd_info, std::string& resource_path, LocationMapIt loc);
-    void  ComposeHeader();
-    int   CheckRedirections(ClientInfo& fd_info, Location& loc);
-    void  LookupStatusMessage();
-    void  SendHeader(ClientInfo& fd_info, pollfd& poll);
-    void  SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
+    // void  AssignContType(std::string resourcePath);
+    // void  OpenFile(ClientInfo& fd_info, std::string& resource_path, LocationMapIt loc);
+    // void  ComposeHeader();
+    // int   CheckRedirections(ClientInfo& fd_info, Location& loc);
+    // void  LookupStatusMessage();
+    
     int   SendOneChunk(int client_socket, std::ifstream &file);
     int   SendToClient(const int clientSocket, const char *msg, int length);
 
-    std::string&                        status_;
+    // std::string&                        status_;
     std::map<std::string, std::string>  cont_type_map_;
     std::string                         cont_type_;
     std::string                         status_message_;

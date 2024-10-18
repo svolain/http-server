@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientInfo.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 14:41:19 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/18 17:56:27 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,14 +16,13 @@
 #include <vector>
 
 ClientInfo::ClientInfo(int fd, Socket& sock)
-    : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
+    : fd_(fd), sock_(sock), parser_(status_) {}
 
 ClientInfo::ClientInfo(ClientInfo&& other)
     : status_(other.status_),
       fd_(other.fd_),
       sock_(other.sock_),
-      parser_(status_),
-      response_(status_) {}
+      parser_(status_)  {}
 
 int ClientInfo::RecvRequest(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
@@ -37,9 +36,10 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());
-    if (!header_parsed || !parser_.HandleRequest(vhost_)) {
+    if (!header_parsed || parser_.HandleRequest(vhost_)) {
       poll.events = POLLOUT;
     }
+    parser_.ComposeResponse(*this);
     is_parsing_body_ = true;
   } else if (parser_.WriteBody(vhost_, buffer, bytesIn)){
     poll.events = POLLOUT;
@@ -48,7 +48,7 @@ int ClientInfo::RecvRequest(pollfd& poll) {
 }
 
 void  ClientInfo::SendResponse(pollfd& poll) {
-  response_.CreateResponse(*this, poll);
+  response_.SendChunkedBody(*this, poll);
 }
 
 void  ClientInfo::ResetClientInfo() {

@@ -6,14 +6,57 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/18 13:39:56 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/18 17:54:41 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 #include "Logger.h"
+#include "ClientInfo.hpp"
 
-HttpParser::HttpParser(std::string& status) : status_(status) {}
+
+
+HttpParser::HttpParser(std::string& status) : status_(status), cont_type_map_{
+    {".mp3", "audio/mpeg"},
+    {".wma", "audio/x-ms-wma"},
+    {".wav", "audio/x-wav"},
+
+    {".png", "image/png"},
+    {".jpg", "image/jpeg"},
+    {".gif", "image/gif"},
+    {".tiff", "image/tiff"},
+    {".ico", "image/x-icon"},
+    {".djvu", "image/vnd.djvu"},
+    {".svg", "image/svg+xml"},
+
+    {".css", "text/css"},
+    {".csv", "text/csv"},
+    {".html", "text/html"},
+    {".txt", "text/plain"},
+
+    {".mp4", "video/mp4"},
+    {".avi", "video/x-msvideo"},
+    {".wmv", "video/x-ms-wmv"},
+    {".flv", "video/x-flv"},
+    {".webm", "video/webm"},
+
+    {".pdf", "application/pdf"},
+    {".json", "application/json"},
+    {".xml", "application/xml"},
+    {".zip", "application/zip"},
+    {".js", "application/javascript"},
+    {".odt", "application/vnd.oasis.opendocument.text"},
+    {".ods", "application/vnd.oasis.opendocument.spreadsheet"},
+    {".odp", "application/vnd.oasis.opendocument.presentation"},
+    {".odg", "application/vnd.oasis.opendocument.graphics"},
+    {".xls", "application/vnd.ms-excel"},
+    {".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+    {".ppt", "application/vnd.ms-powerpoint"},
+    {".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+    {".doc", "application/msword"},
+    {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    {".xul", "application/vnd.mozilla.xul+xml"}
+    }, cont_type_("text/html"), status_message_{}  {}
 
 bool HttpParser::ParseHeader(const std::string& request) {
   std::istringstream  request_stream(request);
@@ -45,20 +88,27 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
   const std::map<std::string, Location>& locations = vhost->getLocations();
   std::string                         location;
   bool                                auto_index;
+  std::pair<std::string, std::string> redir;
 
   for (const auto& it : locations) {
     if (request_target_.find(it.first) == 0) {
       location = it.first;
       index_ = it.second.index_;
       auto_index = it.second.autoindex_;
+      redir = it.second.redirection_;
     }
   } 
 
+  (void)redir; //adding later the redirection check 
+  
+  std::string path("./www" + request_target_);
   if (location.empty() || request_target_.substr(0, location.size()) != location) {
     logError("Error: location not found");
     status_ = "404";
     return false;
   }
+
+
 
   std::string allowedMethods = locations.at(location).methods_;
   if (allowedMethods.find(method_) == std::string::npos) {
@@ -70,6 +120,10 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
   std::string root_dir = locations.at(location).root_;
   std::string relative_path = request_target_.substr(location.size());
   std::string rootPath = root_dir.substr(1) + relative_path;
+  //added
+  file_path_ = request_target_.at(location.size());
+  logError("file path is " + file_path_);
+
 
   std::cout << method_ << " " << auto_index << " " << index_;
 
@@ -143,7 +197,7 @@ std::string HttpParser::getMethod() const {
   return method_;
 }
 
-std::string HttpParser::getResourceTarget() const {
+std::string HttpParser::getRequestTarget() const {
   return request_target_;
 }
 
@@ -523,46 +577,46 @@ void HttpParser::GenerateFileListHtml() {
     file_list_ += "</ul>";
 }
 
- bool HttpParser::CheckValidPath(std::string rootPath) {
-    if (request_target_.at(0) != '/') {
-         logError("Error: wrong path");
-         status_ = "404";
-         return false;
-     }
-     /*check the directory and file existence and permissions, 
-     can take absolute and relative path, needs to be tested 
-     more when we get the root from confiq*/
-     try {
-      if (std::filesystem::exists(rootPath)) {
-        if (std::filesystem::is_directory(rootPath)) {
-            if (rootPath.back() != '/')
-              request_target_ = rootPath + "/" + index_;
-            else
-              request_target_ = rootPath + index_;
-            return true; //The path is a directory
-        } else if (std::filesystem::is_regular_file(rootPath)) {
-            request_target_ = rootPath;
-            return false; //The path is a file
-        }
-        } else {
-        logError("The path does not exist" + rootPath);
+bool HttpParser::CheckValidPath(std::string rootPath) {
+  if (request_target_.at(0) != '/') {
+        logError("Error: wrong path");
         status_ = "404";
         return false;
+    }
+    /*check the directory and file existence and permissions, 
+    can take absolute and relative path, needs to be tested 
+    more when we get the root from confiq*/
+    try {
+    if (std::filesystem::exists(rootPath)) {
+      if (std::filesystem::is_directory(rootPath)) {
+          if (rootPath.back() != '/')
+            request_target_ = rootPath + "/" + index_;
+          else
+            request_target_ = rootPath + index_;
+          return true; //The path is a directory
+      } else if (std::filesystem::is_regular_file(rootPath)) {
+          request_target_ = rootPath;
+          return false; //The path is a file
       }
-     } catch (const std::filesystem::filesystem_error& e) {
-         logError("Filesystem error: ");
-         std::cerr << e.what() << std::endl;
-         status_ = "500";
-         return false;
-     } catch (const std::exception& e) {
-         logError("Unexpected error: "); 
-         std::cerr << e.what() << std::endl;
-         status_ = "500";
-         return false;
-     }
+      } else {
+      logError("The path does not exist" + rootPath);
+      status_ = "404";
+      return false;
+    }
+    } catch (const std::filesystem::filesystem_error& e) {
+        logError("Filesystem error: ");
+        std::cerr << e.what() << std::endl;
+        status_ = "500";
+        return false;
+    } catch (const std::exception& e) {
+        logError("Unexpected error: "); 
+        std::cerr << e.what() << std::endl;
+        status_ = "500";
+        return false;
+    }
 
-     return true;
- }
+    return true;
+}
 
 
 void HttpParser::CreateDirListing(std::string directory) {
@@ -593,4 +647,93 @@ void HttpParser::CreateDirListing(std::string directory) {
     outFile<< "</ul></body></html>";
     outFile.close();
     std::cout << "Directory listing written to " << "./www/dir_list.html" << std::endl;
+}
+
+
+
+void HttpParser::ComposeResponse(ClientInfo& fd_info) {
+  logDebug("the resource path is " + request_target_);
+  logDebug("the error code from parser is " + status_);
+
+  // auto loc_it = fd_info.getVhost()->getLocations().find(resource_target);
+  // if (loc_it != fd_info.getVhost()->getLocations().end() && \
+  //     CheckRedirections(fd_info, loc_it->second)) {
+  //       poll.events = POLLIN;
+  //       return ;
+  //     }
+  
+  AssignContType();
+  LookupStatusMessage();
+  ComposeHeader();
+  OpenFile(fd_info);
+} 
+
+void HttpParser::AssignContType() {
+  try{
+    auto it = cont_type_map_.find(request_target_.substr(request_target_.find_last_of('.')));
+    if (it != cont_type_map_.end())
+      cont_type_ = it->second;
+  }
+  catch (const std::out_of_range &e) {
+    logDebug("AssignContType: no '.' found in the filename");
+  }
+}
+
+
+void HttpParser::OpenFile(ClientInfo& fd_info) {
+  std::ifstream&  file = fd_info.getGetfile();
+
+  if (status_ == "200") 
+    file.open(file_path_, std::ios::binary);
+  else 
+    file.open("./" + fd_info.getVhost()->getErrorPage(status_), std::ios::binary);
+  if (!file.is_open()) {
+    logError("OpenFile: couldnt open the error page " + status_);
+    header_.append("<h1>500 Internal Server Error</h1>\r\n");
+  }
+}
+
+// int HttpParser::CheckRedirections(ClientInfo& fd_info, Location& loc) {
+//   if (!loc.redirection_.first.empty()) {
+//     std::string msg(
+//       "HTTP/1.1 " + loc.redirection_.first +  "\r\n" + \
+//       "Location: " + loc.redirection_.second + "\r\n" + \
+//       "Content-Length: 0" + "\r\n" + \
+//       "\r\n"
+//     );
+//     std::cout << "sent " + msg << std::endl;
+//     SendToClient(fd_info.getFd(), msg.c_str(), msg.size());
+//     return 1;
+//   }
+//   return 0;
+// }
+
+
+void HttpParser::LookupStatusMessage(void) {
+  std::map<std::string, std::string> status_map = {
+      {"200", "200 OK"},
+      {"400", "400 Bad Request"},
+      {"404", "404 Not Found"},
+      {"405", "405 Method Not Allowed"},
+      {"411", "411 Length Required"},
+      {"500", "500 Internal Server Error"},
+  };
+
+  auto it = status_map.find(status_);
+  if (it != status_map.end()) {
+    status_message_ = it->second;
+  } else {
+    logError("LookupStatusMessage: couldn't find the proper status message, assigning 500");
+    logError("status was " + status_);
+    status_message_ = "500 Internal Server Error";
+  }
+}
+
+void HttpParser::ComposeHeader(void) {
+  std::ostringstream oss;
+	oss << "HTTP/1.1 " << status_message_ << "\r\n";
+	oss << "Content-Type: " << cont_type_ << "\r\n";
+  oss << "Transfer-Encoding: chunked" << "\r\n";
+	oss << "\r\n";
+	this->header_ = oss.str();
 }
