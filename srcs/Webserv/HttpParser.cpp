@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/18 11:56:21 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/18 13:39:56 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
     return false;
   }
   
-  const std::map<std::string, Location>& locations = vhost->GetLocations();
+  const std::map<std::string, Location>& locations = vhost->getLocations();
   std::string                         location;
   bool                                auto_index;
 
