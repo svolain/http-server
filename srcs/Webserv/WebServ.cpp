@@ -99,12 +99,16 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
             calling process to wait. */
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
-      pollFDs_.push_back(new_client);
-      connections_.emplace(new_client.fd,
-                           std::make_unique<ClientConnection>(new_client.fd,
-                                                              sockets_[i]));
+      AddNewConnection(new_client,
+                       std::make_unique<ClientConnection>(new_client.fd,
+                                                          sockets_[i], *this));
     }
   }
+}
+
+void WebServ::AddNewConnection(pollfd& fd, std::unique_ptr<Connection> connection) {
+  pollFDs_.push_back(fd);
+  connections_.emplace(fd.fd, std::move(connection));
 }
 
   /* find the host with the parser

@@ -15,16 +15,10 @@
 #include "Logger.h"
 #include <vector>
 
-ClientConnection::ClientConnection(int fd, Socket& sock)
+ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
     : Connection(fd, 20),
       sock_(sock),
-      parser_(status_),
-      response_(status_) {}
-
-ClientConnection::ClientConnection(ClientConnection&& other)
-    : Connection(other.timeout_, other.fd_),
-      status_(other.status_),
-      sock_(other.sock_),
+      webserv_(webserv),
       parser_(status_),
       response_(status_) {}
 
@@ -55,6 +49,7 @@ int ClientConnection::SendData(pollfd& poll) {
   response_.CreateResponse(*this, poll);
   if (poll.events == POLLIN)
     ResetClientConnection();
+  (void)webserv_; //REMOVE_ME                                         
   return 0; //Add protection for send()!
 }
 

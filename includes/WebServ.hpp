@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/17 17:31:53 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/18 11:43:14 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ class WebServ {
 
   int   Init();
   void  Run();
+  void  AddNewConnection(pollfd& fd, std::unique_ptr<Connection> connection);
 
  private:
   void        PollAvailableFDs();

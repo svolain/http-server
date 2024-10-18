@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 17:51:51 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/18 11:48:54 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,14 +20,12 @@
 
 class Socket;
 class VirtualHost;
+class WebServ;
 
 class ClientConnection : public Connection {
  public:
-  ClientConnection(int fd, Socket& sock);
+  ClientConnection(int fd, Socket& sock, WebServ& webserv);
   ClientConnection(const ClientConnection& other)             = delete;
-  ClientConnection& operator=(const ClientConnection& other)  = delete;
-  ClientConnection(ClientConnection&& other);
-  ClientConnection& operator=(ClientConnection&& other)       = delete;
   ~ClientConnection() override                                = default;
 
   int             ReceiveData(pollfd& poll) override;
@@ -44,6 +42,7 @@ class ClientConnection : public Connection {
 private:
   std::string    status_ = "200";
   Socket&        sock_;
+  WebServ&       webserv_;
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   HttpResponse   response_;
