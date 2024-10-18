@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/17 15:53:06 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/18 11:56:21 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,8 +43,9 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
   }
   
   const std::map<std::string, Location>& locations = vhost->GetLocations();
-  std::string location;
-  bool  auto_index;
+  std::string                         location;
+  bool                                auto_index;
+
   for (const auto& it : locations) {
     if (request_target_.find(it.first) == 0) {
       location = it.first;
@@ -58,6 +59,7 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
     status_ = "404";
     return false;
   }
+
   std::string allowedMethods = locations.at(location).methods_;
   if (allowedMethods.find(method_) == std::string::npos) {
     logError("Error: Method not allowed");
@@ -65,16 +67,19 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
       return false;
   }
 
-  if (auto_index && index_.empty()) {
-    auto_index_ = true;
-  } else {
   std::string root_dir = locations.at(location).root_;
-
   std::string relative_path = request_target_.substr(location.size());
   std::string rootPath = root_dir.substr(1) + relative_path;
 
-  if (!CheckValidPath(rootPath))
-    return false;
+  std::cout << method_ << " " << auto_index << " " << index_;
+
+  if (method_ == "GET" && auto_index && index_.empty()) {
+    std::cout << "1\n";
+    CreateDirListing(rootPath);  
+  } else {
+    std::cout << "2\n";
+    if (!CheckValidPath(rootPath))
+      return false;
   }
     
   if (method_ == "GET" || method_ == "HEAD" || method_ == "DELETE")
@@ -144,10 +149,6 @@ std::string HttpParser::getResourceTarget() const {
 
 std::string HttpParser::getFileList() const {
   return file_list_;
-}
-
-bool  HttpParser::getAutoIndex() const {
-  return auto_index_;
 }
 
 bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
@@ -562,3 +563,34 @@ void HttpParser::GenerateFileListHtml() {
 
      return true;
  }
+
+
+void HttpParser::CreateDirListing(std::string directory) {
+  std::ofstream outFile("./www/dir_list.html");
+    if (!outFile.is_open()) {
+        logError("Could not open file: www/dir_list.html");
+        status_ = "500";
+        request_target_ = "www/error_pages/500.html";
+        return;
+    }
+    outFile << "<html><body><h1>Index of " << directory << "</h1><ul>";
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+            std::string name = entry.path().filename().string();
+
+            if (std::filesystem::is_directory(entry.path())) {
+                outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+            } else {
+                outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        outFile << "<h1>Directory not found</h1>";
+        logError("Error accessing directory: " + directory);
+        status_ = "500";
+    }
+    request_target_ = "www/dir_list.html";
+    outFile<< "</ul></body></html>";
+    outFile.close();
+    std::cout << "Directory listing written to " << "./www/dir_list.html" << std::endl;
+}

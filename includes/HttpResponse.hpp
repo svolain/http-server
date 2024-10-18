@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 16:27:09 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/18 08:49:14 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,9 +45,6 @@ class HttpResponse {
   void        SendHeader(ClientInfo& fd_info);
   void        SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
   int         SendOneChunk(int client_socket, std::ifstream &file);
-  void        SendDirList(ClientInfo& fd_info, pollfd& poll, 
-              const std::string& directory_path);
-  std::string CreateDirListing(const std::string& directory_path);
   int         SendToClient(const int clientSocket, const char *msg, int length);
 
   std::string&                        status_;

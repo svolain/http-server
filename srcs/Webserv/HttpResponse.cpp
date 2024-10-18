@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 16:36:43 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/18 09:46:24 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,7 @@ void HttpResponse::CreateResponse(ClientInfo& fd_info, pollfd& poll) {
       SendHeader(fd_info);
       fd_info.setIsSending(true);
   }
-  //else {
-    //if (!fd_info.getParser().getAutoIndex()) {
       SendChunkedBody(fd_info, poll);
-   /* } else {
-      SendDirList(fd_info, poll, "dd");
-    }
-  }*/
 }
 
 void HttpResponse::ResetResponse() {
@@ -44,17 +38,14 @@ void HttpResponse::SendHeader(ClientInfo& fd_info) {
   
   cont_type_ = "text/html";
 
-  if (!parser.getAutoIndex()) {
-    logDebug("the resource path is " + resource_target);
-    logDebug("the error code from parser is " + status_);
+  logDebug("the resource path is " + resource_target);
+  logDebug("the error code from parser is " + status_);
 
-    //setErrorCode(parser.getErrorCode());
+  //setErrorCode(parser.getErrorCode());
 
-    AssignContType(resource_target);
-    std::ifstream& file = fd_info.getGetfile();
-    OpenFile(resource_target, file);
-  } else 
-    logDebug("auto index enabled");
+  AssignContType(resource_target);
+  std::ifstream& file = fd_info.getGetfile();
+  OpenFile(resource_target, file);
   ComposeHeader();
 
   logDebug("\n------response header------\n" + \
@@ -119,33 +110,6 @@ int HttpResponse::SendOneChunk(int client_socket, std::ifstream& file) {
     return 1;
   return 0;
 }
-/*
-void HttpResponse::SendDirList(ClientInfo& fd_info, pollfd& poll, const std::string& directory_path) {
-  std::string html = CreateDirListing(directory_path);
-  
-
-}
-
-std::string HttpResponse::CreateDirListing(const std::string& directory_path) {
-  std::ostringstream html;
-    html << "<html><body><h1>Index of " << directory_path << "</h1><ul>";
-
-    try {
-        for (const auto& entry : std::filesystem::directory_iterator(directory_path)) {
-            std::string name = entry.path().filename().string();
-            if (std::filesystem::is_directory(entry.path())) {
-                html << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
-            } else {
-                html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
-            }
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        return "<html><body><h1>Directory not found</h1></body></html>";
-    }
-
-    html << "</ul></body></html>";
-    return html.str();
-}*/
 
 int HttpResponse::SendToClient(const int client_socket, const char* msg, int length) {
   int bytes_sent;
