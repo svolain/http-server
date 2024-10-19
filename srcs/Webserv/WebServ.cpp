@@ -53,8 +53,6 @@ void WebServ::Run() {
       perror("poll: ");
     else if (!socketsReady) {
       logInfo("poll() is closing connections on timeout...");
-      for (auto it = connections_.begin(); it != connections_.end(); it++) //close all active connections
-        it->second->CleanupConnection();
       connections_.clear();
       pollFDs_.resize(sockets_.size());
     } else
@@ -106,7 +104,8 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::AddNewConnection(pollfd& fd, std::unique_ptr<Connection> connection) {
+void WebServ::AddNewConnection(pollfd& fd,
+                               std::unique_ptr<Connection> connection) {
   pollFDs_.push_back(fd);
   connections_.emplace(fd.fd, std::move(connection));
 }
@@ -129,7 +128,6 @@ void WebServ::SendData(Connection& connection, size_t& i) {
 }
 
 void WebServ::CloseConnection(Connection& connection, size_t& i) {
-  connection.CleanupConnection();
   connections_.erase(connection.fd_);
   pollFDs_.erase(pollFDs_.begin() + i);
   i--;
@@ -138,8 +136,6 @@ void WebServ::CloseConnection(Connection& connection, size_t& i) {
 void WebServ::CloseAllConnections() {
   for (size_t i = 0; i < sockets_.size(); i++) //close all listening sockets
     close(pollFDs_[i].fd);
-  for (auto it = connections_.begin(); it != connections_.end(); it++) //close all active connections
-    it->second->CleanupConnection();
   //Destructor should handle map and vector erasing
 }
 

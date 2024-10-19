@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/17 17:55:41 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:25:14 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ class Connection
   virtual int   SendData(pollfd& poll)    = 0;
   bool          HasTimedOut() const;
   void          UpdateLastActive();
-  virtual void  CleanupConnection() = 0;
 
   int       fd_;
   timepoint last_active_;

@@ -43,9 +43,6 @@ int ClientConnection::ReceiveData(pollfd& poll) {
   } else if (parser_.WriteBody(vhost_, buffer, bytesIn)){
     poll.events = POLLOUT;
   }
-  bool cgi = false;
-  if (cgi)
-    
   return 0;
 }
 
@@ -65,42 +62,6 @@ void  ClientConnection::ResetClientConnection() {
   response_.ResetResponse();
   is_sending_chunks_ = false;
   is_parsing_body_ = false;
-}
-
-void  ClientConnection::CreateCGIConnection() {
-  int pipe_fd[2];
-  if (pipe(pipe_fd) == -1) {
-    status_ = "500";
-    logError("500 Internal Server Error");
-  }
-
-  pid_t id = fork();
-  if (id == -1) {
-    //error occured
-    close(pipe_fd[0]);
-    close(pipe_fd[1]);
-    status_ = "500";
-    logError("500 Internal Server Error");
-  }
-  if (id != 0) {
-    close(pipe_fd[1]);
-    pollfd cgi_poll{0};
-    cgi_poll.fd = pipe_fd[0];
-    fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
-    cgi_poll.events = POLLIN;
-    webserv_.AddNewConnection(cgi_poll, std::make_unique<CGIConnection>());
-    //wait?
-    //set cgi_is_running status may be
-  }
-  else {
-    //prepare env
-    //call execve
-    std::terminate();
-  }
-}
-
-void  ClientConnection::CleanupConnection() {
-  //                  somenthig here;
 }
 
 HttpParser& ClientConnection::getParser() {
