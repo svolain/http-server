@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/18 17:56:27 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/19 17:16:35 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,13 +16,14 @@
 #include <vector>
 
 ClientInfo::ClientInfo(int fd, Socket& sock)
-    : fd_(fd), sock_(sock), parser_(status_) {}
+    : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
 
 ClientInfo::ClientInfo(ClientInfo&& other)
     : status_(other.status_),
       fd_(other.fd_),
       sock_(other.sock_),
-      parser_(status_)  {}
+      parser_(status_),
+      response_(status_)  {}
 
 int ClientInfo::RecvRequest(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
@@ -36,24 +37,21 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());
-    if (!header_parsed || parser_.HandleRequest(vhost_)) {
+    if (!header_parsed || !parser_.HandleRequest(vhost_))
       poll.events = POLLOUT;
-    }
-    parser_.ComposeResponse(*this);
+    parser_.OpenFile(*this);
     is_parsing_body_ = true;
-  } else if (parser_.WriteBody(vhost_, buffer, bytesIn)){
-    poll.events = POLLOUT;
-  }
+  } else if (parser_.WriteBody(vhost_, buffer, bytesIn))
+      poll.events = POLLOUT;
   return 0;
 }
 
 void  ClientInfo::SendResponse(pollfd& poll) {
-  response_.SendChunkedBody(*this, poll);
+  response_.SendResponse(*this, poll);
 }
 
 void  ClientInfo::ResetClientInfo() {
   status_ = "200";
-  //getfile_.close(); Remove it?
   vhost_ = nullptr;
   parser_.ResetParser();
   response_.ResetResponse();
@@ -77,8 +75,8 @@ bool ClientInfo::getIsSending() {
   return is_sending_chunks_;
 }
 
-std::ifstream& ClientInfo::getGetfile() {
-  return getfile_;
+std::fstream& ClientInfo::getGetfile() {
+  return file_;
 }
 
 void ClientInfo::setIsSending(bool boolean) {

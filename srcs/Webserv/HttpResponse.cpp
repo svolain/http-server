@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/18 17:55:39 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:12:53 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,24 +14,23 @@
 #include "ClientInfo.hpp"
 #include "Logger.h"
 
-#include <sys/stat.h>
+HttpResponse::HttpResponse(std::string& status)
+  : header_("---"), status_(status), cont_type_("text/html"), status_message_{} {}
 
-/* How to init the map only once? */
-// HttpResponse::HttpResponse()
-//   :  {}
+void HttpResponse::SendResponse(ClientInfo& fd_info, pollfd& poll) {  
+  std::fstream&   file = fd_info.getGetfile();
+  int             client_socket = fd_info.getFd();
 
+  additional_headers_ = fd_info.getParser().getAddHeaders();
 
-void HttpResponse::SendChunkedBody(ClientInfo& fd_info, pollfd& poll) {
-  
-  std::ifstream& file = fd_info.getGetfile();
-  int client_socket = fd_info.getFd();
+  if (!header_.empty() && !SendHeader(client_socket, fd_info.getParser().getRequestTarget()))
+    return;
   if (file.is_open()) {
     if (SendOneChunk(client_socket, file) == 0)
       return ;
     if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1)
       perror("send 2:");
-  } 
-  else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n0\r\n\r\n", 42) == -1) 
+  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n0\r\n\r\n", 42) == -1) 
     perror("send 3:");
   
   file.close();
@@ -39,7 +38,55 @@ void HttpResponse::SendChunkedBody(ClientInfo& fd_info, pollfd& poll) {
   logDebug("\n-----response sent-----\n", true);
 }
 
-int HttpResponse::SendOneChunk(int client_socket, std::ifstream& file) {
+int HttpResponse::SendHeader(int client_socket, std::string request_target) {
+
+  AssignContType(request_target);
+  LookupStatusMessage();
+  
+  ComposeHeader();
+  std::cout << header_ << std::endl;
+  if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
+    header_.clear();
+    return 0;
+  }
+  else
+    logError("SendResponse: error on send");
+  return 1;
+}
+
+void HttpResponse::AssignContType(std::string request_target) {
+  try{
+    auto it = getContTypeMap().find(request_target.substr(request_target.find_last_of('.')));
+    if (it != getContTypeMap().end())
+      cont_type_ = it->second;
+  }
+  catch (const std::out_of_range &e) {
+    logDebug("AssignContType: no '.' found in the filename");
+  }
+}
+
+void HttpResponse::LookupStatusMessage(void) {
+  auto it = getStatusMap().find(status_);
+  if (it != getStatusMap().end()) {
+    status_message_ = it->second;
+  } else {
+    logError("LookupStatusMessage: couldn't find the proper status message, assigning 500");
+    logError("status was " + status_);
+    status_message_ = "500 Internal Server Error";
+  }
+}
+
+void HttpResponse::ComposeHeader(void) {
+  std::ostringstream oss;
+	oss << "HTTP/1.1 " << status_message_ << "\r\n";
+	oss << "Content-Type: " << cont_type_ << "\r\n";
+  oss <<  additional_headers_ << "\r\n";
+  oss << "Transfer-Encoding: chunked" << "\r\n";
+	oss << "\r\n";
+	this->header_ = oss.str();
+}
+
+int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
   std::streamsize bytes_read;
   const int chunk_size = 1024;
   char buffer[chunk_size]{};
@@ -57,8 +104,7 @@ int HttpResponse::SendOneChunk(int client_socket, std::ifstream& file) {
     SendToClient(client_socket, "\r\n", 2) == -1) {
         perror("send :");
         return 1;
-    }
-
+  }
   logDebug("sent " + std::to_string(bytes_read), false);
   if (bytes_read < chunk_size)
     return 1;
@@ -77,7 +123,68 @@ int HttpResponse::SendToClient(const int client_socket, const char* msg, int len
 }
 
 void HttpResponse::ResetResponse() {
+  header_ = "---";
   cont_type_ = "text/html";
   status_message_.clear();
-  header_.clear();
+  cont_type_.clear();
+}
+
+const std::map<std::string, std::string>& HttpResponse::getContTypeMap() {
+  static const std::map<std::string, std::string> cont_type_map  = 
+  {
+    {".mp3", "audio/mpeg"},
+    {".wma", "audio/x-ms-wma"},
+    {".wav", "audio/x-wav"},
+
+    {".png", "image/png"},
+    {".jpg", "image/jpeg"},
+    {".gif", "image/gif"},
+    {".tiff", "image/tiff"},
+    {".ico", "image/x-icon"},
+    {".djvu", "image/vnd.djvu"},
+    {".svg", "image/svg+xml"},
+
+    {".css", "text/css"},
+    {".csv", "text/csv"},
+    {".html", "text/html"},
+    {".txt", "text/plain"},
+
+    {".mp4", "video/mp4"},
+    {".avi", "video/x-msvideo"},
+    {".wmv", "video/x-ms-wmv"},
+    {".flv", "video/x-flv"},
+    {".webm", "video/webm"},
+
+    {".pdf", "application/pdf"},
+    {".json", "application/json"},
+    {".xml", "application/xml"},
+    {".zip", "application/zip"},
+    {".js", "application/javascript"},
+    {".odt", "application/vnd.oasis.opendocument.text"},
+    {".ods", "application/vnd.oasis.opendocument.spreadsheet"},
+    {".odp", "application/vnd.oasis.opendocument.presentation"},
+    {".odg", "application/vnd.oasis.opendocument.graphics"},
+    {".xls", "application/vnd.ms-excel"},
+    {".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+    {".ppt", "application/vnd.ms-powerpoint"},
+    {".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+    {".doc", "application/msword"},
+    {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    {".xul", "application/vnd.mozilla.xul+xml"}
+  };
+  return cont_type_map;
+}
+
+const std::map<std::string, std::string>& HttpResponse::getStatusMap() {
+  static const std::map<std::string, std::string> status_map  = 
+  {
+    {"200", "200 OK"},
+    {"302", "302 Found"},
+    {"400", "400 Bad Request"},
+    {"404", "404 Not Found"},
+    {"405", "405 Method Not Allowed"},
+    {"411", "411 Length Required"},
+    {"500", "500 Internal Server Error"}
+  };
+  return status_map;
 }

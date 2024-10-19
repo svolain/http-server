@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/18 17:47:03 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:07:23 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,12 +45,14 @@ class HttpParser {
   bool        IsBodySizeValid(VirtualHost* vhost);
   void        ResetParser();
 
-  void        ComposeResponse(ClientInfo& fd_info);
+  void        OpenFile(ClientInfo& fd_info);
   
   std::string getHost() const;
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
+
+  std::string getAddHeaders();
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);
@@ -69,13 +71,6 @@ class HttpParser {
   bool  CheckValidPath(std::string root);
   void  CreateDirListing(std::string directory);
 
-  //Compose Response
-  
-  void AssignContType();
-  void OpenFile(ClientInfo& fd_info);
-  void LookupStatusMessage();
-  void ComposeHeader();
-
   std::string&                        status_;
   size_t                              content_length_ = 0;
   std::string                         method_;
@@ -87,12 +82,7 @@ class HttpParser {
   std::map<std::string, std::string>  headers_;
   bool                                is_chunked_ = false;
 
-
-  std::string                         file_path_;
-  std::map<std::string, std::string>  cont_type_map_;
-  std::string                         cont_type_;
-  std::string                         status_message_;
-  std::string                         header_;
+  std::string                         additional_headers_;
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/18 17:54:41 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:08:07 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,47 +16,7 @@
 
 
 
-HttpParser::HttpParser(std::string& status) : status_(status), cont_type_map_{
-    {".mp3", "audio/mpeg"},
-    {".wma", "audio/x-ms-wma"},
-    {".wav", "audio/x-wav"},
-
-    {".png", "image/png"},
-    {".jpg", "image/jpeg"},
-    {".gif", "image/gif"},
-    {".tiff", "image/tiff"},
-    {".ico", "image/x-icon"},
-    {".djvu", "image/vnd.djvu"},
-    {".svg", "image/svg+xml"},
-
-    {".css", "text/css"},
-    {".csv", "text/csv"},
-    {".html", "text/html"},
-    {".txt", "text/plain"},
-
-    {".mp4", "video/mp4"},
-    {".avi", "video/x-msvideo"},
-    {".wmv", "video/x-ms-wmv"},
-    {".flv", "video/x-flv"},
-    {".webm", "video/webm"},
-
-    {".pdf", "application/pdf"},
-    {".json", "application/json"},
-    {".xml", "application/xml"},
-    {".zip", "application/zip"},
-    {".js", "application/javascript"},
-    {".odt", "application/vnd.oasis.opendocument.text"},
-    {".ods", "application/vnd.oasis.opendocument.spreadsheet"},
-    {".odp", "application/vnd.oasis.opendocument.presentation"},
-    {".odg", "application/vnd.oasis.opendocument.graphics"},
-    {".xls", "application/vnd.ms-excel"},
-    {".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-    {".ppt", "application/vnd.ms-powerpoint"},
-    {".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
-    {".doc", "application/msword"},
-    {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
-    {".xul", "application/vnd.mozilla.xul+xml"}
-    }, cont_type_("text/html"), status_message_{}  {}
+HttpParser::HttpParser(std::string& status) : status_(status) {}
 
 bool HttpParser::ParseHeader(const std::string& request) {
   std::istringstream  request_stream(request);
@@ -98,17 +58,12 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
       redir = it.second.redirection_;
     }
   } 
-
-  (void)redir; //adding later the redirection check 
   
-  std::string path("./www" + request_target_);
   if (location.empty() || request_target_.substr(0, location.size()) != location) {
     logError("Error: location not found");
     status_ = "404";
     return false;
   }
-
-
 
   std::string allowedMethods = locations.at(location).methods_;
   if (allowedMethods.find(method_) == std::string::npos) {
@@ -117,13 +72,15 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
       return false;
   }
 
+  if (!redir.first.empty()) {
+    status_ = redir.first;
+    additional_headers_ = "Location: " + redir.second;
+    return false;
+  }
+
   std::string root_dir = locations.at(location).root_;
   std::string relative_path = request_target_.substr(location.size());
   std::string rootPath = root_dir.substr(1) + relative_path;
-  //added
-  file_path_ = request_target_.at(location.size());
-  logError("file path is " + file_path_);
-
 
   std::cout << method_ << " " << auto_index << " " << index_;
 
@@ -169,7 +126,7 @@ int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char>& buffer,
   return 1;
 }
 
-bool  HttpParser::IsBodySizeValid(VirtualHost* vhost) {
+bool HttpParser::IsBodySizeValid(VirtualHost* vhost) {
   if (request_body_.size() > vhost->getMaxBodySize()) {
     logError("Error: Request Header Fields Too Large");
     status_ = "431";
@@ -178,7 +135,7 @@ bool  HttpParser::IsBodySizeValid(VirtualHost* vhost) {
   return true;
 }
 
-void  HttpParser::ResetParser() {
+void HttpParser::ResetParser() {
   content_length_ = 0;
   method_.clear();
   request_target_.clear();
@@ -188,7 +145,7 @@ void  HttpParser::ResetParser() {
   is_chunked_ = false;
 }
 
-std::string  HttpParser::getHost() const {
+std::string HttpParser::getHost() const {
   std::string host = headers_.at("Host");
     return host;
 }
@@ -205,7 +162,7 @@ std::string HttpParser::getFileList() const {
   return file_list_;
 }
 
-bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
+bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
   std::string line;
   std::string http_version;
   std::getline(request_stream, line);
@@ -249,7 +206,7 @@ bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
   return true;
 }
 
-bool  HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
+bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   std::string line;
   while (std::getline(request_stream, line) && line != "\r") {
     size_t delim = line.find(":");
@@ -276,7 +233,7 @@ bool  HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   return true;
 }
 
-bool  HttpParser::CheckPostHeaders() {
+bool HttpParser::CheckPostHeaders() {
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
@@ -367,7 +324,7 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
                        buffer.begin() + bytesIn);
 }
 
-void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
+void HttpParser::HandlePostRequest(std::vector<char> request_body) {
 
   auto it = headers_.find("Content-Type");
 
@@ -618,7 +575,6 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
     return true;
 }
 
-
 void HttpParser::CreateDirListing(std::string directory) {
   std::ofstream outFile("./www/dir_list.html");
     if (!outFile.is_open()) {
@@ -650,46 +606,25 @@ void HttpParser::CreateDirListing(std::string directory) {
 }
 
 
-
-void HttpParser::ComposeResponse(ClientInfo& fd_info) {
-  logDebug("the resource path is " + request_target_);
-  logDebug("the error code from parser is " + status_);
-
-  // auto loc_it = fd_info.getVhost()->getLocations().find(resource_target);
-  // if (loc_it != fd_info.getVhost()->getLocations().end() && \
-  //     CheckRedirections(fd_info, loc_it->second)) {
-  //       poll.events = POLLIN;
-  //       return ;
-  //     }
-  
-  AssignContType();
-  LookupStatusMessage();
-  ComposeHeader();
-  OpenFile(fd_info);
-} 
-
-void HttpParser::AssignContType() {
-  try{
-    auto it = cont_type_map_.find(request_target_.substr(request_target_.find_last_of('.')));
-    if (it != cont_type_map_.end())
-      cont_type_ = it->second;
-  }
-  catch (const std::out_of_range &e) {
-    logDebug("AssignContType: no '.' found in the filename");
-  }
-}
-
-
 void HttpParser::OpenFile(ClientInfo& fd_info) {
-  std::ifstream&  file = fd_info.getGetfile();
 
-  if (status_ == "200") 
-    file.open(file_path_, std::ios::binary);
-  else 
-    file.open("./" + fd_info.getVhost()->getErrorPage(status_), std::ios::binary);
+  if (status_== "300" || status_ == "302" || status_ == "307" || status_ == "308")
+    return ;
+  
+  std::fstream&  file = fd_info.getGetfile();
+  logDebug("the requeset_target_ is " + request_target_);
+  logDebug("the error code is " + status_);
+
+  file.open("./" + request_target_, std::fstream::in | std::ios::binary);
   if (!file.is_open()) {
-    logError("OpenFile: couldnt open the error page " + status_);
-    header_.append("<h1>500 Internal Server Error</h1>\r\n");
+     logDebug("OpenFile: couldnt open, opening 404 error page");
+    file.open("./" + fd_info.getVhost()->getErrorPage("404"), std::fstream::in | std::ios::binary);
+    if (!file.is_open()) {
+      status_ = "500";
+      logDebug("OpenFile: couldnt open 404, opening 500 error page");
+      file.open("./" + fd_info.getVhost()->getErrorPage("500"), std::fstream::in | std::ios::binary);
+      logError("OpenFile Error: couldn't open the error page 500");
+    }
   }
 }
 
@@ -709,31 +644,6 @@ void HttpParser::OpenFile(ClientInfo& fd_info) {
 // }
 
 
-void HttpParser::LookupStatusMessage(void) {
-  std::map<std::string, std::string> status_map = {
-      {"200", "200 OK"},
-      {"400", "400 Bad Request"},
-      {"404", "404 Not Found"},
-      {"405", "405 Method Not Allowed"},
-      {"411", "411 Length Required"},
-      {"500", "500 Internal Server Error"},
-  };
-
-  auto it = status_map.find(status_);
-  if (it != status_map.end()) {
-    status_message_ = it->second;
-  } else {
-    logError("LookupStatusMessage: couldn't find the proper status message, assigning 500");
-    logError("status was " + status_);
-    status_message_ = "500 Internal Server Error";
-  }
-}
-
-void HttpParser::ComposeHeader(void) {
-  std::ostringstream oss;
-	oss << "HTTP/1.1 " << status_message_ << "\r\n";
-	oss << "Content-Type: " << cont_type_ << "\r\n";
-  oss << "Transfer-Encoding: chunked" << "\r\n";
-	oss << "\r\n";
-	this->header_ = oss.str();
+std::string HttpParser::getAddHeaders() {
+  return additional_headers_;
 }

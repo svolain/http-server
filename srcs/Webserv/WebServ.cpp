@@ -108,8 +108,9 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
 }
 
 void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
-  if (fd_info.RecvRequest(pollFDs_[i]))
+  if (fd_info.RecvRequest(pollFDs_[i])) {
     CloseConnection(pollFDs_[i].fd, i);
+  }
 }
 
 void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {
