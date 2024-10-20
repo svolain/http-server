@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 11:49:17 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/15 13:11:25 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/20 23:14:10 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ Location::Location(std::string& methods,
 
 std::string Location::ToString() const {
   std::string out;
+
   out += std::string(31, ' ') + "Allowed methods: ";
   if (methods_.find("GET") != std::string::npos)
     out += "GET ";
@@ -37,10 +38,12 @@ std::string Location::ToString() const {
   if (methods_.find("DELETE") != std::string::npos)
     out += "DELETE ";
   out += "\n";
+
   if (!redirection_.first.empty()) {
     out += std::string(31, ' ') + "Redirection: ";
     out += redirection_.first + " " + redirection_.second + "\n";
   }
+  
   if (!root_.empty()) {
     out += std::string(31, ' ') + "Root: " + root_ + "\n";
   }

@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/19 18:08:07 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/20 23:13:12 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 #include "Logger.h"
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 
 
 
@@ -44,7 +44,7 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
     status_ = "431";
     return false;
   }
-  
+
   const std::map<std::string, Location>& locations = vhost->getLocations();
   std::string                         location;
   bool                                auto_index;
@@ -59,7 +59,8 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
     }
   } 
   
-  if (location.empty() || request_target_.substr(0, location.size()) != location) {
+  if (location.empty() ||
+      request_target_.substr(0, location.size()) != location) {
     logError("Error: location not found");
     status_ = "404";
     return false;
@@ -325,254 +326,251 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
 }
 
 void HttpParser::HandlePostRequest(std::vector<char> request_body) {
-
   auto it = headers_.find("Content-Type");
 
-  if (it == headers_.end())
-  {
+  if (it == headers_.end()) {
     status_ = "400";
     return;
   }
 
   std::string contentType = it->second;
 
-  if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
-        logDebug("Handling URL-encoded form submission");
-        if (!ParseUrlEncodedData(request_body)) {
-             status_ = "500";// Internal Server Error
-            return;
-        }
-        
-    } else if (contentType.find("multipart/form-data") != std::string::npos) {
-      logDebug("Handling multipart form data");
-        if (!HandleMultipartFormData(request_body, contentType)) {
-            status_ = "500";// Internal Server Error
-            return;
-        }
-        GenerateFileListHtml();
-        std::cout << "fileist:\n" << file_list_;
-    } else {
-        logError("Unsupported Content-Type");
-        status_ = "415";
+  if (contentType.find("application/x-www-form-urlencoded") !=
+      std::string::npos) {
+    logDebug("Handling URL-encoded form submission");
+    if (!ParseUrlEncodedData(request_body)) {
+      status_ = "500";// Internal Server Error
+      return;
     }
+  } else if (contentType.find("multipart/form-data") != std::string::npos) {
+    logDebug("Handling multipart form data");
+    if (!HandleMultipartFormData(request_body, contentType)) {
+      status_ = "500";// Internal Server Error
+      return;
+    }
+    GenerateFileListHtml();
+    std::cout << "fileist:\n" << file_list_;
+  } else {
+    logError("Unsupported Content-Type");
+    status_ = "415";
+  }
 }
 
-bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const std::string &contentType) { 
-    size_t boundaryPosition = contentType.find("boundary=");
-    if (boundaryPosition == std::string::npos)
-        return false;
+bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
+                                         const std::string &contentType) {
+  size_t boundaryPosition = contentType.find("boundary=");
+  if (boundaryPosition == std::string::npos)
+    return false;
 
-    std::string boundary = "--" + contentType.substr(boundaryPosition + 9);
-    std::string fullBoundary = "\r\n" + boundary;
+  std::string boundary = "--" + contentType.substr(boundaryPosition + 9);
+  std::string fullBoundary = "\r\n" + boundary;
 
-    std::vector<char> boundaryVec(boundary.begin(), boundary.end());
-    std::vector<char> fullBoundaryVec = {'\r', '\n'};
-    fullBoundaryVec.insert(fullBoundaryVec.end(), boundaryVec.begin(), boundaryVec.end());
+  std::vector<char> boundaryVec(boundary.begin(), boundary.end());
+  std::vector<char> fullBoundaryVec = {'\r', '\n'};
+  fullBoundaryVec.insert(fullBoundaryVec.end(), boundaryVec.begin(),
+                         boundaryVec.end());
 
-    size_t boundaryLength = boundaryVec.size();
-    size_t fullBoundaryLength = fullBoundaryVec.size();
+  size_t boundaryLength = boundaryVec.size();
+  size_t fullBoundaryLength = fullBoundaryVec.size();
 
-    auto pos = body.begin();
-    bool firstBoundary = true; 
-    while (true) {
-      auto boundaryStart = body.end();
-        if (firstBoundary) {
-          boundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
-        } else {
-          boundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(), fullBoundaryVec.end());
-        }
-
-        if (boundaryStart == body.end())
-            break;
-
-        pos = boundaryStart + (firstBoundary ? boundaryLength : fullBoundaryLength);
-
-        firstBoundary = false;
-
-        auto nextBoundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(), fullBoundaryVec.end());
-
-        if (nextBoundaryStart == body.end()) {
-            break;
-        }
-
-        std::vector<char> bodyPart(pos, nextBoundaryStart);
-
-        if (!ParseMultiPartData(bodyPart))
-            return false;
-
-        pos = nextBoundaryStart;
+  auto pos = body.begin();
+  bool firstBoundary = true;
+  while (true) {
+    auto boundaryStart = body.end();
+    if (firstBoundary) {
+      boundaryStart = std::search(pos, body.end(), boundaryVec.begin(),
+                                  boundaryVec.end());
+    } else {
+      boundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(),
+                                  fullBoundaryVec.end());
     }
 
-    return true;
+    if (boundaryStart == body.end())
+      break;
+
+    pos = boundaryStart + (firstBoundary ? boundaryLength : fullBoundaryLength);
+
+    firstBoundary = false;
+
+    auto nextBoundaryStart = std::search(pos, body.end(),
+                                         fullBoundaryVec.begin(),
+                                         fullBoundaryVec.end());
+
+    if (nextBoundaryStart == body.end())
+      break;
+
+    std::vector<char> bodyPart(pos, nextBoundaryStart);
+
+    if (!ParseMultiPartData(bodyPart))
+      return false;
+
+    pos = nextBoundaryStart;
+  }
+  return true;
 }
 
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
-    std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
-    
-    auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(), crlf.begin(), crlf.end());
-    if (headerEndIt == bodyPart.end()) {
-        logError("Error: invalid multi part format");
+  std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
+    auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(),
+                                   crlf.begin(), crlf.end());
+  if (headerEndIt == bodyPart.end()) {
+    logError("Error: invalid multi part format");
+    return false;
+  }
+
+  std::vector<char> headers(bodyPart.begin(), headerEndIt);
+  std::vector<char> content(headerEndIt + 4, bodyPart.end());
+
+  std::string headersStr(headers.begin(), headers.end());
+
+  if (headersStr.find("Content-Disposition") != std::string::npos) {
+    size_t posFilename = headersStr.find("filename=");
+    size_t posName = headersStr.find("name=");
+
+    if (posFilename != std::string::npos) {
+      size_t posStart = headersStr.find('"', posFilename) + 1;
+      size_t posEnd = headersStr.find('"', posStart);
+      std::string filename = headersStr.substr(posStart, posEnd - posStart);
+      logDebug("File upload: " + filename);
+      std::ofstream outFile("www/uploads/" + filename, std::ios::binary);
+      if (outFile.is_open()) {
+        outFile.write(content.data(), content.size());
+        outFile.close();
+        logDebug("File " + filename + " saved successfully");
+      } else {
+        logError("Error: failed to save file ");
         return false;
+      }
+    } else if (posName != std::string::npos) {
+      size_t posStart = headersStr.find('"', posName) + 1;
+      size_t posEnd = headersStr.find('"', posStart);
+      std::string fieldName = headersStr.substr(posStart, posEnd - posStart);
+      std::string contentStr(content.begin(), content.end());
+      logDebug("Form field: " + fieldName + " = " + contentStr);
     }
-
-    std::vector<char> headers(bodyPart.begin(), headerEndIt);
-    std::vector<char> content(headerEndIt + 4, bodyPart.end());
-
-    std::string headersStr(headers.begin(), headers.end());
-
-    if (headersStr.find("Content-Disposition") != std::string::npos) {
-        size_t posFilename = headersStr.find("filename=");
-        size_t posName = headersStr.find("name=");
-
-        if (posFilename != std::string::npos) {
-
-            size_t posStart = headersStr.find('"', posFilename) + 1;
-            size_t posEnd = headersStr.find('"', posStart);
-            std::string filename = headersStr.substr(posStart, posEnd - posStart);
-
-            logDebug("File upload: " + filename);
-
-            std::ofstream outFile("www/uploads/" + filename, std::ios::binary);
-            if (outFile.is_open()) {
-                outFile.write(content.data(), content.size());
-                outFile.close();
-                logDebug("File " + filename + " saved successfully");
-            } else {
-                logError("Error: failed to save file ");
-                return false;
-            }
-        } else if (posName != std::string::npos) {
-      
-            size_t posStart = headersStr.find('"', posName) + 1;
-            size_t posEnd = headersStr.find('"', posStart);
-            std::string fieldName = headersStr.substr(posStart, posEnd - posStart);
-
-            std::string contentStr(content.begin(), content.end());
-            logDebug("Form field: " + fieldName + " = " + contentStr);
-        }
-    }
-
-    return true;
+  }
+  return true;
 }
-  
+
 bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
-    std::string requestBody(body.begin(), body.end());
-    std::string filename = "form_bin";
+  std::string requestBody(body.begin(), body.end());
+  std::string filename = "form_bin";
 
-    std::istringstream stream(requestBody);
-    std::string pair;
+  std::istringstream stream(requestBody);
+  std::string pair;
 
-    std::ofstream outputFile(filename, std::ios::binary);
-    if (!outputFile) {
-        logError("Error: could not open file for writing.");
-        return false;
+  std::ofstream outputFile(filename, std::ios::binary);
+  if (!outputFile) {
+    logError("Error: could not open file for writing.");
+    return false;
+  }
+
+  while (std::getline(stream, pair, '&')) {
+    size_t delim = pair.find('=');
+    if (delim == std::string::npos) {
+      logError("Error: URL encoding has wrong format.");
+      return false;
     }
+    std::string key = pair.substr(0, delim);
+    std::string value = pair.substr(delim + 1);
 
-    while (std::getline(stream, pair, '&')) {
-        size_t delim = pair.find('=');
-        if (delim == std::string::npos) {
-            logError("Error: URL encoding has wrong format.");
-            return false;
-        }
-        std::string key = pair.substr(0, delim);
-        std::string value = pair.substr(delim + 1);
+    size_t keyLength = key.size();
+    outputFile.write(reinterpret_cast<const char*>(&keyLength),
+                     sizeof(keyLength));
+    outputFile.write(key.data(), keyLength);
 
-        size_t keyLength = key.size();
-        outputFile.write(reinterpret_cast<const char*>(&keyLength), sizeof(keyLength));
-        outputFile.write(key.data(), keyLength);
-
-        size_t valueLength = value.size();
-        outputFile.write(reinterpret_cast<const char*>(&valueLength), sizeof(valueLength));
-        outputFile.write(value.data(), valueLength);
-    }
-
-    outputFile.close();
-    return true;
+    size_t valueLength = value.size();
+    outputFile.write(reinterpret_cast<const char*>(&valueLength),
+                     sizeof(valueLength));
+    outputFile.write(value.data(), valueLength);
+  }
+  outputFile.close();
+  return true;
 }
 
 bool HttpParser::IsPathSafe(const std::string& path) {
   if (path.find(".."))
     return false;
 
-    //this function we can add more checks to check safety
+  //this function we can add more checks to check safety
   return true;
 }
 
 void HttpParser::HandleDeleteRequest() {
-    std::string path = request_target_;
-    logDebug("Handling DELETE request for path: " + path);
+  std::string path = request_target_;
+  logDebug("Handling DELETE request for path: " + path);
 
-    if (!IsPathSafe(path)) {
-      status_ = "400";
-      return;
-    }
+  if (!IsPathSafe(path)) {
+    status_ = "400";
+    return;
+  }
 
-    if (std::ifstream(path)) { 
-        if (std::remove(path.c_str()) == 0) {
-            logDebug("File deleted successfully");
-            status_ = "204";
-        } else {
-            logError("Error: Failed to delete file");
-            status_ = "500";
-        }
+  if (std::ifstream(path)) {
+    if (std::remove(path.c_str()) == 0) {
+      logDebug("File deleted successfully");
+      status_ = "204";
     } else {
-        logError("Error: File not found");
-        status_ = "404";
+      logError("Error: Failed to delete file");
+      status_ = "500";
     }
+  } else {
+    logError("Error: File not found");
+    status_ = "404";
+  }
 
 }
 
 void HttpParser::GenerateFileListHtml() {
-    file_list_ += "<ul>";
-    for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
-        std::string filename = entry.path().filename().string();
-        file_list_ += "<li>";
-        file_list_ += "<span>" + filename + "</span>";
-        file_list_ += "<button onclick=\"deleteFile('filename.txt')\">Delete</button>";
-        file_list_ += "</li>";
-    }
-    file_list_ += "</ul>";
+  file_list_ += "<ul>";
+  for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
+    std::string filename = entry.path().filename().string();
+    file_list_ += "<li>";
+    file_list_ += "<span>" + filename + "</span>";
+    file_list_ += "<button onclick=\"deleteFile('filename.txt')\">""Delete</button>";
+    file_list_ += "</li>";
+  }
+  file_list_ += "</ul>";
 }
 
 bool HttpParser::CheckValidPath(std::string rootPath) {
   if (request_target_.at(0) != '/') {
-        logError("Error: wrong path");
-        status_ = "404";
-        return false;
+    logError("Error: wrong path");
+    status_ = "404";
+    return false;
+  }
+  /*check the directory and file existence and permissions, 
+  can take absolute and relative path, needs to be tested 
+  more when we get the root from confiq*/
+  try {
+  if (std::filesystem::exists(rootPath)) {
+    if (std::filesystem::is_directory(rootPath)) {
+      if (rootPath.back() != '/')
+      request_target_ = rootPath + "/" + index_;
+      else
+      request_target_ = rootPath + index_;
+      return true; //The path is a directory
+    } else if (std::filesystem::is_regular_file(rootPath)) {
+      request_target_ = rootPath;
+      return false; //The path is a file
     }
-    /*check the directory and file existence and permissions, 
-    can take absolute and relative path, needs to be tested 
-    more when we get the root from confiq*/
-    try {
-    if (std::filesystem::exists(rootPath)) {
-      if (std::filesystem::is_directory(rootPath)) {
-          if (rootPath.back() != '/')
-            request_target_ = rootPath + "/" + index_;
-          else
-            request_target_ = rootPath + index_;
-          return true; //The path is a directory
-      } else if (std::filesystem::is_regular_file(rootPath)) {
-          request_target_ = rootPath;
-          return false; //The path is a file
-      }
-      } else {
-      logError("The path does not exist" + rootPath);
-      status_ = "404";
-      return false;
-    }
-    } catch (const std::filesystem::filesystem_error& e) {
-        logError("Filesystem error: ");
-        std::cerr << e.what() << std::endl;
-        status_ = "500";
-        return false;
-    } catch (const std::exception& e) {
-        logError("Unexpected error: "); 
-        std::cerr << e.what() << std::endl;
-        status_ = "500";
-        return false;
-    }
+    } else {
+    logError("The path does not exist" + rootPath);
+    status_ = "404";
+    return false;
+  }
+  } catch (const std::filesystem::filesystem_error& e) {
+    logError("Filesystem error: ");
+    std::cerr << e.what() << std::endl;
+    status_ = "500";
+    return false;
+  } catch (const std::exception& e) {
+    logError("Unexpected error: "); 
+    std::cerr << e.what() << std::endl;
+    status_ = "500";
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 void HttpParser::CreateDirListing(std::string directory) {
@@ -606,7 +604,7 @@ void HttpParser::CreateDirListing(std::string directory) {
 }
 
 
-void HttpParser::OpenFile(ClientInfo& fd_info) {
+void HttpParser::OpenFile(ClientConnection& fd_info) {
 
   if (status_== "300" || status_ == "302" || status_ == "307" || status_ == "308")
     return ;
@@ -628,7 +626,7 @@ void HttpParser::OpenFile(ClientInfo& fd_info) {
   }
 }
 
-// int HttpParser::CheckRedirections(ClientInfo& fd_info, Location& loc) {
+// int HttpParser::CheckRedirections(ClientConnection& fd_info, Location& loc) {
 //   if (!loc.redirection_.first.empty()) {
 //     std::string msg(
 //       "HTTP/1.1 " + loc.redirection_.first +  "\r\n" + \
