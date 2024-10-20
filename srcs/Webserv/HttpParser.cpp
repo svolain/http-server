@@ -3,15 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/15 11:56:05 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:08:07 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 #include "Logger.h"
+#include "ClientInfo.hpp"
+
+
 
 HttpParser::HttpParser(std::string& status) : status_(status) {}
 
@@ -22,12 +25,10 @@ bool HttpParser::ParseHeader(const std::string& request) {
     return false;
   if (!ParseHeaderFields(request_stream))
     return false;
-  if (method_ == "POST" && !CheckPostHeaders())
-    return false;
-  else if (method_ == "DELETE") //CHECKS FOR DELETE METHOD IF NEEDED                  
-    ;
-  else
+  if (method_ != "POST")
     return true;
+  if (!CheckPostHeaders())
+    return false;
   std::streampos current = request_stream.tellg();
   request_stream.seekg(0, std::ios::end); /* Beware of off by 1, should be good tho */
   size_t stream_size = request_stream.tellg() - current;
@@ -37,25 +38,95 @@ bool HttpParser::ParseHeader(const std::string& request) {
   return true;
 }
 
+bool  HttpParser::HandleRequest(VirtualHost* vhost) {
+  if (!IsBodySizeValid(vhost)) {
+    logError("Error: body size too big");
+    status_ = "431";
+    return false;
+  }
+  
+  const std::map<std::string, Location>& locations = vhost->getLocations();
+  std::string                         location;
+  bool                                auto_index;
+  std::pair<std::string, std::string> redir;
+
+  for (const auto& it : locations) {
+    if (request_target_.find(it.first) == 0) {
+      location = it.first;
+      index_ = it.second.index_;
+      auto_index = it.second.autoindex_;
+      redir = it.second.redirection_;
+    }
+  } 
+  
+  if (location.empty() || request_target_.substr(0, location.size()) != location) {
+    logError("Error: location not found");
+    status_ = "404";
+    return false;
+  }
+
+  std::string allowedMethods = locations.at(location).methods_;
+  if (allowedMethods.find(method_) == std::string::npos) {
+    logError("Error: Method not allowed");
+      status_ = "405";
+      return false;
+  }
+
+  if (!redir.first.empty()) {
+    status_ = redir.first;
+    additional_headers_ = "Location: " + redir.second;
+    return false;
+  }
+
+  std::string root_dir = locations.at(location).root_;
+  std::string relative_path = request_target_.substr(location.size());
+  std::string rootPath = root_dir.substr(1) + relative_path;
+
+  std::cout << method_ << " " << auto_index << " " << index_;
+
+  if (method_ == "GET" && auto_index && index_.empty()) {
+    std::cout << "1\n";
+    CreateDirListing(rootPath);  
+  } else {
+    std::cout << "2\n";
+    if (!CheckValidPath(rootPath))
+      return false;
+  }
+    
+  if (method_ == "GET" || method_ == "HEAD" || method_ == "DELETE")
+    return false;
+
+  return true;
+}
+
+
 int HttpParser::WriteBody(VirtualHost* vhost, std::vector<char>& buffer,
                           int bytesIn) {
   std::string eoc = "0\r\n\r\n";
-
-  if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
-    logDebug("bytesIn == MAXBYTES, more data to recieve");
-    AppendBody(buffer, bytesIn);
-    if (!IsBodySizeValid(vhost) || request_body_.size() > content_length_) {
-      logError("Error: Request Header Fields Too Large");
-      status_ = "431";
-      return 1;
+  (void)vhost;
+  if (is_chunked_) {
+    if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
+      logDebug("bytesIn == MAXBYTES, more data to recieve");
+      AppendBody(buffer, bytesIn);
+      /*if (!is_chunked_ &&
+          (!IsBodySizeValid(vhost) || request_body_.size() > content_length_)) {
+        logError("Error: Request Header Fields Too Large");
+        status_ = 431;
+        return 1;
+      }*/
+      return 0;
     }
-    return 0;
+    UnChunkBody(request_body_);
+  } else {
+    AppendBody(buffer, bytesIn);
+    if (bytesIn == MAXBYTES)
+      return 0;
   }
-  UnChunkBody(request_body_);
+  HandlePostRequest(request_body_);
   return 1;
 }
 
-bool  HttpParser::IsBodySizeValid(VirtualHost* vhost) {
+bool HttpParser::IsBodySizeValid(VirtualHost* vhost) {
   if (request_body_.size() > vhost->getMaxBodySize()) {
     logError("Error: Request Header Fields Too Large");
     status_ = "431";
@@ -64,7 +135,7 @@ bool  HttpParser::IsBodySizeValid(VirtualHost* vhost) {
   return true;
 }
 
-void  HttpParser::ResetParser() {
+void HttpParser::ResetParser() {
   content_length_ = 0;
   method_.clear();
   request_target_.clear();
@@ -74,20 +145,24 @@ void  HttpParser::ResetParser() {
   is_chunked_ = false;
 }
 
-std::string  HttpParser::getHost() const {
-  return headers_.at("Host");
+std::string HttpParser::getHost() const {
+  std::string host = headers_.at("Host");
+    return host;
 }
 
 std::string HttpParser::getMethod() const {
   return method_;
 }
 
-std::string HttpParser::getResourceTarget() const {
+std::string HttpParser::getRequestTarget() const {
   return request_target_;
 }
 
+std::string HttpParser::getFileList() const {
+  return file_list_;
+}
 
-bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
+bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
   std::string line;
   std::string http_version;
   std::getline(request_stream, line);
@@ -131,7 +206,7 @@ bool  HttpParser::ParseStartLine(std::istringstream& request_stream) {
   return true;
 }
 
-bool  HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
+bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   std::string line;
   while (std::getline(request_stream, line) && line != "\r") {
     size_t delim = line.find(":");
@@ -158,10 +233,11 @@ bool  HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   return true;
 }
 
-bool  HttpParser::CheckPostHeaders() {
+bool HttpParser::CheckPostHeaders() {
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
+    logError(std::to_string(is_chunked_));
     auto it = headers_.find("Content-Length");
     if (it == headers_.end()) {
       logError("Error: content-lenght missing for request body");
@@ -235,6 +311,7 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
     } else {
       status_ = "400";
       logError("UnChunkBody: \\r\\n missing");
+      status_ = "400";
       return false;
     }
   }
@@ -247,7 +324,8 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
                        buffer.begin() + bytesIn);
 }
 
-void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
+void HttpParser::HandlePostRequest(std::vector<char> request_body) {
+
   auto it = headers_.find("Content-Type");
 
   if (it == headers_.end())
@@ -261,16 +339,18 @@ void  HttpParser::HandlePostRequest(std::vector<char> request_body) {
   if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
         logDebug("Handling URL-encoded form submission");
         if (!ParseUrlEncodedData(request_body)) {
-             status_ = "500"; // Internal Server Error
+             status_ = "500";// Internal Server Error
             return;
         }
         
     } else if (contentType.find("multipart/form-data") != std::string::npos) {
       logDebug("Handling multipart form data");
         if (!HandleMultipartFormData(request_body, contentType)) {
-            status_ = "500"; // Internal Server Error
+            status_ = "500";// Internal Server Error
             return;
         }
+        GenerateFileListHtml();
+        std::cout << "fileist:\n" << file_list_;
     } else {
         logError("Unsupported Content-Type");
         status_ = "415";
@@ -283,20 +363,37 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const st
         return false;
 
     std::string boundary = "--" + contentType.substr(boundaryPosition + 9);
+    std::string fullBoundary = "\r\n" + boundary;
 
     std::vector<char> boundaryVec(boundary.begin(), boundary.end());
+    std::vector<char> fullBoundaryVec = {'\r', '\n'};
+    fullBoundaryVec.insert(fullBoundaryVec.end(), boundaryVec.begin(), boundaryVec.end());
+
     size_t boundaryLength = boundaryVec.size();
+    size_t fullBoundaryLength = fullBoundaryVec.size();
 
     auto pos = body.begin();
-
+    bool firstBoundary = true; 
     while (true) {
-        auto boundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
+      auto boundaryStart = body.end();
+        if (firstBoundary) {
+          boundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
+        } else {
+          boundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(), fullBoundaryVec.end());
+        }
+
         if (boundaryStart == body.end())
             break;
 
-        pos = boundaryStart + boundaryLength;
+        pos = boundaryStart + (firstBoundary ? boundaryLength : fullBoundaryLength);
 
-        auto nextBoundaryStart = std::search(pos, body.end(), boundaryVec.begin(), boundaryVec.end());
+        firstBoundary = false;
+
+        auto nextBoundaryStart = std::search(pos, body.end(), fullBoundaryVec.begin(), fullBoundaryVec.end());
+
+        if (nextBoundaryStart == body.end()) {
+            break;
+        }
 
         std::vector<char> bodyPart(pos, nextBoundaryStart);
 
@@ -310,7 +407,7 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body, const st
 }
 
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
-    std::vector<char> crlf = {'\r', '\n'};
+    std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
     
     auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(), crlf.begin(), crlf.end());
     if (headerEndIt == bodyPart.end()) {
@@ -319,7 +416,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
     }
 
     std::vector<char> headers(bodyPart.begin(), headerEndIt);
-    std::vector<char> content(headerEndIt + 2, bodyPart.end());
+    std::vector<char> content(headerEndIt + 4, bodyPart.end());
 
     std::string headersStr(headers.begin(), headers.end());
 
@@ -425,75 +522,128 @@ void HttpParser::HandleDeleteRequest() {
 
 }
 
-// bool HttpParser::CheckValidPath(std::string path) {
+void HttpParser::GenerateFileListHtml() {
+    file_list_ += "<ul>";
+    for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
+        std::string filename = entry.path().filename().string();
+        file_list_ += "<li>";
+        file_list_ += "<span>" + filename + "</span>";
+        file_list_ += "<button onclick=\"deleteFile('filename.txt')\">Delete</button>";
+        file_list_ += "</li>";
+    }
+    file_list_ += "</ul>";
+}
 
-//     status_ = "200";
-//     /*for this function the root from confiq file is needed
-//     in short this searches the asked path either directory or file
-//     within the root directory*/
-//     if (path.at(0) != '/') {
-//         logError("Error: wrong path");
-//         status_ = "404"; // or 400?
-//         return false;
-//     }
+bool HttpParser::CheckValidPath(std::string rootPath) {
+  if (request_target_.at(0) != '/') {
+        logError("Error: wrong path");
+        status_ = "404";
+        return false;
+    }
+    /*check the directory and file existence and permissions, 
+    can take absolute and relative path, needs to be tested 
+    more when we get the root from confiq*/
+    try {
+    if (std::filesystem::exists(rootPath)) {
+      if (std::filesystem::is_directory(rootPath)) {
+          if (rootPath.back() != '/')
+            request_target_ = rootPath + "/" + index_;
+          else
+            request_target_ = rootPath + index_;
+          return true; //The path is a directory
+      } else if (std::filesystem::is_regular_file(rootPath)) {
+          request_target_ = rootPath;
+          return false; //The path is a file
+      }
+      } else {
+      logError("The path does not exist" + rootPath);
+      status_ = "404";
+      return false;
+    }
+    } catch (const std::filesystem::filesystem_error& e) {
+        logError("Filesystem error: ");
+        std::cerr << e.what() << std::endl;
+        status_ = "500";
+        return false;
+    } catch (const std::exception& e) {
+        logError("Unexpected error: "); 
+        std::cerr << e.what() << std::endl;
+        status_ = "500";
+        return false;
+    }
 
-//     //untill we get root it has to be set manually for example "www" in current working directory
-//     std::string rootPath = "";
-//      try {
-//         rootPath = std::filesystem::current_path().string() + "/www" + path;
-//         logDebug("root path: " + rootPath);
-//     } catch (const std::filesystem::filesystem_error& e) {
-//         logError("Filesystem error: ");
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     } catch (const std::exception& e) {
-//         logError("Unexpected error: "); 
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     }
+    return true;
+}
 
-//     /*check the directory and file existence and permissions, 
-//     can take absolute and relative path, needs to be tested 
-//     more when we get the root from confiq*/
-//     try {
-//         if (rootPath.back() == '/') {
-//             if (std::filesystem::exists(rootPath) && std::filesystem::is_directory(rootPath)) {
-//                 logDebug("valid path");
-//                 return true;
-//             } else {
-//                 status_ = "404";
-//                 logDebug("no valid path");
-//                 return false;
-//             }
-//         } else {
-//             if (std::filesystem::exists(rootPath) && std::filesystem::is_regular_file(rootPath)) {
-//                 if (access(rootPath.c_str(), R_OK) == 0) {
-//                     logDebug("file found");
-//                     return true;
-//                 } else {
-//                     logDebug("permission denied");
-//                     status_ = "403";
-//                     return false;
-//                 } 
-//             } else {
-//                 logDebug("file not found");
-//                 status_ = "404";
-//                 return false;
-//             }
-//         }
-//     } catch (const std::filesystem::filesystem_error& e) {
-//         logError("Filesystem error: ");
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     } catch (const std::exception& e) {
-//         logError("Unexpected error: "); 
-//         std::cerr << e.what() << std::endl;
-//         status_ = "500";
-//         return false;
-//     }
+void HttpParser::CreateDirListing(std::string directory) {
+  std::ofstream outFile("./www/dir_list.html");
+    if (!outFile.is_open()) {
+        logError("Could not open file: www/dir_list.html");
+        status_ = "500";
+        request_target_ = "www/error_pages/500.html";
+        return;
+    }
+    outFile << "<html><body><h1>Index of " << directory << "</h1><ul>";
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+            std::string name = entry.path().filename().string();
 
-//     return true;
+            if (std::filesystem::is_directory(entry.path())) {
+                outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+            } else {
+                outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        outFile << "<h1>Directory not found</h1>";
+        logError("Error accessing directory: " + directory);
+        status_ = "500";
+    }
+    request_target_ = "www/dir_list.html";
+    outFile<< "</ul></body></html>";
+    outFile.close();
+    std::cout << "Directory listing written to " << "./www/dir_list.html" << std::endl;
+}
+
+
+void HttpParser::OpenFile(ClientInfo& fd_info) {
+
+  if (status_== "300" || status_ == "302" || status_ == "307" || status_ == "308")
+    return ;
+  
+  std::fstream&  file = fd_info.getGetfile();
+  logDebug("the requeset_target_ is " + request_target_);
+  logDebug("the error code is " + status_);
+
+  file.open("./" + request_target_, std::fstream::in | std::ios::binary);
+  if (!file.is_open()) {
+     logDebug("OpenFile: couldnt open, opening 404 error page");
+    file.open("./" + fd_info.getVhost()->getErrorPage("404"), std::fstream::in | std::ios::binary);
+    if (!file.is_open()) {
+      status_ = "500";
+      logDebug("OpenFile: couldnt open 404, opening 500 error page");
+      file.open("./" + fd_info.getVhost()->getErrorPage("500"), std::fstream::in | std::ios::binary);
+      logError("OpenFile Error: couldn't open the error page 500");
+    }
+  }
+}
+
+// int HttpParser::CheckRedirections(ClientInfo& fd_info, Location& loc) {
+//   if (!loc.redirection_.first.empty()) {
+//     std::string msg(
+//       "HTTP/1.1 " + loc.redirection_.first +  "\r\n" + \
+//       "Location: " + loc.redirection_.second + "\r\n" + \
+//       "Content-Length: 0" + "\r\n" + \
+//       "\r\n"
+//     );
+//     std::cout << "sent " + msg << std::endl;
+//     SendToClient(fd_info.getFd(), msg.c_str(), msg.size());
+//     return 1;
+//   }
+//   return 0;
 // }
+
+
+std::string HttpParser::getAddHeaders() {
+  return additional_headers_;
+}

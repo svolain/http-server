@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 11:56:42 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:12:19 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,40 +18,46 @@
 #include <fstream>
 #include <sstream>
 #include <poll.h>
+#include "Location.hpp"
 
 class ClientInfo;
 
 class HttpResponse {
- public:
-  HttpResponse(std::string& status);
-  HttpResponse(const HttpResponse& other)             = delete;
-  HttpResponse& operator=(const HttpResponse& other)  = delete;
 
+  private:
+     using StringMap = std::map<std::string, std::string>;
 
-  ~HttpResponse() = default;
+  public:
+    HttpResponse(std::string& status);
+    HttpResponse(const HttpResponse& other)             = delete;
+    HttpResponse& operator=(const HttpResponse& other)  = delete;
+    ~HttpResponse() = default;
 
-  void  CreateResponse(ClientInfo& fd_info, pollfd& poll);
-  void  ResetResponse(); //DEFINE IT OR REMOVE
+    void  SendResponse(ClientInfo& fd_info, pollfd &poll);
+    void  ResetResponse(); 
 
- private:
-  void  AssignContType(std::string resourcePath);
-  void  OpenFile(std::string& resource_path, std::ifstream& file);
-  void  ComposeHeader();
-  // std::string     getContType() const;
-  // std::string     getResponseHeader() const;
-  // std::string     getErrorCodeMessage() const;
-  void InitContMap();
-  void LookupStatusMessage();
-  void SendHeader(ClientInfo& fd_info);
-  void SendChunkedBody(ClientInfo& fd_info, pollfd &poll);
-  int  SendOneChunk(int client_socket, std::ifstream &file);
-  int  SendToClient(const int clientSocket, const char *msg, int length);
+  private:
+    void  AssignContType(std::string resourcePath);
+    void  ComposeHeader();
+    int   CheckRedirections(ClientInfo& fd_info, Location& loc);
+    void  LookupStatusMessage();
+    
+    int   SendHeader(int client_socket, std::string request_target) ;
+    int   SendOneChunk(int client_socket, std::fstream &file);
+    int   SendToClient(const int clientSocket, const char *msg, int length);
 
-  std::string&                        status_;
-  std::map<std::string, std::string>  cont_type_map_;
-  std::string                         cont_type_;
-  std::string                         status_message_;
-  std::string                         header_;
+    const std::map<std::string, std::string>& getContTypeMap();
+    const std::map<std::string, std::string>& getStatusMap();
+    
+
+    std::string                            header_;
+    std::string&                           status_;
+    // StringMap                              cont_type_map_;
+    std::string                            cont_type_;
+    std::string                            status_message_;
+    // std::map<std::string, std::string>     status_map_;
+
+    std::string                            additional_headers_;
 };
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 22:08:00 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/17 12:41:21 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 

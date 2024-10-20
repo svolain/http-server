@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/15 11:50:48 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/19 18:07:23 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,13 +39,20 @@ class HttpParser {
   ~HttpParser() = default;
 
   bool        ParseHeader(const std::string& buffer);
+  bool        HandleRequest(VirtualHost* vhost);
   int         WriteBody(VirtualHost* vhost,  std::vector<char>& buffer,
                         int bytesIn);
   bool        IsBodySizeValid(VirtualHost* vhost);
   void        ResetParser();
+
+  void        OpenFile(ClientInfo& fd_info);
+  
   std::string getHost() const;
   std::string getMethod() const;
-  std::string getResourceTarget() const;
+  std::string getRequestTarget() const;
+  std::string getFileList() const;
+
+  std::string getAddHeaders();
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);
@@ -60,15 +67,22 @@ class HttpParser {
   bool  ParseUrlEncodedData(const std::vector<char>& body);
   bool  IsPathSafe(const std::string& path);
   void  HandleDeleteRequest();
+  void  GenerateFileListHtml();
+  bool  CheckValidPath(std::string root);
+  void  CreateDirListing(std::string directory);
 
   std::string&                        status_;
   size_t                              content_length_ = 0;
   std::string                         method_;
   std::string                         request_target_;
   std::string                         query_string_;
+  std::string                         file_list_;
+  std::string                         index_;
   std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_;
   bool                                is_chunked_ = false;
+
+  std::string                         additional_headers_;
 };
 
 #endif
