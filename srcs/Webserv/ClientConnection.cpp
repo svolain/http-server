@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientConnection.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:39:21 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/15 13:13:24 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/19 17:16:35 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,12 +21,11 @@ ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
       sock_(sock),
       webserv_(webserv),
       parser_(status_),
-      response_(status_) {}
+      response_(status_)  {}
 
 int ClientConnection::ReceiveData(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
   int               bytesIn;
-
   bytesIn = recv(fd_, buffer.data(), MAXBYTES, 0);
   if (bytesIn < 0)
     return 1;
@@ -36,18 +35,17 @@ int ClientConnection::ReceiveData(pollfd& poll) {
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());
-    if (!header_parsed || parser_.getMethod() == "GET"
-        || parser_.getMethod() == "HEAD"|| !parser_.IsBodySizeValid(vhost_)) {
+    if (!header_parsed || !parser_.HandleRequest(vhost_))
       poll.events = POLLOUT;
-    }
-  } else if (parser_.WriteBody(vhost_, buffer, bytesIn)){
-    poll.events = POLLOUT;
-  }
+    parser_.OpenFile(*this);
+    is_parsing_body_ = true;
+  } else if (parser_.WriteBody(vhost_, buffer, bytesIn))
+      poll.events = POLLOUT;
   return 0;
 }
 
 int ClientConnection::SendData(pollfd& poll) {
-  response_.CreateResponse(*this, poll);
+  response_.SendResponse(*this, poll);
   if (poll.events == POLLIN)
     ResetClientConnection();
   (void)webserv_; //REMOVE_ME                                         
@@ -56,7 +54,6 @@ int ClientConnection::SendData(pollfd& poll) {
 
 void  ClientConnection::ResetClientConnection() {
   status_ = "200";
-  //getfile_.close(); Remove it?
   vhost_ = nullptr;
   parser_.ResetParser();
   response_.ResetResponse();
@@ -80,8 +77,8 @@ bool ClientConnection::getIsSending() {
   return is_sending_chunks_;
 }
 
-std::ifstream& ClientConnection::getGetfile() {
-  return getfile_;
+std::fstream& ClientConnection::getGetfile() {
+  return file_;
 }
 
 void ClientConnection::setIsSending(bool boolean) {

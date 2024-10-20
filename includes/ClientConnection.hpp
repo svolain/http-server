@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/19 18:24:55 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/20 22:33:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ class ClientConnection : public Connection {
   HttpParser&     getParser();
   VirtualHost*    getVhost();
   int             getFd();
-  std::ifstream&  getGetfile();
+  std::fstream&   getGetfile();
   bool            getIsSending();
   void            setIsSending(bool boolean);
 
@@ -45,7 +45,7 @@ private:
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   HttpResponse   response_;
-  std::ifstream  getfile_;
+  std::fstream   file_;
   bool           is_sending_chunks_ = false;
   bool           is_parsing_body_ = false;
 };
