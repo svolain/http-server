@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/18 14:00:46 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/20 22:41:55 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sys/stat.h>
 #include "VirtualHost.hpp"
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 #include "Logger.h"
 #include <string>
 
@@ -85,6 +85,5 @@ const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {
                                         {"502", "www/error_pages/502.html"},
                                         {"504", "www/error_pages/504.html"},
                                         {"505", "www/error_pages/505.html"}};
-  logError("HERE");
   return error_pages;
 }

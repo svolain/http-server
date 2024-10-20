@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/07 06:41:58 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/17 16:38:12 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ int main(int ac, char** av) {
 
   WebServ webServ(av[1]);
   if (webServ.Init())
-    return (1);
+    return 1;
   webServ.Run();
   return  0;
 }

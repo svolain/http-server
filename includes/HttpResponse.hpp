@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/19 18:12:19 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/20 22:35:22 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 #include <poll.h>
 #include "Location.hpp"
 
-class ClientInfo;
+class ClientConnection;
 
 class HttpResponse {
 
@@ -33,13 +33,13 @@ class HttpResponse {
     HttpResponse& operator=(const HttpResponse& other)  = delete;
     ~HttpResponse() = default;
 
-    void  SendResponse(ClientInfo& fd_info, pollfd &poll);
+    void  SendResponse(ClientConnection& fd_info, pollfd &poll);
     void  ResetResponse(); 
 
   private:
     void  AssignContType(std::string resourcePath);
     void  ComposeHeader();
-    int   CheckRedirections(ClientInfo& fd_info, Location& loc);
+    int   CheckRedirections(ClientConnection& fd_info, Location& loc);
     void  LookupStatusMessage();
     
     int   SendHeader(int client_socket, std::string request_target) ;

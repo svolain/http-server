@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ClientInfo.cpp                                     :+:      :+:    :+:   */
+/*   ClientConnection.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,22 +10,20 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
+#include "CGIConnection.hpp"
 #include "Socket.hpp"
 #include "Logger.h"
 #include <vector>
 
-ClientInfo::ClientInfo(int fd, Socket& sock)
-    : fd_(fd), sock_(sock), parser_(status_), response_(status_) {}
-
-ClientInfo::ClientInfo(ClientInfo&& other)
-    : status_(other.status_),
-      fd_(other.fd_),
-      sock_(other.sock_),
+ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
+    : Connection(fd, 20),
+      sock_(sock),
+      webserv_(webserv),
       parser_(status_),
       response_(status_)  {}
 
-int ClientInfo::RecvRequest(pollfd& poll) {
+int ClientConnection::ReceiveData(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
   int               bytesIn;
   bytesIn = recv(fd_, buffer.data(), MAXBYTES, 0);
@@ -46,11 +44,15 @@ int ClientInfo::RecvRequest(pollfd& poll) {
   return 0;
 }
 
-void  ClientInfo::SendResponse(pollfd& poll) {
+int ClientConnection::SendData(pollfd& poll) {
   response_.SendResponse(*this, poll);
+  if (poll.events == POLLIN)
+    ResetClientConnection();
+  (void)webserv_; //REMOVE_ME                                         
+  return 0; //Add protection for send()!
 }
 
-void  ClientInfo::ResetClientInfo() {
+void  ClientConnection::ResetClientConnection() {
   status_ = "200";
   vhost_ = nullptr;
   parser_.ResetParser();
@@ -59,26 +61,26 @@ void  ClientInfo::ResetClientInfo() {
   is_parsing_body_ = false;
 }
 
-HttpParser& ClientInfo::getParser() {
+HttpParser& ClientConnection::getParser() {
   return parser_;
 }
 
-VirtualHost*  ClientInfo::getVhost() {
+VirtualHost*  ClientConnection::getVhost() {
   return vhost_;
 }
 
-int ClientInfo::getFd() {
+int ClientConnection::getFd() {
   return fd_;
 }
 
-bool ClientInfo::getIsSending() {
+bool ClientConnection::getIsSending() {
   return is_sending_chunks_;
 }
 
-std::fstream& ClientInfo::getGetfile() {
+std::fstream& ClientConnection::getGetfile() {
   return file_;
 }
 
-void ClientInfo::setIsSending(bool boolean) {
+void ClientConnection::setIsSending(bool boolean) {
   is_sending_chunks_ = boolean;
 }

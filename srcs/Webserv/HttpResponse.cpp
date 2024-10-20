@@ -3,21 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/19 18:12:53 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/20 22:40:51 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
-#include "ClientInfo.hpp"
+#include "ClientConnection.hpp"
 #include "Logger.h"
 
 HttpResponse::HttpResponse(std::string& status)
   : header_("---"), status_(status), cont_type_("text/html"), status_message_{} {}
 
-void HttpResponse::SendResponse(ClientInfo& fd_info, pollfd& poll) {  
+void HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {  
   std::fstream&   file = fd_info.getGetfile();
   int             client_socket = fd_info.getFd();
 

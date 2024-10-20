@@ -1,39 +1,36 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ClientInfo.hpp                                     :+:      :+:    :+:   */
+/*   ClientConnection.hpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/19 15:58:31 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/20 22:33:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef ClientInfo_HPP
-#define ClientInfo_HPP
+#ifndef CLIENTCONNECTION_HPP
+#define CLIENTCONNECTION_HPP
 
+#include "Connection.hpp"
 #include "HttpParser.hpp"
 #include "HttpResponse.hpp"
-#include <poll.h>
 #include <fstream>
 
 class Socket;
 class VirtualHost;
+class WebServ;
 
-class ClientInfo
-{
+class ClientConnection : public Connection {
  public:
-  ClientInfo(int fd, Socket& sock);
-  ClientInfo(const ClientInfo& other)             = delete;
-  ClientInfo& operator=(const ClientInfo& other)  = delete;
-  ClientInfo(ClientInfo&& other);
-  ClientInfo& operator=(ClientInfo&& other)       = delete;
-  ~ClientInfo()                                   = default;
+  ClientConnection(int fd, Socket& sock, WebServ& webserv);
+  ClientConnection(const ClientConnection& other)             = delete;
+  ~ClientConnection() override                                = default;
 
-  int             RecvRequest(pollfd& poll);
-  void            SendResponse(pollfd& poll);
-  void            ResetClientInfo();
+  int             ReceiveData(pollfd& poll) override;
+  int             SendData(pollfd& poll) override;
+  void            ResetClientConnection();
   HttpParser&     getParser();
   VirtualHost*    getVhost();
   int             getFd();
@@ -43,8 +40,8 @@ class ClientInfo
 
 private:
   std::string    status_ = "200";
-  int            fd_;
   Socket&        sock_;
+  WebServ&       webserv_;
   VirtualHost*   vhost_ = nullptr;
   HttpParser     parser_;
   HttpResponse   response_;
@@ -53,4 +50,4 @@ private:
   bool           is_parsing_body_ = false;
 };
 
-#endif
+#endif //CLIENTCONNECTION_HPP

@@ -14,6 +14,7 @@
 #include <string>
 #include "ConfigParser.hpp"
 #include "WebServ.hpp"
+#include "ClientConnection.hpp"
 
 #define TODO 123
 
@@ -37,7 +38,7 @@ int WebServ::Init() {
     logDebug("init the server on socket " + socket.getSocket());
   }
   logInfo("Servers are ready");
-  return (0);
+  return 0;
 }
 
 #define TIMEOUT   5000
@@ -51,13 +52,9 @@ void WebServ::Run() {
     if (socketsReady == -1)
       perror("poll: ");
     else if (!socketsReady) {
-      /* TODO: individual timer for the timeout close */
       logInfo("poll() is closing connections on timeout...");
-      while (pollFDs_.size() != sockets_.size()) {
-        close(pollFDs_.back().fd);
-        pollFDs_.pop_back();
-      }
-      client_info_map_.clear();
+      connections_.clear();
+      pollFDs_.resize(sockets_.size());
     } else
         PollAvailableFDs();
   }
@@ -74,61 +71,72 @@ void WebServ::PollAvailableFDs(void) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
-    ClientInfo& fd_info = client_info_map_.at(fd);
+    Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
       logDebug("error or read end has been closed", true);
-      CloseConnection(fd, i);
+      CloseConnection(connection, i);
     } else if (revents & POLLHUP) { 
       logDebug("Hang up: " + std::to_string(fd), true);
-      CloseConnection(fd, i);
+      CloseConnection(connection, i);
     } else if (revents & POLLNVAL) {
       logDebug("Invalid fd: " + std::to_string(fd));
-      CloseConnection(fd, i);
+      CloseConnection(connection, i);
     } else if (revents & POLLIN) {
-      RecvFromClient(fd_info, i);
+      ReceiveData(connection, i);
     } else if (revents & POLLOUT)
-      SendToClient(fd_info, pollFDs_[i]);
+      SendData(connection, i);
   }
 }
 
 void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   if (revents & POLLIN) {
-    pollfd new_client;
+    pollfd new_client = {0, 0, 0};
     new_client.fd = accept(fd, nullptr, nullptr);
     if (new_client.fd != -1) {
       /* O_NONBLOCK: No I/O operations on the file descriptor will cause the
             calling process to wait. */
       fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
       new_client.events = POLLIN;
-      pollFDs_.push_back(new_client);
-      client_info_map_.emplace(new_client.fd, ClientInfo(new_client.fd,
-                                                         sockets_[i]));
+      AddNewConnection(new_client,
+                       std::make_unique<ClientConnection>(new_client.fd,
+                                                          sockets_[i], *this));
     }
   }
 }
 
-void WebServ::RecvFromClient(ClientInfo& fd_info, size_t& i) {
-  if (fd_info.RecvRequest(pollFDs_[i])) {
-    CloseConnection(pollFDs_[i].fd, i);
-  }
+void WebServ::AddNewConnection(pollfd& fd,
+                               std::unique_ptr<Connection> connection) {
+  pollFDs_.push_back(fd);
+  connections_.emplace(fd.fd, std::move(connection));
 }
 
-void WebServ::SendToClient(ClientInfo& fd_info, pollfd& poll) {
-  fd_info.SendResponse(poll);
-  if (poll.events == POLLIN)
-    fd_info.ResetClientInfo();
+  /* find the host with the parser
+    check if the permissions are good (Location)
+    assign the vhost to the ConnecInfo class
+    set bool to send body if all is good
+    get back and try to read the body
+    read for MAXBYTES and go back and continue next time
+  */
+void WebServ::ReceiveData(Connection& connection, size_t& i) {
+  if (connection.ReceiveData(pollFDs_[i]))
+    CloseConnection(connection, i);
 }
 
-void WebServ::CloseConnection(int sock, size_t& i) {
-  close(sock);
+void WebServ::SendData(Connection& connection, size_t& i) {
+  if (connection.SendData(pollFDs_[i]))
+    CloseConnection(connection, i);
+}
+
+void WebServ::CloseConnection(Connection& connection, size_t& i) {
+  connections_.erase(connection.fd_);
   pollFDs_.erase(pollFDs_.begin() + i);
-  client_info_map_.erase(sock);
   i--;
 }
 
-void WebServ::CloseAllConnections(void) {
-  for (size_t i = 0; i < pollFDs_.size(); i++)
+void WebServ::CloseAllConnections() {
+  for (size_t i = 0; i < sockets_.size(); i++) //close all listening sockets
     close(pollFDs_[i].fd);
+  //Destructor should handle map and vector erasing
 }
 
 std::string WebServ::ToString() const {

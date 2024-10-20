@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/19 18:07:23 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/20 22:39:08 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ class HttpParser {
   bool        IsBodySizeValid(VirtualHost* vhost);
   void        ResetParser();
 
-  void        OpenFile(ClientInfo& fd_info);
+  void        OpenFile(ClientConnection& fd_info);
   
   std::string getHost() const;
   std::string getMethod() const;
