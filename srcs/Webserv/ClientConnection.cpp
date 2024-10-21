@@ -34,7 +34,7 @@ int ClientConnection::ReceiveData(pollfd& poll) {
   logDebug("request is:\n", buffer.data());
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
-    vhost_ = sock_.FindVhost(parser_.getHost());
+    vhost_ = sock_.FindVhost(parser_.getHost(header_parsed));
     if (!header_parsed || !parser_.HandleRequest(vhost_))
       poll.events = POLLOUT;
     parser_.OpenFile(*this);
@@ -45,7 +45,10 @@ int ClientConnection::ReceiveData(pollfd& poll) {
 }
 
 int ClientConnection::SendData(pollfd& poll) {
-  response_.SendResponse(*this, poll);
+  if (response_.SendResponse(*this, poll)) {
+    file_.close();
+    return 1;
+  } 
   if (poll.events == POLLIN)
     ResetClientConnection();
   (void)webserv_; //REMOVE_ME                                         

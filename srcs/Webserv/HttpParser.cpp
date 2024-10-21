@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/21 14:08:34 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/21 16:52:32 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,9 +142,17 @@ void HttpParser::ResetParser() {
   is_chunked_ = false;
 }
 
-std::string HttpParser::getHost() const {
-  std::string host = headers_.at("Host");
-    return host;
+std::string HttpParser::getHost(bool& header_parsed) const {
+
+  std::string host;
+  try {
+    host = headers_.at("Host");
+  }
+  catch(const std::exception& e) {
+    logError("getHost: malformed request : no Host");
+    header_parsed = false;
+  }
+  return host;
 }
 
 std::string HttpParser::getMethod() const {
@@ -513,7 +521,6 @@ void HttpParser::HandleDeleteRequest() {
     logError("Error: File not found");
     status_ = "404";
   }
-
 }
 
 void HttpParser::GenerateFileListHtml() {
@@ -541,18 +548,18 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
   if (std::filesystem::exists(rootPath)) {
     if (std::filesystem::is_directory(rootPath)) {
       if (rootPath.back() != '/')
-      request_target_ = rootPath + "/" + index_;
+        request_target_ = rootPath + "/" + index_;
       else
-      request_target_ = rootPath + index_;
+        request_target_ = rootPath + index_;
       return true; //The path is a directory
     } else if (std::filesystem::is_regular_file(rootPath)) {
       request_target_ = rootPath;
       return false; //The path is a file
     }
     } else {
-    logError("The path does not exist", rootPath);
-    status_ = "404";
-    return false;
+      logError("The path does not exist", rootPath);
+      status_ = "404";
+      return false;
   }
   } catch (const std::filesystem::filesystem_error& e) {
     logError("Filesystem error: ");
@@ -602,8 +609,10 @@ void HttpParser::CreateDirListing(std::string directory) {
 
 void HttpParser::OpenFile(ClientConnection& fd_info) {
 
-  if (status_== "300" || status_ == "302" || status_ == "307" || status_ == "308")
+  if (status_.front() == '3'){
+    logDebug("redirections status code, not opening the file");
     return ;
+  }
   
   std::fstream&  file = fd_info.getGetfile();
   logDebug("the requeset_target_ is ", request_target_);
@@ -627,6 +636,6 @@ void HttpParser::OpenFile(ClientConnection& fd_info) {
 }
 
 
-std::string HttpParser::getAddHeaders() {
+std::string HttpParser::getLocationHeader() {
   return location_header_;
 }

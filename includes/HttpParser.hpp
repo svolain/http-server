@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/21 13:45:34 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/21 16:05:46 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,12 +47,12 @@ class HttpParser {
 
   void        OpenFile(ClientConnection& fd_info);
   
-  std::string getHost() const;
+  std::string getHost(bool& header_parsed) const;
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
 
-  std::string getAddHeaders();
+  std::string getLocationHeader();
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);

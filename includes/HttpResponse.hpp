@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/21 13:45:34 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/21 16:49:41 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include "Location.hpp"
 
 class ClientConnection;
+class HttpParser;
 
 class HttpResponse {
 
@@ -33,16 +34,16 @@ class HttpResponse {
     HttpResponse& operator=(const HttpResponse& other)  = delete;
     ~HttpResponse() = default;
 
-    void  SendResponse(ClientConnection& fd_info, pollfd &poll);
+    int   SendResponse(ClientConnection& fd_info, pollfd &poll);
     void  ResetResponse(); 
 
   private:
     void  AssignContType(std::string resourcePath);
-    void  ComposeHeader();
-    int   CheckRedirections(ClientConnection& fd_info, Location& loc);
+    void  ComposeHeader(std::string location_header);
+    // int   CheckRedirections(ClientConnection& fd_info, Location& loc);
     void  LookupStatusMessage();
     
-    int   SendHeader(int client_socket, std::string request_target) ;
+    int   SendHeader(int client_socket, HttpParser& parser);
     int   SendOneChunk(int client_socket, std::fstream &file);
     int   SendToClient(const int clientSocket, const char *msg, int length);
 
@@ -57,7 +58,7 @@ class HttpResponse {
     std::string                            status_message_;
     // std::map<std::string, std::string>     status_map_;
 
-    std::string                            location_header_;
+    // std::string                            location_header_;
 };
 
 #endif
