@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/20 22:35:22 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 13:45:34 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ class HttpResponse {
     std::string                            status_message_;
     // std::map<std::string, std::string>     status_map_;
 
-    std::string                            additional_headers_;
+    std::string                            location_header_;
 };
 
 #endif

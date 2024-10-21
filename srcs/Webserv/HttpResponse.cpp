@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/21 12:38:01 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/21 14:09:06 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ void HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {
   std::fstream&   file = fd_info.getGetfile();
   int             client_socket = fd_info.getFd();
 
-  additional_headers_ = fd_info.getParser().getAddHeaders();
+  location_header_ = fd_info.getParser().getAddHeaders();
 
   if (!header_.empty() && !SendHeader(client_socket, fd_info.getParser().getRequestTarget()))
     return;
@@ -30,7 +30,7 @@ void HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {
       return ;
     if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1)
       perror("send 2:");
-  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n0\r\n\r\n", 42) == -1) 
+  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n", 37) == -1) 
     perror("send 3:");
   
   file.close();
@@ -42,7 +42,6 @@ int HttpResponse::SendHeader(int client_socket, std::string request_target) {
 
   AssignContType(request_target);
   LookupStatusMessage();
-  
   ComposeHeader();
   std::cout << header_ << std::endl;
   if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
@@ -80,8 +79,8 @@ void HttpResponse::ComposeHeader(void) {
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
-  if (!additional_headers_.empty())
-    oss <<  additional_headers_ << "\r\n";
+  if (!location_header_.empty())
+    oss <<  location_header_ << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();

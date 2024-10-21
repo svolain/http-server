@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/21 12:23:23 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/21 14:08:34 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,7 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
 
   if (!redir.first.empty()) {
     status_ = redir.first;
-    additional_headers_ = "Location: " + redir.second;
+    location_header_ = "Location: " + redir.second;
     return false;
   }
 
@@ -609,35 +609,24 @@ void HttpParser::OpenFile(ClientConnection& fd_info) {
   logDebug("the requeset_target_ is ", request_target_);
   logDebug("the error code is ", status_);
 
-  file.open("./" + request_target_, std::fstream::in | std::ios::binary);
+  if (!access(request_target_.c_str(), F_OK) && !access(request_target_.c_str(), R_OK))
+    file.open(request_target_, std::ios::in | std::ios::binary);
+  else if (access(request_target_.c_str(), F_OK)) {
+    file.open(fd_info.getVhost()->getErrorPage("404"), std::ios::in | std::ios::binary);
+    status_ = "404";
+  }
+  else if (access(request_target_.c_str(), R_OK)) {
+    file.open(fd_info.getVhost()->getErrorPage("500"), std::ios::in | std::ios::binary);
+    status_ = "500";
+  }
+  
   if (!file.is_open()) {
-     logDebug("OpenFile: couldnt open, opening 404 error page");
-    file.open("./" + fd_info.getVhost()->getErrorPage("404"), std::fstream::in | std::ios::binary);
-    if (!file.is_open()) {
-      status_ = "500";
-      logDebug("OpenFile: couldnt open 404, opening 500 error page");
-      file.open("./" + fd_info.getVhost()->getErrorPage("500"), std::fstream::in | std::ios::binary);
-      logError("OpenFile Error: couldn't open the error page 500");
-    }
+    file.open(fd_info.getVhost()->getErrorPage("500"), std::ios::in | std::ios::binary);
+    status_ = "500";
   }
 }
 
-// int HttpParser::CheckRedirections(ClientConnection& fd_info, Location& loc) {
-//   if (!loc.redirection_.first.empty()) {
-//     std::string msg(
-//       "HTTP/1.1 " + loc.redirection_.first +  "\r\n" + \
-//       "Location: " + loc.redirection_.second + "\r\n" + \
-//       "Content-Length: 0" + "\r\n" + \
-//       "\r\n"
-//     );
-//     std::cout << "sent " + msg << std::endl;
-//     SendToClient(fd_info.getFd(), msg.c_str(), msg.size());
-//     return 1;
-//   }
-//   return 0;
-// }
-
 
 std::string HttpParser::getAddHeaders() {
-  return additional_headers_;
+  return location_header_;
 }
