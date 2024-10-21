@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/21 11:59:57 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 12:38:01 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,7 +80,8 @@ void HttpResponse::ComposeHeader(void) {
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
-  oss <<  additional_headers_ << "\r\n";
+  if (!additional_headers_.empty())
+    oss <<  additional_headers_ << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();
