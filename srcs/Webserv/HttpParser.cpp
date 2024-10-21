@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/21 12:06:18 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 12:18:35 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,16 +80,16 @@ bool  HttpParser::HandleRequest(VirtualHost* vhost) {
   }
 
   std::string root_dir = locations.at(location).root_;
-  std::string relative_path = request_target_.substr(location.size());
+  std::cout << "rootdir" << root_dir << std::endl;
+  std::string relative_path = "/" + request_target_.substr(location.size());
+  
+  std::cout << "relative path" << relative_path << std::endl;
   std::string rootPath = root_dir.substr(1) + relative_path;
-
-  std::cout << method_ << " " << auto_index << " " << index_;
+  std::cout << "rootPath" << rootPath << std::endl;
 
   if (method_ == "GET" && auto_index && index_.empty()) {
-    std::cout << "1\n";
     CreateDirListing(rootPath);  
   } else {
-    std::cout << "2\n";
     if (!CheckValidPath(rootPath))
       return false;
   }
@@ -349,7 +349,7 @@ void HttpParser::HandlePostRequest(std::vector<char> request_body) {
       return;
     }
     GenerateFileListHtml();
-    std::cout << "fileist:\n" << file_list_;
+    //std::cout << "fileist:\n" << file_list_;
   } else {
     logError("Unsupported Content-Type");
     status_ = "415";
@@ -600,7 +600,7 @@ void HttpParser::CreateDirListing(std::string directory) {
     request_target_ = "www/dir_list.html";
     outFile<< "</ul></body></html>";
     outFile.close();
-    std::cout << "Directory listing written to " << "./www/dir_list.html" << std::endl;
+    logDebug("Directory listing written to ./www/dir_list.html");
 }
 
 
