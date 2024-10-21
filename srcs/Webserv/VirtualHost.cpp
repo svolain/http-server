@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 16:40:09 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,21 +54,11 @@ size_t VirtualHost::getMaxBodySize() const {
 
 std::map<std::string, Location>& VirtualHost::getLocations() {
     return locations_;
-  }
+}
 
 std::string VirtualHost::getErrorPage(std::string error) const {
   auto it = error_pages_.find(error);
-  
-  if (it != error_pages_.end())
-    return it->second;
-  else {
-    logError("getErrorPage: can't find the error page, returning 404");
-    it = error_pages_.find("404");
-    if (it != error_pages_.end())
-      return it->second;
-    else
-      return ("www/404.html");
-  }
+  return it->second;
 }
 
 const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {

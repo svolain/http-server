@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/20 22:39:08 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 16:05:46 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,12 +47,12 @@ class HttpParser {
 
   void        OpenFile(ClientConnection& fd_info);
   
-  std::string getHost() const;
+  std::string getHost(bool& header_parsed) const;
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
 
-  std::string getAddHeaders();
+  std::string getLocationHeader();
 
  private:
   bool  ParseStartLine(std::istringstream& request_stream);
@@ -82,7 +82,7 @@ class HttpParser {
   std::map<std::string, std::string>  headers_;
   bool                                is_chunked_ = false;
 
-  std::string                         additional_headers_;
+  std::string                         location_header_;
 };
 
 #endif

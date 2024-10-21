@@ -46,8 +46,6 @@ int WebServ::Init() {
 void WebServ::Run() {
   int socketsReady = 0;
   while (true) {
-    /* the socketsReady from poll() 
-      is the number of file descriptors with events that occurred. */
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
     if (socketsReady == -1)
       perror("poll: ");
@@ -78,10 +76,11 @@ void WebServ::PollAvailableFDs(void) {
     } else if (revents & POLLHUP) { 
       logError("Hang up: ", fd);
       CloseConnection(connection, i);
-    } else if (revents & POLLNVAL) {
-      logError("Invalid fd: ", fd);
-      CloseConnection(connection, i);
-    } else if (revents & POLLIN) {
+    } 
+    // else if (revents & POLLNVAL) {
+    //   logError("Invalid fd: ", fd);
+    //   CloseConnection(connection, i);} 
+    else if (revents & POLLIN) {
       ReceiveData(connection, i);
     } else if (revents & POLLOUT)
       SendData(connection, i);
@@ -110,13 +109,6 @@ void WebServ::AddNewConnection(pollfd& fd,
   connections_.emplace(fd.fd, std::move(connection));
 }
 
-  /* find the host with the parser
-    check if the permissions are good (Location)
-    assign the vhost to the ConnecInfo class
-    set bool to send body if all is good
-    get back and try to read the body
-    read for MAXBYTES and go back and continue next time
-  */
 void WebServ::ReceiveData(Connection& connection, size_t& i) {
   if (connection.ReceiveData(pollFDs_[i]))
     CloseConnection(connection, i);

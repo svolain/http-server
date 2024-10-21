@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/21 12:38:01 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/21 16:49:43 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,41 +17,46 @@
 HttpResponse::HttpResponse(std::string& status)
   : header_("---"), status_(status), cont_type_("text/html"), status_message_{} {}
 
-void HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {  
+int HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {  
   std::fstream&   file = fd_info.getGetfile();
   int             client_socket = fd_info.getFd();
+  int             send_status;
+  // location_header_ = fd_info.getParser().getLocationHeader();
 
-  additional_headers_ = fd_info.getParser().getAddHeaders();
-
-  if (!header_.empty() && !SendHeader(client_socket, fd_info.getParser().getRequestTarget()))
-    return;
+  if (!header_.empty())
+    return (SendHeader(client_socket, fd_info.getParser()));
   if (file.is_open()) {
-    if (SendOneChunk(client_socket, file) == 0)
-      return ;
-    if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1)
+    send_status = SendOneChunk(client_socket, file);
+    if (send_status == 0 || send_status == 1)
+      return send_status;
+    if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1) {
       perror("send 2:");
-  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n0\r\n\r\n", 42) == -1) 
+      return 1;
+    }
+  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n", 37) == -1) {
     perror("send 3:");
-  
+    return 1;
+  }
+    
   file.close();
   poll.events = POLLIN;
   logDebug("\n-----response sent-----\n");
+  return 0;
 }
 
-int HttpResponse::SendHeader(int client_socket, std::string request_target) {
+int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
 
-  AssignContType(request_target);
+  AssignContType(parser.getRequestTarget());
   LookupStatusMessage();
-  
-  ComposeHeader();
+  ComposeHeader(parser.getLocationHeader());
   std::cout << header_ << std::endl;
   if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
     header_.clear();
     return 0;
-  }
-  else
+  } else {
     logError("SendResponse: error on send");
-  return 1;
+    return 1;
+  }
 }
 
 void HttpResponse::AssignContType(std::string request_target) {
@@ -59,8 +64,7 @@ void HttpResponse::AssignContType(std::string request_target) {
     auto it = getContTypeMap().find(request_target.substr(request_target.find_last_of('.')));
     if (it != getContTypeMap().end())
       cont_type_ = it->second;
-  }
-  catch (const std::out_of_range &e) {
+  } catch (const std::out_of_range &e) {
     logDebug("AssignContType: no '.' found in the filename");
   }
 }
@@ -70,18 +74,19 @@ void HttpResponse::LookupStatusMessage(void) {
   if (it != getStatusMap().end()) {
     status_message_ = it->second;
   } else {
-    logError("LookupStatusMessage: couldn't find the proper status message, assigning 500");
-    logError("status was ", status_);
-    status_message_ = "500 Internal Server Error";
+    logError("LookupStatusMessage: couldn't find the proper status message for ", status_, ", not assigning anything");
+    status_message_ = status_;
   }
 }
 
-void HttpResponse::ComposeHeader(void) {
+void HttpResponse::ComposeHeader(std::string location_header) {
+
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
-  if (!additional_headers_.empty())
-    oss <<  additional_headers_ << "\r\n";
+  // oss << "Content-Length: " << 0 << "\r\n";
+  if (!location_header.empty())
+    oss <<  location_header << "\r\n";
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();
@@ -108,7 +113,7 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
   }
   logDebug("sent ", bytes_read);
   if (bytes_read < chunk_size)
-    return 1;
+    return 2;
   return 0;
 }
 
