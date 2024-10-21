@@ -4,16 +4,16 @@ NAME			:=	webserv
 # COMPILER
 CPP						:=	c++ -std=c++20
 FLAGS					:=	-Wall -Wextra -Werror -Wpedantic
-
+DFLAGS				:=	-DDEBUG -g
 # COLORS
 GREEN					:=	\033[32m
 RED						:=	\033[41m
 EC						:=	\033[0m
 
 # SOURCE_FILES
+debug: FLAGS += $(DFLAGS)
 
-
-WEBSERV_NAME	:=	WebServ.cpp Logger.cpp HttpParser.cpp Connection.cpp\
+WEBSERV_NAME	:=	WebServ.cpp HttpParser.cpp Connection.cpp\
 	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp ConfigParser.cpp ClientConnection.cpp
 
 WEBSERV_PATH	:=	Webserv/
@@ -52,5 +52,7 @@ fclean: clean
 	@echo "$(RED)Full clean up completed successfully!$(EC)"
 
 re: fclean all
+
+debug: fclean all
 
 .PHONY: all clean fclean re

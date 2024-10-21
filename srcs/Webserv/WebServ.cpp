@@ -21,8 +21,8 @@
 WebServ::WebServ(const char* conf)
     : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
   if (conf == nullptr)
-    logInfo("Configuration file not provided.\n\t\t\t     Using the "
-            "default configuration file: /" + std::string(DEFAULT_CONF));
+    logInfo("Configuration file not provided.\n\t\t\t"
+            "Using the default configuration file: /", DEFAULT_CONF);
 }
 
 int WebServ::Init() {
@@ -31,11 +31,11 @@ int WebServ::Init() {
     if (parser.ParseConfig(this->sockets_))
       return 1;
   }
-  logDebug(ToString(), true);
+  logDebug(ToString());
   for (Socket& socket : sockets_) {
     if (socket.InitServer(pollFDs_))
       return 2;
-    logDebug("init the server on socket " + socket.getSocket());
+    logDebug("init the server on socket ", socket.getSocket());
   }
   logInfo("Servers are ready");
   return 0;
@@ -73,13 +73,13 @@ void WebServ::PollAvailableFDs(void) {
     }
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
-      logDebug("error or read end has been closed", true);
+      logError("error or read end has been closed");
       CloseConnection(connection, i);
     } else if (revents & POLLHUP) { 
-      logDebug("Hang up: " + std::to_string(fd), true);
+      logError("Hang up: ", fd);
       CloseConnection(connection, i);
     } else if (revents & POLLNVAL) {
-      logDebug("Invalid fd: " + std::to_string(fd));
+      logError("Invalid fd: ", fd);
       CloseConnection(connection, i);
     } else if (revents & POLLIN) {
       ReceiveData(connection, i);

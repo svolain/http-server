@@ -6,12 +6,12 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:35 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/17 16:38:12 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <iostream>
-#include "Logger.h"
+#include "Logger.hpp"
 #include "WebServ.hpp"
 
 int main(int ac, char** av) {

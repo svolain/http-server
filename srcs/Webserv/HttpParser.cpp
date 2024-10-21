@@ -6,12 +6,12 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/20 23:13:12 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 12:06:18 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
-#include "Logger.h"
+#include "Logger.hpp"
 #include "ClientConnection.hpp"
 
 
@@ -238,7 +238,7 @@ bool HttpParser::CheckPostHeaders() {
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
-    logError(std::to_string(is_chunked_));
+    logError(is_chunked_);
     auto it = headers_.find("Content-Length");
     if (it == headers_.end()) {
       logError("Error: content-lenght missing for request body");
@@ -431,12 +431,12 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
       size_t posStart = headersStr.find('"', posFilename) + 1;
       size_t posEnd = headersStr.find('"', posStart);
       std::string filename = headersStr.substr(posStart, posEnd - posStart);
-      logDebug("File upload: " + filename);
+      logDebug("File upload: ", filename);
       std::ofstream outFile("www/uploads/" + filename, std::ios::binary);
       if (outFile.is_open()) {
         outFile.write(content.data(), content.size());
         outFile.close();
-        logDebug("File " + filename + " saved successfully");
+        logDebug("File ", filename, " saved successfully");
       } else {
         logError("Error: failed to save file ");
         return false;
@@ -446,7 +446,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
       size_t posEnd = headersStr.find('"', posStart);
       std::string fieldName = headersStr.substr(posStart, posEnd - posStart);
       std::string contentStr(content.begin(), content.end());
-      logDebug("Form field: " + fieldName + " = " + contentStr);
+      logDebug("Form field: ", fieldName, " = ", contentStr);
     }
   }
   return true;
@@ -498,7 +498,7 @@ bool HttpParser::IsPathSafe(const std::string& path) {
 
 void HttpParser::HandleDeleteRequest() {
   std::string path = request_target_;
-  logDebug("Handling DELETE request for path: " + path);
+  logDebug("Handling DELETE request for path: ", path);
 
   if (!IsPathSafe(path)) {
     status_ = "400";
@@ -554,7 +554,7 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
       return false; //The path is a file
     }
     } else {
-    logError("The path does not exist" + rootPath);
+    logError("The path does not exist", rootPath);
     status_ = "404";
     return false;
   }
@@ -594,7 +594,7 @@ void HttpParser::CreateDirListing(std::string directory) {
         }
     } catch (const std::filesystem::filesystem_error& e) {
         outFile << "<h1>Directory not found</h1>";
-        logError("Error accessing directory: " + directory);
+        logError("Error accessing directory: ", directory);
         status_ = "500";
     }
     request_target_ = "www/dir_list.html";
@@ -610,8 +610,8 @@ void HttpParser::OpenFile(ClientConnection& fd_info) {
     return ;
   
   std::fstream&  file = fd_info.getGetfile();
-  logDebug("the requeset_target_ is " + request_target_);
-  logDebug("the error code is " + status_);
+  logDebug("the requeset_target_ is ", request_target_);
+  logDebug("the error code is ", status_);
 
   file.open("./" + request_target_, std::fstream::in | std::ios::binary);
   if (!file.is_open()) {

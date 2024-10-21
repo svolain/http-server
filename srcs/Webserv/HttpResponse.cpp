@@ -6,13 +6,13 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/20 22:40:51 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:59:57 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 #include "ClientConnection.hpp"
-#include "Logger.h"
+#include "Logger.hpp"
 
 HttpResponse::HttpResponse(std::string& status)
   : header_("---"), status_(status), cont_type_("text/html"), status_message_{} {}
@@ -35,7 +35,7 @@ void HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {
   
   file.close();
   poll.events = POLLIN;
-  logDebug("\n-----response sent-----\n", true);
+  logDebug("\n-----response sent-----\n");
 }
 
 int HttpResponse::SendHeader(int client_socket, std::string request_target) {
@@ -71,7 +71,7 @@ void HttpResponse::LookupStatusMessage(void) {
     status_message_ = it->second;
   } else {
     logError("LookupStatusMessage: couldn't find the proper status message, assigning 500");
-    logError("status was " + status_);
+    logError("status was ", status_);
     status_message_ = "500 Internal Server Error";
   }
 }
@@ -105,7 +105,7 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
         perror("send :");
         return 1;
   }
-  logDebug("sent " + std::to_string(bytes_read), false);
+  logDebug("sent ", bytes_read);
   if (bytes_read < chunk_size)
     return 1;
   return 0;

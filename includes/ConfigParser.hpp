@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:56:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/14 21:32:53 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CONFIGPARSER_HPP_
 #define CONFIGPARSER_HPP_
 
-#include "Logger.h"
+#include "Logger.hpp"
 #include "Location.hpp"
 #include "VirtualHost.hpp"
 #include "Socket.hpp"

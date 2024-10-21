@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/20 22:39:39 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:55:53 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ int ConfigParser::ParseConfig(std::deque<Socket>& sockets) {
     try {
       ParseServer(ss, sockets);
     } catch (std::string& error_token) {
-      logError("invalid input: \"" + error_token + "\"");
+      logError("invalid input: \"", error_token, "\"");
       return 1;
     } catch (const char* e) {
       logError(e);
@@ -173,7 +173,7 @@ void ConfigParser::ParseLocation(LocationMap& locations,
     throw token;
   while (true) { //what if location is in format location / {} ?
     ss >> token;
-    logDebug(token, false);
+    logDebug(token);
     if (token == "limit_except")
       ParseAllowedMethods(methods, ss);
     else if (token == "return")

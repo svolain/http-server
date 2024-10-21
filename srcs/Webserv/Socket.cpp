@@ -6,12 +6,12 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/20 22:41:43 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Socket.hpp"
-#include "Logger.h"
+#include "Logger.hpp"
 
 Socket::Socket(std::string& listen,
          std::string& name,

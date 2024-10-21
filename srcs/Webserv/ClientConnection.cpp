@@ -13,7 +13,7 @@
 #include "ClientConnection.hpp"
 #include "CGIConnection.hpp"
 #include "Socket.hpp"
-#include "Logger.h"
+#include "Logger.hpp"
 #include <vector>
 
 ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
@@ -31,7 +31,7 @@ int ClientConnection::ReceiveData(pollfd& poll) {
     return 1;
   if (bytesIn == 0) //When a stream socket peer has performed an orderly shutdown, the return value will be 0 (the traditional "end-of-file" return)
     return 2;
-  logDebug("request is:\n" + std::string(buffer.data()), 1);
+  logDebug("request is:\n", buffer.data());
   if (!is_parsing_body_) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());

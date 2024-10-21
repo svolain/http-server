@@ -6,14 +6,14 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/19 18:24:45 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <fcntl.h>
 #include <unistd.h>
 #include "CGIConnection.hpp"
-#include "Logger.h"
+#include "Logger.hpp"
 
 CGIConnection::CGIConnection(int fd, pid_t child_pid, std::fstream& file)
     : Connection(fd, 10), child_pid_(child_pid), file_(file) {}

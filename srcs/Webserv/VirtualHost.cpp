@@ -6,14 +6,14 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/20 22:41:55 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sys/stat.h>
 #include "VirtualHost.hpp"
 #include "ClientConnection.hpp"
-#include "Logger.h"
+#include "Logger.hpp"
 #include <string>
 
 #define MAXBYTES  8192
