@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 17:23:33 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 17:58:52 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,6 +86,8 @@ bool  HttpParser::HandleRequest() {
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest(rootPath))
     return false;
+  else if (method_ == "POST")
+    client_.stage_ = ClientConnection::Stage::kBody;
 
   return true;
 }
@@ -113,6 +115,7 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
   }
   if (!HandlePostRequest(request_body_))
     return false;
+  
   return true;
 }
 
@@ -391,6 +394,9 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     client_.status_ = "415";
     return false;
   }
+  std::cout << request_target_ << std::endl;
+  //OpenFile(request_target_);
+  client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }
 
@@ -556,6 +562,7 @@ bool HttpParser::HandleDeleteRequest(std::string rootPath) {
     logError("File not found");
     client_.status_ = "404";
   }
+  client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }
 
