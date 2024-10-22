@@ -79,6 +79,14 @@ void  ClientConnection::ResetClientConnection() {
 std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
   std::vector<std::string>  env;
   env.push_back("REQUEST_METHOD=" + parser_.method_);
+  env.push_back("QUERY_STRING=" + parser_.query_string_);
+  env.push_back("SCRIPT_NAME=" + parser_.request_target_.substr(1));
+  env.push_back("SERVER_NAME=" + vhost_->getName());
+  // env.push_back("CONTENT_TYPE=" + vhost_->getName());
+  // env.push_back("CONTENT_LENGTH=" + vhost_->getName());
+  //env.push_back("PATH_INFO=" + std::filesystem::current_path());
+  env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+
   return env;
 }
 
