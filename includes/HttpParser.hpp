@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 13:49:03 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 17:02:37 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ class HttpParser {
   bool        WriteBody(std::vector<char>& buffer, int bytesIn);
   bool        IsBodySizeValid();
   void        ResetParser();
-  void        OpenFile(std::string& filename);
+  int         OpenFile(std::string& filename);
   std::string getHost() const;
   std::string getMethod() const;
   std::string getRequestTarget() const;

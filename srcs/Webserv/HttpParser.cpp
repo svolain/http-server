@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 15:48:19 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 17:23:33 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -612,45 +612,45 @@ void HttpParser::CreateDirListing(std::string& directory) {
   std::string clientFd = std::to_string(client_.fd_);
   std::string filename = "/tmp/webserv/dir_list"  + clientFd;
   std::fstream& outFile = client_.file_;
-  outFile.open(filename);
-    if (!outFile.is_open()) {
-        logError("Could not open file: www/dir_list.html");
-        client_.status_ = "500";
-        request_target_ = "www/error_pages/500.html";
-        return;
-    }
-    outFile << "<html><body><h1>Index of " << directory << "</h1><ul>";
-    try {
-        for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-            std::string name = entry.path().filename().string();
+  if (OpenFile(filename))
+    return;
+  std::remove(filename.c_str());
 
-            if (std::filesystem::is_directory(entry.path())) {
-                outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
-            } else {
-                outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
-            }
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        outFile << "<h1>Directory not found</h1>";
-        logError("Error accessing directory: ", directory);
-        client_.status_ = "500";
-    }
-    request_target_ = "www/dir_list.html";
-    outFile<< "</ul></body></html>";
-    std::remove(filename.c_str());
-    logDebug("Directory listing created");
+    
+  outFile << "<html><body><h1>Index of " << directory << "</h1><ul>";
+  try {
+      for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+          std::string name = entry.path().filename().string();
+          if (std::filesystem::is_directory(entry.path())) {
+              outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+          } else {
+              outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+          }
+      }
+  } catch (const std::filesystem::filesystem_error& e) {
+      outFile << "<h1>Directory not found</h1>";
+      logError("Error accessing directory: ", directory);
+      client_.status_ = "500";
+  }
+  //request_target_ = "www/dir_list.html";
+  outFile<< "</ul></body></html>";
+  logDebug("Directory listing created");
+  outFile.seekg(0); 
 }
 
 
-void HttpParser::OpenFile(std::string& filename) {
+int HttpParser::OpenFile(std::string& filename) {
   logDebug(filename);
   std::fstream& file = client_.file_;
-  file.open(filename, std::fstream::in | std::fstream::out | std::ios::binary);
+  file.open(filename, std::fstream::in | std::fstream::out| std::fstream::app | std::ios::binary);
   if (!file.is_open()) {
+    logError("1");
     client_.status_ = "500";
     file.open(client_.vhost_->getErrorPage("500"));
     //client_.stage_ = ClientConnection::Stage::kResponse;
+    return 1;
   }
+  return 0;
 }
 
 
@@ -659,15 +659,17 @@ std::string HttpParser::getLocationHeader() {
 }
 
 bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
-  if (method_ == "GET" && autoIndex && index_.empty()) {
+  
+  if (autoIndex && index_.empty() && rootPath.back() == '/') {
     CreateDirListing(rootPath);  
   } else {
     if (!CheckValidPath(rootPath))
       return false;
+    else
+      OpenFile(request_target_);
   }
   //std::string clientFd = std::to_string(client_.fd_);
   //std::string filename = "/tmp/webserv/"  + clientFd;
-  OpenFile(request_target_);
   client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }

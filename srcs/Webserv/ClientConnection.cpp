@@ -34,6 +34,7 @@ int ClientConnection::ReceiveData(pollfd& poll) {
   logDebug("request is:\n", buffer.data());
 
   if (stage_ == Stage::kHeader) {
+    logError("H");
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());
     if (!header_parsed || !parser_.HandleRequest()) {
@@ -42,6 +43,7 @@ int ClientConnection::ReceiveData(pollfd& poll) {
     }
   }
   if (stage_ == Stage::kBody) {
+        logError("B");
     bool body_read = parser_.WriteBody(buffer, bytesIn); //not sure that it's correct
     if (!body_read) {
       file_.open(vhost_->getErrorPage(status_));
@@ -49,9 +51,11 @@ int ClientConnection::ReceiveData(pollfd& poll) {
     }
   }
   if (stage_ == Stage::kCgi) {
+        logError("CG");
     ;//waitpid
   }
   if (stage_ == Stage::kResponse)
+      logError("R");
     poll.events = POLLOUT;
   return 0;
 }
@@ -73,6 +77,7 @@ void  ClientConnection::ResetClientConnection() {
   parser_.ResetParser();
   response_.ResetResponse();
   is_sending_chunks_ = false;
+  file_.close();
   stage_ = Stage::kHeader;
 }
 
