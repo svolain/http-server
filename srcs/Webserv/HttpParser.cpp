@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 13:54:20 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 14:21:26 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -296,7 +296,7 @@ void HttpParser::HandleCookies() {
     } else {
         session_id_ = CreateSessionID();
         logDebug("New User. Generated session_id: ", session_id_);
-        additional_headers_ += "Set-Cookie: session_id=" + session_id_ + "; Path=/; Max-Age=3600; HttpOnly\r\n";
+        additional_headers_ += "Cookie: session_id=" + session_id_ + "\r\n";
         //std::cout << "sessionid2: " << session_id_ << std::endl;
     }
 }
@@ -485,16 +485,20 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
 
 bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
   std::string requestBody(body.begin(), body.end());
-  std::string filename = "form_bin";
 
   std::istringstream stream(requestBody);
   std::string pair;
 
-  std::ofstream outputFile(filename, std::ios::binary);
-  if (!outputFile) {
-    logError("Could not open file for writing.");
-    return false;
-  }
+  std::string clientFd = std::to_string(client_.fd_);
+  std::string filename = "/tmp/webserv/dir_list"  + clientFd;
+  std::fstream& outputFile = client_.file_;
+  outputFile.open(filename);
+    if (!outputFile.is_open()) {
+        logError("Could not open file: " + filename);
+        client_.status_ = "500";
+        request_target_ = "www/error_pages/500.html";
+        return false;
+    }
 
   while (std::getline(stream, pair, '&')) {
     size_t delim = pair.find('=');
@@ -515,7 +519,7 @@ bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
                      sizeof(valueLength));
     outputFile.write(value.data(), valueLength);
   }
-  outputFile.close();
+  std::remove(filename.c_str());
   return true;
 }
 
