@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/22 12:02:11 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 15:44:43 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,7 +88,7 @@ void HttpResponse::ComposeHeader(std::string location_header) {
 	oss << "Content-Type: " << cont_type_ << "\r\n";
   // oss << "Content-Length: " << 0 << "\r\n";
   if (!location_header.empty())
-    oss <<  location_header << "\r\n";
+    oss <<  location_header;
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();

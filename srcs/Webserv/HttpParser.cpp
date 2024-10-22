@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 14:21:26 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 15:48:19 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ bool  HttpParser::HandleRequest() {
     client_.status_ = "431";
     return false;
   }
-
+  
   const std::map<std::string, Location>& locations = client_.vhost_->getLocations();
   std::string                         location;
   bool                                autoIndex;
@@ -86,6 +86,7 @@ bool  HttpParser::HandleRequest() {
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest(rootPath))
     return false;
+
   return true;
 }
 
@@ -586,7 +587,7 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
       return true; //The path is a directory
     } else if (std::filesystem::is_regular_file(rootPath)) {
       request_target_ = rootPath;
-      return false; //The path is a file
+      return true; //The path is a file
     }
     } else {
       logError("The path does not exist", rootPath);
@@ -604,7 +605,6 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
     client_.status_ = "500";
     return false;
   }
-
   return true;
 }
 
@@ -643,12 +643,13 @@ void HttpParser::CreateDirListing(std::string& directory) {
 
 
 void HttpParser::OpenFile(std::string& filename) {
+  logDebug(filename);
   std::fstream& file = client_.file_;
-  file.open(filename);
+  file.open(filename, std::fstream::in | std::fstream::out | std::ios::binary);
   if (!file.is_open()) {
     client_.status_ = "500";
     file.open(client_.vhost_->getErrorPage("500"));
-    // client_.stage_ = ClientConnection::Stage::kResponse;
+    //client_.stage_ = ClientConnection::Stage::kResponse;
   }
 }
 
@@ -664,6 +665,9 @@ bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
     if (!CheckValidPath(rootPath))
       return false;
   }
-  
+  //std::string clientFd = std::to_string(client_.fd_);
+  //std::string filename = "/tmp/webserv/"  + clientFd;
+  OpenFile(request_target_);
+  client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }
