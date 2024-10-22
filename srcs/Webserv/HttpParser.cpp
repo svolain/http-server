@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 11:56:35 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 13:54:20 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,58 +47,50 @@ bool  HttpParser::HandleRequest() {
 
   const std::map<std::string, Location>& locations = client_.vhost_->getLocations();
   std::string                         location;
-  bool                                auto_index;
+  bool                                autoIndex;
   std::pair<std::string, std::string> redir;
-
   for (const auto& it : locations) {
     if (request_target_.find(it.first) == 0) {
       location = it.first;
       index_ = it.second.index_;
-      auto_index = it.second.autoindex_;
+      autoIndex = it.second.autoindex_;
       redir = it.second.redirection_;
     }
-  } 
-  
+  }   
+
   if (location.empty() ||
       request_target_.substr(0, location.size()) != location) {
     logError("Location not found");
     client_.status_ = "404";
     return false;
   }
-
   std::string allowedMethods = locations.at(location).methods_;
   if (allowedMethods.find(method_) == std::string::npos) {
     logError("Method not allowed");
       client_.status_ = "405";
       return false;
   }
-
   if (!redir.first.empty()) {
     client_.status_ = redir.first;
-    location_header_ = "Location: " + redir.second;
+    additional_headers_ = "Location: " + redir.second;
     return false;
   }
 
-  std::string root_dir = locations.at(location).root_;
-  std::string relative_path = "/" + request_target_.substr(location.size()); 
-  std::string rootPath = root_dir.substr(1) + relative_path;
+  std::string rootDir = locations.at(location).root_;
+  std::string relativePath = "/" + request_target_.substr(location.size()); 
+  std::string rootPath = rootDir.substr(1) + relativePath;
 
-  if (method_ == "GET" && auto_index && index_.empty()) {
-    CreateDirListing(rootPath);  
-  } else {
-    if (!CheckValidPath(rootPath))
-      return false;
-  }
-
-  if (method_ == "GET" || method_ == "HEAD" || method_ == "DELETE")
-    return false; //This function should return false only in case of an error.
-    //Please add 4 functions for each method
-
+  HandleCookies();
+  
+  if (method_ == "GET" && !HandleGet(rootPath, autoIndex))
+    return false;
+  else if (method_ == "DELETE" && !HandleDeleteRequest(rootPath))
+    return false;
   return true;
 }
 
 
-int HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
+bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
   std::string eoc = "0\r\n\r\n";
   if (is_chunked_) {
     if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
@@ -108,18 +100,19 @@ int HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
           (!IsBodySizeValid(vhost) || request_body_.size() > content_length_)) {
         logError("Error: Request Header Fields Too Large");
         client_.status_ = 431;
-        return 1;
+        return false;
       }*/
-      return 0;
+      return true;
     }
     UnChunkBody(request_body_);
   } else {
     AppendBody(buffer, bytesIn);
     if (bytesIn == MAXBYTES)
-      return 0;
+      return true;
   }
-  HandlePostRequest(request_body_);
-  return 1;
+  if (!HandlePostRequest(request_body_))
+    return false;
+  return true;
 }
 
 bool HttpParser::IsBodySizeValid() {
@@ -221,6 +214,12 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
     headers_["Host"] = "";
     return false;
   }
+
+  if (headers_.contains("Cookie")) {
+        std::string cookie_header = headers_["Cookie"];
+        ParseCookies(cookie_header);
+  }
+
   if (line != "\r") {
     logError("Request Header Fields Too Large");
     client_.status_ = "431";
@@ -259,6 +258,47 @@ bool HttpParser::CheckPostHeaders() {
     }
   }
   return true;
+}
+
+void HttpParser::ParseCookies(const std::string& cookie_header) {
+    std::istringstream cookie_stream(cookie_header);
+    std::string cookie_pair;
+
+    while (std::getline(cookie_stream, cookie_pair, ';')) {
+        size_t delim = cookie_pair.find('=');
+        if (delim != std::string::npos) {
+            std::string name = cookie_pair.substr(0, delim);
+            std::string value = cookie_pair.substr(delim + 1);
+            name = TrimWhitespace(name);
+            value = TrimWhitespace(value);
+            session_store_[name] = value;
+        }
+    }
+}
+
+std::string HttpParser::TrimWhitespace(const std::string& str) {
+    size_t first = str.find_first_not_of(' ');
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
+}
+
+static std::string CreateSessionID() {
+  std::ostringstream ss;
+    ss << std::hex << std::random_device{}();
+    return ss.str();
+}
+
+void HttpParser::HandleCookies() {
+  if (session_store_.find("session_id") != session_store_.end()) {
+        session_id_ = session_store_["session_id"];
+        logDebug("Returning User with session_id: ", session_id_);
+        //std::cout << "sessionid1: " << session_id_ << std::endl;
+    } else {
+        session_id_ = CreateSessionID();
+        logDebug("New User. Generated session_id: ", session_id_);
+        additional_headers_ += "Set-Cookie: session_id=" + session_id_ + "; Path=/; Max-Age=3600; HttpOnly\r\n";
+        //std::cout << "sessionid2: " << session_id_ << std::endl;
+    }
 }
 
 bool HttpParser::UnChunkBody(std::vector<char>& buf) {
@@ -320,12 +360,12 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
                        buffer.begin() + bytesIn);
 }
 
-void HttpParser::HandlePostRequest(std::vector<char> request_body) {
+bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   auto it = headers_.find("Content-Type");
 
   if (it == headers_.end()) {
     client_.status_ = "400";
-    return;
+    return false;
   }
 
   std::string contentType = it->second;
@@ -335,20 +375,22 @@ void HttpParser::HandlePostRequest(std::vector<char> request_body) {
     logDebug("Handling URL-encoded form submission");
     if (!ParseUrlEncodedData(request_body)) {
       client_.status_ = "500";// Internal Server Error
-      return;
+      return false;
     }
   } else if (contentType.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, contentType)) {
       client_.status_ = "500";// Internal Server Error
-      return;
+      return false;
     }
     GenerateFileListHtml();
     //std::cout << "fileist:\n" << file_list_;
   } else {
     logError("Unsupported Content-Type");
     client_.status_ = "415";
+    return false;
   }
+  return true;
 }
 
 bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
@@ -384,21 +426,15 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
       break;
 
     pos = boundaryStart + (firstBoundary ? boundaryLength : fullBoundaryLength);
-
     firstBoundary = false;
-
     auto nextBoundaryStart = std::search(pos, body.end(),
                                          fullBoundaryVec.begin(),
                                          fullBoundaryVec.end());
-
     if (nextBoundaryStart == body.end())
       break;
-
     std::vector<char> bodyPart(pos, nextBoundaryStart);
-
     if (!ParseMultiPartData(bodyPart))
       return false;
-
     pos = nextBoundaryStart;
   }
   return true;
@@ -491,13 +527,16 @@ bool HttpParser::IsPathSafe(const std::string& path) {
   return true;
 }
 
-void HttpParser::HandleDeleteRequest() {
+bool HttpParser::HandleDeleteRequest(std::string rootPath) {
   std::string path = request_target_;
   logDebug("Handling DELETE request for path: ", path);
 
+  if (!CheckValidPath(rootPath))
+      return false;
+
   if (!IsPathSafe(path)) {
     client_.status_ = "400";
-    return;
+    return false;
   }
 
   if (std::ifstream(path)) {
@@ -512,6 +551,7 @@ void HttpParser::HandleDeleteRequest() {
     logError("File not found");
     client_.status_ = "404";
   }
+  return true;
 }
 
 void HttpParser::GenerateFileListHtml() {
@@ -532,9 +572,6 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
     client_.status_ = "404";
     return false;
   }
-  /*check the directory and file existence and permissions, 
-  can take absolute and relative path, needs to be tested 
-  more when we get the root from confiq*/
   try {
   if (std::filesystem::exists(rootPath)) {
     if (std::filesystem::is_directory(rootPath)) {
@@ -567,8 +604,11 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
   return true;
 }
 
-void HttpParser::CreateDirListing(std::string directory) {
-  std::ofstream outFile("./www/dir_list.html");
+void HttpParser::CreateDirListing(std::string& directory) {
+  std::string clientFd = std::to_string(client_.fd_);
+  std::string filename = "/tmp/webserv/dir_list"  + clientFd;
+  std::fstream& outFile = client_.file_;
+  outFile.open(filename);
     if (!outFile.is_open()) {
         logError("Could not open file: www/dir_list.html");
         client_.status_ = "500";
@@ -593,40 +633,33 @@ void HttpParser::CreateDirListing(std::string directory) {
     }
     request_target_ = "www/dir_list.html";
     outFile<< "</ul></body></html>";
-    outFile.close();
-    logDebug("Directory listing written to ./www/dir_list.html");
+    std::remove(filename.c_str());
+    logDebug("Directory listing created");
 }
 
 
-void HttpParser::OpenFile() {
-
-  if (client_.status_.front() == '3'){
-    logDebug("redirections status code, not opening the file");
-    return ;
-  }
-  
-  std::fstream&  file = client_.file_;
-  logDebug("the requeset_target_ is ", request_target_);
-  logDebug("the error code is ", client_.status_);
-
-  if (!access(request_target_.c_str(), F_OK) && !access(request_target_.c_str(), R_OK))
-    file.open(request_target_, std::ios::in | std::ios::binary);
-  else if (access(request_target_.c_str(), F_OK)) {
-    file.open(client_.vhost_->getErrorPage("404"), std::ios::in | std::ios::binary);
-    client_.status_ = "404";
-  }
-  else if (access(request_target_.c_str(), R_OK)) {
-    file.open(client_.vhost_->getErrorPage("500"), std::ios::in | std::ios::binary);
-    client_.status_ = "500";
-  }
-  
+void HttpParser::OpenFile(std::string& filename) {
+  std::fstream& file = client_.file_;
+  file.open(filename);
   if (!file.is_open()) {
-    file.open(client_.vhost_->getErrorPage("500"), std::ios::in | std::ios::binary);
     client_.status_ = "500";
+    file.open(client_.vhost_->getErrorPage("500"));
+    // client_.stage_ = ClientConnection::Stage::kResponse;
   }
 }
 
 
 std::string HttpParser::getLocationHeader() {
-  return location_header_;
+  return additional_headers_;
+}
+
+bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
+  if (method_ == "GET" && autoIndex && index_.empty()) {
+    CreateDirListing(rootPath);  
+  } else {
+    if (!CheckValidPath(rootPath))
+      return false;
+  }
+  
+  return true;
 }

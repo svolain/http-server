@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 11:41:39 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 13:49:03 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,8 @@
 # include <vector>
 # include <array>
 # include "VirtualHost.hpp"
+# include <random>
+# include <cstdio>
 
 #define MAXBYTES 8192
 
@@ -40,10 +42,10 @@ class HttpParser {
 
   bool        ParseHeader(const std::string& buffer);
   bool        HandleRequest();
-  int         WriteBody(std::vector<char>& buffer, int bytesIn);
+  bool        WriteBody(std::vector<char>& buffer, int bytesIn);
   bool        IsBodySizeValid();
   void        ResetParser();
-  void        OpenFile();
+  void        OpenFile(std::string& filename);
   std::string getHost() const;
   std::string getMethod() const;
   std::string getRequestTarget() const;
@@ -51,24 +53,25 @@ class HttpParser {
   std::string getLocationHeader();
 
  private:
-  friend ClientConnection;
-  friend HttpResponse;
-
-  bool  ParseStartLine(std::istringstream& request_stream);
-  bool  ParseHeaderFields(std::istringstream& request_stream);
-  bool  CheckPostHeaders();
-  bool  UnChunkBody(std::vector<char>& buf);
-  void  AppendBody(std::vector<char> buffer, int bytesIn);
-  void  HandlePostRequest(std::vector<char> request_body);
-  bool  HandleMultipartFormData(const std::vector<char> &body,
-                                const std::string &contentType);
-  bool  ParseMultiPartData(std::vector<char> &bodyPart);
-  bool  ParseUrlEncodedData(const std::vector<char>& body);
-  bool  IsPathSafe(const std::string& path);
-  void  HandleDeleteRequest();
-  void  GenerateFileListHtml();
-  bool  CheckValidPath(std::string root);
-  void  CreateDirListing(std::string directory);
+  bool        ParseStartLine(std::istringstream& request_stream);
+  bool        ParseHeaderFields(std::istringstream& request_stream);
+  bool        CheckPostHeaders();
+  void        ParseCookies(const std::string& cookie_header);
+  std::string TrimWhitespace(const std::string& str);
+  void        HandleCookies();
+  bool        UnChunkBody(std::vector<char>& buf);
+  void        AppendBody(std::vector<char> buffer, int bytesIn);
+  bool        HandlePostRequest(std::vector<char> request_body);
+  bool        HandleMultipartFormData(const std::vector<char> &body,
+                                      const std::string &contentType);
+  bool        ParseMultiPartData(std::vector<char> &bodyPart);
+  bool        ParseUrlEncodedData(const std::vector<char>& body);
+  bool        IsPathSafe(const std::string& path);
+  bool        HandleDeleteRequest(std::string rootPath);
+  void        GenerateFileListHtml();
+  bool        CheckValidPath(std::string root);
+  void        CreateDirListing(std::string& directory);
+  bool        HandleGet(std::string rootPath, bool autoIndex);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;
@@ -77,10 +80,12 @@ class HttpParser {
   std::string                         query_string_;
   std::string                         file_list_;
   std::string                         index_;
+  std::string                         session_id_;
   std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_;
+  std::map<std::string, std::string>  session_store_;
   bool                                is_chunked_ = false;
-  std::string                         location_header_;
+  std::string                         additional_headers_;
 };
 
 #endif
