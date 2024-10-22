@@ -72,15 +72,20 @@ void  ClientConnection::ResetClientConnection() {
   vhost_ = nullptr;
   parser_.ResetParser();
   response_.ResetResponse();
-  is_sending_chunks_ = false;
   file_.close();
   stage_ = Stage::kHeader;
 }
 
-bool ClientConnection::getIsSending() {
-  return is_sending_chunks_;
+std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
+  std::vector<std::string>  env;
+  env.push_back("REQUEST_METHOD=" + parser_.method_);
+  return env;
 }
 
-void ClientConnection::setIsSending(bool boolean) {
-  is_sending_chunks_ = boolean;
+WebServ&  ClientConnection::getWebServ() {
+  return webserv_;
+}
+
+void  ClientConnection::setStatus(const std::string& status) {
+  status_ = status;
 }

@@ -13,8 +13,9 @@ EC						:=	\033[0m
 # SOURCE_FILES
 debug: FLAGS += $(DFLAGS)
 
-WEBSERV_NAME	:=	WebServ.cpp HttpParser.cpp Connection.cpp\
-	HttpResponse.cpp VirtualHost.cpp Location.cpp Socket.cpp ConfigParser.cpp ClientConnection.cpp
+WEBSERV_NAME	:=	WebServ.cpp HttpParser.cpp Connection.cpp ClientConnection.cpp \
+									CgiConnection.cpp HttpResponse.cpp VirtualHost.cpp Location.cpp \
+									Socket.cpp ConfigParser.cpp
 
 WEBSERV_PATH	:=	Webserv/
 WEBSERV				:=	$(addprefix $(WEBSERV_PATH), $(WEBSERV_NAME))

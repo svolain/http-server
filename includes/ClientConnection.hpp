@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientConnection.hpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/22 12:30:05 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 22:18:28 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,11 +28,13 @@ class ClientConnection : public Connection {
   ClientConnection(const ClientConnection& other)             = delete;
   ~ClientConnection() override                                = default;
 
-  int             ReceiveData(pollfd& poll) override;
-  int             SendData(pollfd& poll) override;
-  void            ResetClientConnection();
-  bool            getIsSending();
-  void            setIsSending(bool boolean);
+  int                       ReceiveData(pollfd& poll) override;
+  int                       SendData(pollfd& poll) override;
+  void                      ResetClientConnection();
+  std::vector<std::string>  PrepareCgiEvniron();
+  WebServ&                  getWebServ();
+  void                      setStatus(const std::string& status);
+
 
 private:
   friend HttpParser;
@@ -51,7 +53,6 @@ private:
   HttpParser     parser_;
   HttpResponse   response_;
   std::fstream   file_;
-  bool           is_sending_chunks_ = false;
 };
 
 #endif //CLIENTCONNECTION_HPP
