@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/21 16:49:41 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/22 12:01:32 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,13 +29,13 @@ class HttpResponse {
      using StringMap = std::map<std::string, std::string>;
 
   public:
-    HttpResponse(std::string& status);
+    HttpResponse(ClientConnection& client);
     HttpResponse(const HttpResponse& other)             = delete;
     HttpResponse& operator=(const HttpResponse& other)  = delete;
     ~HttpResponse() = default;
 
-    int   SendResponse(ClientConnection& fd_info, pollfd &poll);
-    void  ResetResponse(); 
+    int   SendResponse(pollfd &poll);
+    void  ResetResponse();
 
   private:
     void  AssignContType(std::string resourcePath);
@@ -51,13 +51,12 @@ class HttpResponse {
     const std::map<std::string, std::string>& getStatusMap();
     
 
-    std::string                            header_;
-    std::string&                           status_;
+    ClientConnection& client_;
+    std::string       header_;
     // StringMap                              cont_type_map_;
-    std::string                            cont_type_;
-    std::string                            status_message_;
+    std::string       cont_type_;
+    std::string       status_message_;
     // std::map<std::string, std::string>     status_map_;
-
     // std::string                            location_header_;
 };
 

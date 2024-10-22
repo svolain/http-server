@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 error</title>
+    <title>404 Not Found</title>
     <style>
         body {
             font-family: sans-serif;
@@ -44,14 +44,17 @@
             z-index: 1;
             height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
         }
 
         .main-card{
-            max-width: 560px;
             width: 100%;
             text-align: center;
+        }
+
+        .main-content{
+            width: 100%;
+            height:100vh;
         }
 
 
@@ -65,25 +68,16 @@
             stroke-linejoin: round;
         }
 
-        .main-card p{
-            color: #62ffcd;
-            position: relative;
-            font-size: clamp(16px, 4vw, 40px);
-            font-weight: 500;
-            margin-top: 0;
+        .main-content .msg {
+            font-size: clamp(20px, 18vw, 70px);
+            letter-spacing: 1px;
+            font-weight: 700;
+            fill:none;
+            stroke: #62ffcd;
+            stroke-width: 2px;
+            stroke-linejoin: round;
         }
 
-        .main-card a{
-            color: #62ffcd;
-            font-size: 16px;
-            text-decoration: none;
-            text-transform: uppercase;
-            border: 2px solid #62ffcd;
-            display: inline-block;
-            padding: 10px 25px;
-            font-weight: 700;
-            transition: 0.2s linear;
-        }
 
     </style>
 </head>
@@ -93,11 +87,10 @@
         <div class="index-wrp">
             <div class="main-card">
                 <div class="main-content">
-                    <svg width="100%" height="100%" viewBox="0 0 450 220" preserveAspectRatio="xMidYMid meet">
-                        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">404</text>
+                    <svg width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+                        <text x="50%" y="45%" text-anchor="middle" dominant-baseline="middle">400</text>
+                        <text x="50%" y="55%" class="msg" text-anchor="middle" dominant-baseline="middle">Not Found</text>
                 </div>
-                <p>Whatever you're looking for is lost in cyberspace</p>
-                <a href="https://www.google.com/">Try this instead</a>
             </div>
         </div>
     </section>

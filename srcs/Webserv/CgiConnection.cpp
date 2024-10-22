@@ -6,19 +6,19 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 11:02:35 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <fcntl.h>
 #include <unistd.h>
-#include "CGIConnection.hpp"
+#include "CgiConnection.hpp"
 #include "Logger.hpp"
 
-CGIConnection::CGIConnection(int fd, pid_t child_pid, std::fstream& file)
+CgiConnection::CgiConnection(int fd, pid_t child_pid, std::fstream& file)
     : Connection(fd, 10), child_pid_(child_pid), file_(file) {}
 
-pid_t  CGIConnection::CreateCGIConnection(WebServ& webserv_) {
+pid_t  CgiConnection::CreateCgiConnection(WebServ& webserv_) {
   int pipe_fd[2];
   if (pipe(pipe_fd) == -1) {
     logError("pipe()");
@@ -37,7 +37,7 @@ pid_t  CGIConnection::CreateCGIConnection(WebServ& webserv_) {
     cgi_poll.fd = pipe_fd[0];
     fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
     cgi_poll.events = POLLIN;
-    webserv_.AddNewConnection(cgi_poll, std::make_unique<CGIConnection>());
+    webserv_.AddNewConnection(cgi_poll, std::make_unique<CgiConnection>());
     return pid;
   }
   else {
@@ -47,7 +47,7 @@ pid_t  CGIConnection::CreateCGIConnection(WebServ& webserv_) {
   }
 }
 
-int CGIConnection::ReceiveData(pollfd& poll) {
+int CgiConnection::ReceiveData(pollfd& poll) {
   char  buffer[MAXBYTES];
   int   bytes_in;
 
@@ -58,6 +58,6 @@ int CGIConnection::ReceiveData(pollfd& poll) {
   
 }
 
-int CGIConnection::SendData(pollfd& poll) {
+int CgiConnection::SendData(pollfd& poll) {
   (void)poll;
 }

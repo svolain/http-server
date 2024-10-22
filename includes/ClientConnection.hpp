@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/20 22:33:46 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 12:07:16 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,14 +31,19 @@ class ClientConnection : public Connection {
   int             ReceiveData(pollfd& poll) override;
   int             SendData(pollfd& poll) override;
   void            ResetClientConnection();
-  HttpParser&     getParser();
-  VirtualHost*    getVhost();
-  int             getFd();
-  std::fstream&   getGetfile();
   bool            getIsSending();
   void            setIsSending(bool boolean);
 
 private:
+  friend HttpParser;
+  friend HttpResponse;
+
+  enum class Stage { kHeader,
+                     kBody,
+                     kCgi,
+                     kResponse };
+                     
+  Stage          stage_ = Stage::kHeader;
   std::string    status_ = "200";
   Socket&        sock_;
   WebServ&       webserv_;
@@ -47,7 +52,6 @@ private:
   HttpResponse   response_;
   std::fstream   file_;
   bool           is_sending_chunks_ = false;
-  bool           is_parsing_body_ = false;
 };
 
 #endif //CLIENTCONNECTION_HPP

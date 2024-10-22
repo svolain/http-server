@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/21 16:05:46 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/22 11:41:39 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,29 +32,28 @@ class VirtualHost;
 
 class HttpParser {
  public:
-  HttpParser(std::string& status);
+  HttpParser(ClientConnection& client);
   HttpParser(const HttpParser& other)             = delete;
   HttpParser& operator=(const HttpParser& other)  = delete;
 
   ~HttpParser() = default;
 
   bool        ParseHeader(const std::string& buffer);
-  bool        HandleRequest(VirtualHost* vhost);
-  int         WriteBody(VirtualHost* vhost,  std::vector<char>& buffer,
-                        int bytesIn);
-  bool        IsBodySizeValid(VirtualHost* vhost);
+  bool        HandleRequest();
+  int         WriteBody(std::vector<char>& buffer, int bytesIn);
+  bool        IsBodySizeValid();
   void        ResetParser();
-
-  void        OpenFile(ClientConnection& fd_info);
-  
-  std::string getHost(bool& header_parsed) const;
+  void        OpenFile();
+  std::string getHost() const;
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
-
   std::string getLocationHeader();
 
  private:
+  friend ClientConnection;
+  friend HttpResponse;
+
   bool  ParseStartLine(std::istringstream& request_stream);
   bool  ParseHeaderFields(std::istringstream& request_stream);
   bool  CheckPostHeaders();
@@ -71,7 +70,7 @@ class HttpParser {
   bool  CheckValidPath(std::string root);
   void  CreateDirListing(std::string directory);
 
-  std::string&                        status_;
+  ClientConnection&                   client_;
   size_t                              content_length_ = 0;
   std::string                         method_;
   std::string                         request_target_;
@@ -81,7 +80,6 @@ class HttpParser {
   std::vector<char>                   request_body_;
   std::map<std::string, std::string>  headers_;
   bool                                is_chunked_ = false;
-
   std::string                         location_header_;
 };
 

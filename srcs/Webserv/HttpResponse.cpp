@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/21 16:49:43 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/22 12:02:11 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,17 +14,19 @@
 #include "ClientConnection.hpp"
 #include "Logger.hpp"
 
-HttpResponse::HttpResponse(std::string& status)
-  : header_("---"), status_(status), cont_type_("text/html"), status_message_{} {}
+HttpResponse::HttpResponse(ClientConnection& client)
+    : client_(client),
+      header_("---"),
+      cont_type_("text/html") {}
 
-int HttpResponse::SendResponse(ClientConnection& fd_info, pollfd& poll) {  
-  std::fstream&   file = fd_info.getGetfile();
-  int             client_socket = fd_info.getFd();
+int HttpResponse::SendResponse(pollfd& poll) {
+  std::fstream&   file = client_.file_; //
+  int             client_socket = client_.fd_;
   int             send_status;
   // location_header_ = fd_info.getParser().getLocationHeader();
 
   if (!header_.empty())
-    return (SendHeader(client_socket, fd_info.getParser()));
+    return (SendHeader(client_socket, client_.parser_));
   if (file.is_open()) {
     send_status = SendOneChunk(client_socket, file);
     if (send_status == 0 || send_status == 1)
@@ -70,12 +72,12 @@ void HttpResponse::AssignContType(std::string request_target) {
 }
 
 void HttpResponse::LookupStatusMessage(void) {
-  auto it = getStatusMap().find(status_);
+  auto it = getStatusMap().find(client_.status_);
   if (it != getStatusMap().end()) {
     status_message_ = it->second;
   } else {
-    logError("LookupStatusMessage: couldn't find the proper status message for ", status_, ", not assigning anything");
-    status_message_ = status_;
+    logError("LookupStatusMessage: couldn't find the proper status message for ", client_.status_, ", not assigning anything");
+    status_message_ = client_.status_;
   }
 }
 
