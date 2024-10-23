@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 17:02:37 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/23 16:42:53 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,11 +67,12 @@ class HttpParser {
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
   bool        ParseUrlEncodedData(const std::vector<char>& body);
   bool        IsPathSafe(const std::string& path);
-  bool        HandleDeleteRequest(std::string rootPath);
+  bool        HandleDeleteRequest();
   void        GenerateFileListHtml();
   bool        CheckValidPath(std::string root);
   void        CreateDirListing(std::string& directory);
   bool        HandleGet(std::string rootPath, bool autoIndex);
+  std::string InjectFileListIntoHtml(const std::string& html_path);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;
@@ -86,6 +87,7 @@ class HttpParser {
   std::map<std::string, std::string>  session_store_;
   bool                                is_chunked_ = false;
   std::string                         additional_headers_;
+  std::string                         content_type_;
 };
 
 #endif

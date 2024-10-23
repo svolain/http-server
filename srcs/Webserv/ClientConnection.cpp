@@ -48,7 +48,7 @@ int ClientConnection::ReceiveData(pollfd& poll) {
       stage_ = Stage::kResponse;
     }
   }
-  else if (stage_ == Stage::kCgi) {
+  if (stage_ == Stage::kCgi) {
     ;//waitpid
   }
   if (stage_ == Stage::kResponse)

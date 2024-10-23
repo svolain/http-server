@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/23 14:19:30 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/23 17:29:46 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,14 +81,12 @@ bool  HttpParser::HandleRequest() {
   std::string rootPath = rootDir.substr(1) + relativePath;
 
   HandleCookies();
-  std::cout << "test: " << method_ << std::endl;
   if (method_ == "GET" && !HandleGet(rootPath, autoIndex))
     return false;
-  else if (method_ == "DELETE" && !HandleDeleteRequest(rootPath))
+  else if (method_ == "DELETE" && !HandleDeleteRequest())
     return false;
   else if (method_ == "POST") {
     client_.stage_ = ClientConnection::Stage::kBody;
-    std::cout << "test: \n";
   }
   return true;
 }
@@ -109,6 +107,7 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
       return true;
     }
     UnChunkBody(request_body_);
+    content_length_ = request_body_.size();
   } else {
     AppendBody(buffer, bytesIn);
     if (bytesIn == MAXBYTES)
@@ -374,6 +373,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   }
 
   std::string contentType = it->second;
+  content_type_ = contentType;
 
   if (contentType.find("application/x-www-form-urlencoded") !=
       std::string::npos) {
@@ -388,16 +388,22 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
       client_.status_ = "500";// Internal Server Error
       return false;
     }
-    GenerateFileListHtml();
     //std::cout << "fileist:\n" << file_list_;
   } else {
     logError("Unsupported Content-Type");
     client_.status_ = "415";
     return false;
   }
-  std::cout << request_target_ << std::endl;
-  //OpenFile(request_target_);
+  std::string clientFd = std::to_string(client_.fd_);
+  std::string filename = "/tmp/webserv/upload_list"  + clientFd;
+  std::fstream& outFile = client_.file_;
+  if (OpenFile(filename))
+    return false;
+  std::remove(filename.c_str());
+  std::string htmlStr = InjectFileListIntoHtml("www/index.html");
+  outFile << htmlStr;
   client_.stage_ = ClientConnection::Stage::kResponse;
+  outFile.seekg(0);
   return true;
 }
 
@@ -531,53 +537,68 @@ bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
   return true;
 }
 
-bool HttpParser::IsPathSafe(const std::string& path) {
+/*bool HttpParser::IsPathSafe(const std::string& path) {
   if (path.find(".."))
     return false;
 
   //this function we can add more checks to check safety
   return true;
-}
+}*/
 
-bool HttpParser::HandleDeleteRequest(std::string rootPath) {
-  std::string path = request_target_;
-  logDebug("Handling DELETE request for path: ", path);
+bool HttpParser::HandleDeleteRequest() {
+  size_t delim = query_string_.find("=");
+  if (delim == std::string::npos) {
+      logError("Wrong query string format");
+      client_.status_ = "400";
+      return false; 
+    }
+    std::string filename = query_string_.substr(delim + 1);
 
-  if (!CheckValidPath(rootPath))
+  std::string path = "./www/uploads/" + filename;
+  logDebug("Handling DELETE request for: ", path);
+  /*
+  if (!CheckValidPath(path))
       return false;
 
   if (!IsPathSafe(path)) {
     client_.status_ = "400";
     return false;
-  }
+  }*/
 
-  if (std::ifstream(path)) {
-    if (std::remove(path.c_str()) == 0) {
-      logDebug("File deleted successfully");
-      client_.status_ = "204";
-    } else {
-      logError("Failed to delete file");
-      client_.status_ = "500";
-    }
+  if (std::filesystem::exists(path)) {
+     // Try to delete the file
+     if (std::remove(path.c_str()) == 0) {
+         logDebug("File deleted successfully");
+         client_.status_ = "204";
+     } else {
+         logError("Failed to delete file: " + path);
+         client_.status_ = "500";
+     }
   } else {
-    logError("File not found");
+    logError("File not found: ", path);
     client_.status_ = "404";
   }
-  client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }
 
 void HttpParser::GenerateFileListHtml() {
-  file_list_ += "<ul>";
-  for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
-    std::string filename = entry.path().filename().string();
-    file_list_ += "<li>";
-    file_list_ += "<span>" + filename + "</span>";
-    file_list_ += "<button onclick=\"deleteFile('filename.txt')\">""Delete</button>";
-    file_list_ += "</li>";
-  }
-  file_list_ += "</ul>";
+    file_list_ = "<ul>";
+    try {
+        for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
+            std::string filename = entry.path().filename().string();
+            file_list_ += "<li>";
+            file_list_ += "<span>" + filename + "</span>";
+            file_list_ += "<button onclick=\"deleteFile('" + filename + "')\">Delete</button>";
+            file_list_ += "</li>";
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        file_list_ += "<li>Error reading directory: " + std::string(e.what()) + "</li>";
+    } catch (const std::exception& e) {
+        file_list_ += "<li>Unexpected error: " + std::string(e.what()) + "</li>";
+    }
+    file_list_ += "</ul>";
 }
+
 
 bool HttpParser::CheckValidPath(std::string rootPath) {
   if (request_target_.at(0) != '/') {
@@ -585,6 +606,7 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
     client_.status_ = "404";
     return false;
   }
+  std::cout << "checkValidPath: " << rootPath << std::endl;
   try {
   if (std::filesystem::exists(rootPath)) {
     if (std::filesystem::is_directory(rootPath)) {
@@ -598,7 +620,7 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
       return true; //The path is a file
     }
     } else {
-      logError("The path does not exist", rootPath);
+      logError("The path does not exist: ", rootPath);
       client_.status_ = "404";
       return false;
   }
@@ -680,4 +702,22 @@ bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
   //std::string filename = "/tmp/webserv/"  + clientFd;
   client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
+}
+
+std::string HttpParser::InjectFileListIntoHtml(const std::string& html_path) {
+    std::ifstream html_file(html_path);
+    if (!html_file.is_open()) {
+        return "<html><body><h1>Error: Unable to open HTML file.</h1></body></html>";
+    }
+    std::string html_content((std::istreambuf_iterator<char>(html_file)),
+                              std::istreambuf_iterator<char>());
+    GenerateFileListHtml();
+    std::size_t placeholder_pos = html_content.find("<!-- UPLOAD_LIST -->");
+    if (placeholder_pos != std::string::npos) {
+        html_content.replace(placeholder_pos, std::string("<!-- UPLOAD_LIST -->").length(), file_list_);
+    } else {
+
+        html_content += "<!-- Error: Upload list placeholder not found -->";
+    }
+    return html_content;
 }

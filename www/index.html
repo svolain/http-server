@@ -122,7 +122,18 @@
                 </form>  
             </div>
             <div class="file-list">
-                <!-- UPLOAD_LIST -->                
+                <!-- UPLOAD_LIST -->            
             </div>
 </body>
 </html>
+
+<script>
+    function deleteFile(filename, element) {
+        fetch(`/?name=${encodeURIComponent(filename)}`, {
+            method: 'DELETE',
+        })
+        /*.then(() => {
+            element.parentElement.remove();
+        })*/
+    }
+</script>
