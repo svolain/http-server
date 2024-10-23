@@ -115,6 +115,7 @@ void WebServ::ReceiveData(Connection& connection, size_t& i) {
 }
 
 void WebServ::SendData(Connection& connection, size_t& i) {
+  std::cout << "here" << std::endl;
   if (connection.SendData(pollFDs_[i]))
     CloseConnection(connection, i);
 }
