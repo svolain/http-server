@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 17:02:37 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/23 18:28:00 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ class HttpParser {
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
-  std::string getLocationHeader();
+  std::string getAdditionalHeaders();
 
  private:
   bool        ParseStartLine(std::istringstream& request_stream);

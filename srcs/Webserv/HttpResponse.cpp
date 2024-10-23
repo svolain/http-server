@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/22 15:44:43 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/23 18:30:42 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,16 +16,14 @@
 
 HttpResponse::HttpResponse(ClientConnection& client)
     : client_(client),
-      header_("---"),
       cont_type_("text/html") {}
 
 int HttpResponse::SendResponse(pollfd& poll) {
   std::fstream&   file = client_.file_; //
   int             client_socket = client_.fd_;
   int             send_status;
-  // location_header_ = fd_info.getParser().getLocationHeader();
 
-  if (!header_.empty())
+  if (header_.empty())
     return (SendHeader(client_socket, client_.parser_));
   if (file.is_open()) {
     send_status = SendOneChunk(client_socket, file);
@@ -50,10 +48,9 @@ int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
 
   AssignContType(parser.getRequestTarget());
   LookupStatusMessage();
-  ComposeHeader(parser.getLocationHeader());
+  ComposeHeader(parser.getAdditionalHeaders());
   std::cout << header_ << std::endl;
   if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
-    header_.clear();
     return 0;
   } else {
     logError("SendResponse: error on send");
@@ -81,14 +78,14 @@ void HttpResponse::LookupStatusMessage(void) {
   }
 }
 
-void HttpResponse::ComposeHeader(std::string location_header) {
+void HttpResponse::ComposeHeader(std::string additional_headers_) {
 
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
   // oss << "Content-Length: " << 0 << "\r\n";
-  if (!location_header.empty())
-    oss <<  location_header;
+  if (!additional_headers_.empty())
+    oss <<  additional_headers_;
   oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();
@@ -131,7 +128,7 @@ int HttpResponse::SendToClient(const int client_socket, const char* msg, int len
 }
 
 void HttpResponse::ResetResponse() {
-  header_ = "---";
+  header_.clear();
   cont_type_ = "text/html";
   status_message_.clear();
   cont_type_.clear();

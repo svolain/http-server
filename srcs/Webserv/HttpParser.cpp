@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/23 14:19:30 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/23 18:28:00 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -662,7 +662,7 @@ int HttpParser::OpenFile(std::string& filename) {
 }
 
 
-std::string HttpParser::getLocationHeader() {
+std::string HttpParser::getAdditionalHeaders() {
   return additional_headers_;
 }
 
