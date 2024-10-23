@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 17:58:52 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/23 14:19:30 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,14 +81,15 @@ bool  HttpParser::HandleRequest() {
   std::string rootPath = rootDir.substr(1) + relativePath;
 
   HandleCookies();
-  
+  std::cout << "test: " << method_ << std::endl;
   if (method_ == "GET" && !HandleGet(rootPath, autoIndex))
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest(rootPath))
     return false;
-  else if (method_ == "POST")
+  else if (method_ == "POST") {
     client_.stage_ = ClientConnection::Stage::kBody;
-
+    std::cout << "test: \n";
+  }
   return true;
 }
 

@@ -41,14 +41,14 @@ int ClientConnection::ReceiveData(pollfd& poll) {
       stage_ = Stage::kResponse;
     }
   }
-  if (stage_ == Stage::kBody) {
+  else if (stage_ == Stage::kBody) {
     bool body_read = parser_.WriteBody(buffer, bytesIn); //not sure that it's correct
     if (!body_read) {
       file_.open(vhost_->getErrorPage(status_));
       stage_ = Stage::kResponse;
     }
   }
-  if (stage_ == Stage::kCgi) {
+  else if (stage_ == Stage::kCgi) {
     ;//waitpid
   }
   if (stage_ == Stage::kResponse)

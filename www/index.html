@@ -88,6 +88,7 @@
             flex-direction: column;
             width: 300px;
             margin: 0 auto;
+            margin-bottom: 20px;
         }
 
     </style>
@@ -109,9 +110,15 @@
             </div>
             <p>Welcome to our server</p>
             <div class="form">
+                <form action="/cgi-bin" method="POST" enctype="application/x-www-form-urlencoded">
+                    <input type="text" id="fname" name="fname" placeholder="Enter name"><br>
+                    <input type="submit" value="Upload name" />
+                </form>  
+            </div>
+            <div class="form">
                 <form action="/" method="POST" enctype="multipart/form-data">
                     <input type="file" id="file" name="file" accept="*/*">
-                    <input type="submit" value="Upload">
+                    <input type="submit" value="Upload file">
                 </form>  
             </div>
             <div class="file-list">
