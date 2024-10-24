@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/23 17:29:46 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/24 13:24:13 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -552,9 +552,9 @@ bool HttpParser::HandleDeleteRequest() {
       client_.status_ = "400";
       return false; 
     }
-    std::string filename = query_string_.substr(delim + 1);
+    std::string queryname = query_string_.substr(delim + 1);
 
-  std::string path = "./www/uploads/" + filename;
+  std::string path = "./www/uploads/" + queryname;
   logDebug("Handling DELETE request for: ", path);
   /*
   if (!CheckValidPath(path))
@@ -569,15 +569,27 @@ bool HttpParser::HandleDeleteRequest() {
      // Try to delete the file
      if (std::remove(path.c_str()) == 0) {
          logDebug("File deleted successfully");
-         client_.status_ = "204";
+         client_.status_ = "200";
      } else {
          logError("Failed to delete file: " + path);
          client_.status_ = "500";
+         return false;
      }
   } else {
     logError("File not found: ", path);
     client_.status_ = "404";
+    return false;
   }
+  std::string clientFd = std::to_string(client_.fd_);
+  std::string filename = "/tmp/webserv/delete_list"  + clientFd;
+  std::fstream& outFile = client_.file_;
+  if (OpenFile(filename))
+    return false;
+  std::remove(filename.c_str());
+  std::string htmlStr = InjectFileListIntoHtml("www/index.html");
+  outFile << htmlStr;
+  client_.stage_ = ClientConnection::Stage::kResponse;
+  outFile.seekg(0);
   return true;
 }
 
@@ -677,7 +689,6 @@ int HttpParser::OpenFile(std::string& filename) {
     logError("1");
     client_.status_ = "500";
     file.open(client_.vhost_->getErrorPage("500"));
-    //client_.stage_ = ClientConnection::Stage::kResponse;
     return 1;
   }
   return 0;

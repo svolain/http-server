@@ -110,7 +110,7 @@
             </div>
             <p>Welcome to our server</p>
             <div class="form">
-                <form action="/cgi-bin" method="POST" enctype="application/x-www-form-urlencoded">
+                <form action="/" method="POST" enctype="application/x-www-form-urlencoded">
                     <input type="text" id="fname" name="fname" placeholder="Enter name"><br>
                     <input type="submit" value="Upload name" />
                 </form>  
@@ -132,8 +132,20 @@
         fetch(`/?name=${encodeURIComponent(filename)}`, {
             method: 'DELETE',
         })
-        /*.then(() => {
-            element.parentElement.remove();
-        })*/
+        .then(response => {
+            if (response.ok) {
+                // Check if the server sends back new HTML
+                return response.text(); // Get the response body as text
+            } else {
+                console.error("Failed to delete the file on the server");
+                throw new Error('Delete request failed');
+            }
+        })
+        .then(newHtml => {
+            // Replace the current document body with the new HTML
+            document.open(); // Clear the current document
+            document.write(newHtml); // Write the new HTML
+            document.close(); // Close the document stream
+        })
     }
 </script>
