@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/23 08:58:20 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 17:59:21 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 class Socket;
 class VirtualHost;
 class WebServ;
+class CgiConnection;
 
 class ClientConnection : public Connection {
  public:
@@ -32,28 +33,25 @@ class ClientConnection : public Connection {
   int                       SendData(pollfd& poll) override;
   void                      ResetClientConnection();
   std::vector<std::string>  PrepareCgiEvniron();
-  WebServ&                  getWebServ();
-  std::fstream&             getFile();
-  void                      setStatus(const std::string& status);
 
-
-private:
+ private:
   friend HttpParser;
   friend HttpResponse;
+  friend CgiConnection;
 
   enum class Stage { kHeader,
                      kBody,
                      kCgi,
                      kResponse };
                      
-  Stage          stage_ = Stage::kHeader;
-  std::string    status_ = "200";
-  Socket&        sock_;
-  WebServ&       webserv_;
-  VirtualHost*   vhost_ = nullptr;
-  HttpParser     parser_;
-  HttpResponse   response_;
-  std::fstream   file_;
+  Stage         stage_ = Stage::kHeader;
+  std::string   status_ = "200";
+  Socket&       sock_;
+  WebServ&      webserv_;
+  VirtualHost*  vhost_ = nullptr;
+  HttpParser    parser_;
+  HttpResponse  response_;
+  std::fstream  file_;
 };
 
 #endif //CLIENTCONNECTION_HPP

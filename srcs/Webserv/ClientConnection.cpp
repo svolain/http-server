@@ -89,14 +89,3 @@ std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
 
   return env;
 }
-
-WebServ&  ClientConnection::getWebServ() {
-  return webserv_;
-}
-std::fstream& ClientConnection::getFile() {
-  return file_;
-}
-
-void  ClientConnection::setStatus(const std::string& status) {
-  status_ = status;
-}

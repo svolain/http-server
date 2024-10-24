@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/19 18:25:14 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 17:26:17 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ class Connection
   Connection& operator=(const Connection& other) = delete;
   Connection& operator=(Connection&& other)      = delete;
 
-  virtual ~Connection() = 0;
+  virtual ~Connection();
 
   virtual int   ReceiveData(pollfd& poll) = 0;
   virtual int   SendData(pollfd& poll)    = 0;

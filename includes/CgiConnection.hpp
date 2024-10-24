@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/23 10:01:27 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 17:30:46 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,12 +31,11 @@ class CgiConnection : public Connection {
   static void   StartCgiProcess(int pipe_fd[2], ClientConnection& client);
   int           ReceiveData(pollfd& poll) override;
   int           SendData(pollfd& poll) override;
-  void          SwitchToRecieve();
+  int           SwitchToRecieve();
 
  private:
   int               pipe_fd_[2];
   ClientConnection& client_;
-  WebServ&          webserv_;
   std::fstream&     file_;
   pid_t             child_pid_;
 
