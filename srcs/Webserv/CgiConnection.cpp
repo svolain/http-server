@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/24 09:12:01 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/24 13:05:31 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,4 +117,5 @@ void  CgiConnection::SwitchToRecieve() {
   cgi_poll.fd = pipe_fd_[READ];
   fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
   cgi_poll.events = POLLIN;
+  webserv_.SwitchCgiToReceive(pipe_fd_[WRITE], pipe_fd_[READ]);
 }

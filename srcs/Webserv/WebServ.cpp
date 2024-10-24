@@ -15,6 +15,7 @@
 #include "ConfigParser.hpp"
 #include "WebServ.hpp"
 #include "ClientConnection.hpp"
+#include "CgiConnection.hpp"
 
 #define TODO 123
 
@@ -51,6 +52,8 @@ void WebServ::Run() {
       perror("poll: ");
     else if (!socketsReady) {
       logInfo("poll() is closing connections on timeout...");
+      for (size_t i = sockets_.size(); i < pollFDs_.size(); ++i)
+        close(pollFDs_[i].fd);
       connections_.clear();
       pollFDs_.resize(sockets_.size());
     } else
@@ -58,6 +61,29 @@ void WebServ::Run() {
   }
   CloseAllConnections();
   logInfo("--- Shutting down the server ---");
+}
+
+
+void WebServ::AddNewConnection(pollfd& fd,
+                               std::unique_ptr<Connection> connection) {
+  pollFDs_.push_back(fd);
+  connections_.emplace(fd.fd, std::move(connection));
+}
+
+void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
+  pollfd cgi_poll = {new_cgi_fd, POLLIN, 0};
+  fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
+  AddNewConnection(cgi_poll, std::move(connections_.at(olg_cgi_fd)));
+
+  connections_.erase(olg_cgi_fd);
+  auto it = std::find_if(
+      pollFDs_.begin(),
+      pollFDs_.end(),
+      [&](const pollfd& poll) {
+        return poll.fd == olg_cgi_fd;
+      }
+  );
+  pollFDs_.erase(it);
 }
 
 void WebServ::PollAvailableFDs(void) {
@@ -72,10 +98,10 @@ void WebServ::PollAvailableFDs(void) {
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
       logError("error or read end has been closed");
-      CloseConnection(connection, i);
+      CloseConnection(connection.fd_, i);
     } else if (revents & POLLHUP) { 
       logError("Hang up: ", fd);
-      CloseConnection(connection, i);
+      CloseConnection(connection.fd_, i);
     } 
     // else if (revents & POLLNVAL) {
     //   logError("Invalid fd: ", fd);
@@ -103,30 +129,24 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::AddNewConnection(pollfd& fd,
-                               std::unique_ptr<Connection> connection) {
-  pollFDs_.push_back(fd);
-  connections_.emplace(fd.fd, std::move(connection));
-}
-
 void WebServ::ReceiveData(Connection& connection, int& i) {
   if (connection.ReceiveData(pollFDs_[i]))
-    CloseConnection(connection, i);
+    CloseConnection(connection.fd_, i);
 }
 
 void WebServ::SendData(Connection& connection, int& i) {
   if (connection.SendData(pollFDs_[i]))
-    CloseConnection(connection, i);
+    CloseConnection(connection.fd_, i);
 }
 
-void WebServ::CloseConnection(Connection& connection, int& i) {
-  connections_.erase(connection.fd_);
+void WebServ::CloseConnection(int fd, int& i) {
+  close(fd);
+  connections_.erase(fd);
   pollFDs_.erase(pollFDs_.begin() + i);
-  i--;
 }
 
 void WebServ::CloseAllConnections() {
-  for (size_t i = 0; i < sockets_.size(); i++) //close all listening sockets
+  for (size_t i = 0; i < pollFDs_.size(); i++) //close all listening sockets and active connections
     close(pollFDs_[i].fd);
   //Destructor should handle map and vector erasing
 }
