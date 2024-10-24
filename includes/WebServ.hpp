@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/18 11:43:14 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 09:25:52 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,9 @@ class WebServ {
  private:
   void        PollAvailableFDs();
   void        CheckForNewConnection(int fd, short revents, int i);
-  void        ReceiveData(Connection& connection, size_t& i);
-  void        SendData(Connection& connection, size_t& i);
-  void        CloseConnection(Connection& connection, size_t& i);
+  void        ReceiveData(Connection& connection, int& i);
+  void        SendData(Connection& connection, int& i);
+  void        CloseConnection(Connection& connection, int& i);
   void        CloseAllConnections();
   std::string ToString() const;
 

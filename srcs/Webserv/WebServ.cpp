@@ -61,11 +61,11 @@ void WebServ::Run() {
 }
 
 void WebServ::PollAvailableFDs(void) {
-  for (size_t i = 0; i < pollFDs_.size(); i++) {
+  for (int i = pollFDs_.size() - 1; i >= 0; --i) {
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
 
-    if (i < sockets_.size()) {
+    if (i < static_cast<int>(sockets_.size())) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
@@ -109,17 +109,17 @@ void WebServ::AddNewConnection(pollfd& fd,
   connections_.emplace(fd.fd, std::move(connection));
 }
 
-void WebServ::ReceiveData(Connection& connection, size_t& i) {
+void WebServ::ReceiveData(Connection& connection, int& i) {
   if (connection.ReceiveData(pollFDs_[i]))
     CloseConnection(connection, i);
 }
 
-void WebServ::SendData(Connection& connection, size_t& i) {
+void WebServ::SendData(Connection& connection, int& i) {
   if (connection.SendData(pollFDs_[i]))
     CloseConnection(connection, i);
 }
 
-void WebServ::CloseConnection(Connection& connection, size_t& i) {
+void WebServ::CloseConnection(Connection& connection, int& i) {
   connections_.erase(connection.fd_);
   pollFDs_.erase(pollFDs_.begin() + i);
   i--;

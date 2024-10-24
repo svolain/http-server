@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientConnection.hpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/22 22:18:28 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/23 08:58:20 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ class ClientConnection : public Connection {
   void                      ResetClientConnection();
   std::vector<std::string>  PrepareCgiEvniron();
   WebServ&                  getWebServ();
+  std::fstream&             getFile();
   void                      setStatus(const std::string& status);
 
 

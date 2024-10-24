@@ -41,14 +41,14 @@ int ClientConnection::ReceiveData(pollfd& poll) {
       stage_ = Stage::kResponse;
     }
   }
-  if (stage_ == Stage::kBody) {
-    bool body_read = parser_.WriteBody(buffer, bytesIn); //not sure that it's correct
+  else if (stage_ == Stage::kBody) {
+    bool body_read = parser_.WriteBody(buffer, bytesIn);
     if (!body_read) {
       file_.open(vhost_->getErrorPage(status_));
       stage_ = Stage::kResponse;
     }
   }
-  if (stage_ == Stage::kCgi) {
+  else if (stage_ == Stage::kCgi) { //move it to response - reference invalidation!!
     ;//waitpid
   }
   if (stage_ == Stage::kResponse)
@@ -92,6 +92,9 @@ std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
 
 WebServ&  ClientConnection::getWebServ() {
   return webserv_;
+}
+std::fstream& ClientConnection::getFile() {
+  return file_;
 }
 
 void  ClientConnection::setStatus(const std::string& status) {
