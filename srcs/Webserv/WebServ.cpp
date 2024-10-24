@@ -115,8 +115,7 @@ void WebServ::ReceiveData(Connection& connection, size_t& i) {
 }
 
 void WebServ::SendData(Connection& connection, size_t& i) {
-  std::cout << "here" << std::endl;
-  if (connection.SendData(pollFDs_[i]))
+  if (connection.SendData(pollFDs_[i])) 
     CloseConnection(connection, i);
 }
 
@@ -127,9 +126,8 @@ void WebServ::CloseConnection(Connection& connection, size_t& i) {
 }
 
 void WebServ::CloseAllConnections() {
-  for (size_t i = 0; i < sockets_.size(); i++) //close all listening sockets
+  for (size_t i = 0; i < sockets_.size(); i++)
     close(pollFDs_[i].fd);
-  //Destructor should handle map and vector erasing
 }
 
 std::string WebServ::ToString() const {
