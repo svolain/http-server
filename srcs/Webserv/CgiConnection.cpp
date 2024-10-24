@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/24 17:52:42 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 23:05:12 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,6 +87,19 @@ int CgiConnection::ReceiveData(pollfd& poll) {
     logError("CGI: failed to read from child process.");
     return 1;
   }
+  if (bytes_in == 0) {
+    logInfo("CGI: finished reading from child.");//~~~~~~~~~~~~~~~~~~Is it correct?
+    return 0;
+  }
+  if (!header_parsed_) {
+    header_parsed_ = ParseCgiResponseHeaderFields(buffer);
+    if (!header_parsed_) {
+      client_.status_ = "502";
+      return 1;
+    }
+  } else {
+    file_.write(buffer, bytes_in);
+  }
   return 0;
 }
 
@@ -132,4 +145,32 @@ int CgiConnection::SwitchToRecieve() {
   }
   std::remove(filename.c_str());
   return 0;
+}
+
+bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
+  std::istringstream  response_stream(buffer);
+  std::string line;
+  while (std::getline(response_stream, line) && line != "\r") {
+    size_t delim = line.find(":");
+    if (delim == std::string::npos || line.back() != '\r') {
+      logError("CGI: Wrong header line format.");
+      return false;
+    }
+    std::string header = line.substr(0, delim + 1);
+    std::string header_value = line.substr(delim + 1);
+    headers_[header] = header_value;
+  }
+  if (!headers_.contains("Content-Type:")) {
+    logError("CGI: failed to find \"Content-Type\" in headers.");
+    return false;
+  }
+  if (headers_.contains("Status:")) {
+    client_.status_ = headers_.at("Status:"); //If status invalid -> 200
+    headers_.erase("Status:");
+  }
+
+  while (std::getline(response_stream, line)) {
+    file_ << line << "\n";
+  }
+  return true;
 }

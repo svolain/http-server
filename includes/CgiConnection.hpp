@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/24 17:30:46 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 23:06:12 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,13 +32,15 @@ class CgiConnection : public Connection {
   int           ReceiveData(pollfd& poll) override;
   int           SendData(pollfd& poll) override;
   int           SwitchToRecieve();
+  bool          ParseCgiResponseHeaderFields(char* buffer);
 
  private:
-  int               pipe_fd_[2];
-  ClientConnection& client_;
-  std::fstream&     file_;
-  pid_t             child_pid_;
-
+  int                                 pipe_fd_[2];
+  ClientConnection&                   client_;
+  std::fstream&                       file_;
+  pid_t                               child_pid_;
+  bool                                header_parsed_ = false;
+  std::map<std::string, std::string>  headers_;
 };
 
 #endif //CGICONNECTION_HPP
