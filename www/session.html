@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session info</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: black;
+            color: #62ffcd;
+            margin: 0;
+        }
+        
+        @keyframes color-change {
+            0%, 100% {
+                filter: hue-rotate(0deg);
+            }
+            50% {
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        .main-content{
+            display: flex;
+            position: absolute;
+            justify-content: center;
+            align-items: center;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("img/background.jpg");
+            background-size: cover;
+            animation: color-change 2s linear infinite;
+        }
+
+    </style>
+</head>
+<body>
+    <section>
+            <div class="index-wrp">
+                <div class="main-content">
+                    <h1>your session id for cookies: </h1>
+                    <!-- UPLOAD_COOKIE -->
+                </div>
+    </section>
+</body>
+</html>

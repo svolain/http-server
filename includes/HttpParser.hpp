@@ -69,11 +69,13 @@ class HttpParser {
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
   bool        ParseUrlEncodedData(const std::vector<char>& body);
   bool        IsPathSafe(const std::string& path);
-  bool        HandleDeleteRequest(std::string rootPath);
+  bool        HandleDeleteRequest();
   void        GenerateFileListHtml();
   bool        CheckValidPath(std::string root);
   void        CreateDirListing(std::string& directory);
   bool        HandleGet(std::string rootPath, bool autoIndex);
+  std::string InjectFileListIntoHtml(const std::string& html_path);
+  std::string InjectCookieIntoHtml(const std::string& html_path);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;
@@ -88,6 +90,7 @@ class HttpParser {
   std::map<std::string, std::string>  session_store_;
   bool                                is_chunked_ = false;
   std::string                         additional_headers_;
+  std::string                         content_type_;
 };
 
 #endif
