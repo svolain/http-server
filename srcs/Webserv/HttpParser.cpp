@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/24 17:47:04 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:16:10 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,8 @@ bool  HttpParser::HandleRequest() {
   if (!redir.first.empty()) {
     client_.status_ = redir.first;
     additional_headers_ = "Location: " + redir.second + "\r\n";
+    additional_headers_ += "Content-Length: 0\r\n";
+    // additional_headers_ += "Connection: close\r\n";
     return false;
   }
 

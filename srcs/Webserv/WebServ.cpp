@@ -71,7 +71,7 @@ void WebServ::PollAvailableFDs(void) {
     }
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
-      logError("error or read end has been closed");
+      logError("read end has been closed or an error occured");
       CloseConnection(connection, i);
     } else if (revents & POLLHUP) { 
       logError("Hang up: ", fd);
