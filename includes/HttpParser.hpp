@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/23 16:42:53 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/25 12:05:05 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,7 @@ class HttpParser {
   void        CreateDirListing(std::string& directory);
   bool        HandleGet(std::string rootPath, bool autoIndex);
   std::string InjectFileListIntoHtml(const std::string& html_path);
+  std::string InjectCookieIntoHtml(const std::string& html_path);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;

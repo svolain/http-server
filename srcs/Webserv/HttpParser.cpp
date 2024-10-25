@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/24 13:24:13 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/25 12:13:36 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -296,12 +296,10 @@ void HttpParser::HandleCookies() {
   if (session_store_.find("session_id") != session_store_.end()) {
         session_id_ = session_store_["session_id"];
         logDebug("Returning User with session_id: ", session_id_);
-        //std::cout << "sessionid1: " << session_id_ << std::endl;
     } else {
         session_id_ = CreateSessionID();
         logDebug("New User. Generated session_id: ", session_id_);
-        additional_headers_ += "Cookie: session_id=" + session_id_ + "\r\n";
-        //std::cout << "sessionid2: " << session_id_ << std::endl;
+        additional_headers_ += "Set-Cookie: session_id=" + session_id_ + "\r\n";
     }
 }
 
@@ -618,7 +616,6 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
     client_.status_ = "404";
     return false;
   }
-  std::cout << "checkValidPath: " << rootPath << std::endl;
   try {
   if (std::filesystem::exists(rootPath)) {
     if (std::filesystem::is_directory(rootPath)) {
@@ -707,10 +704,9 @@ bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
     if (!CheckValidPath(rootPath))
       return false;
     else
-      OpenFile(request_target_);
+      if  (OpenFile(request_target_))
+        return false;
   }
-  //std::string clientFd = std::to_string(client_.fd_);
-  //std::string filename = "/tmp/webserv/"  + clientFd;
   client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }
@@ -729,6 +725,23 @@ std::string HttpParser::InjectFileListIntoHtml(const std::string& html_path) {
     } else {
 
         html_content += "<!-- Error: Upload list placeholder not found -->";
+    }
+    return html_content;
+}
+
+std::string HttpParser::InjectCookieIntoHtml(const std::string& html_path) {
+  std::ifstream html_file(html_path);
+    if (!html_file.is_open()) {
+        return "<html><body><h1>Error: Unable to open HTML file.</h1></body></html>";
+    }
+    std::string html_content((std::istreambuf_iterator<char>(html_file)),
+                              std::istreambuf_iterator<char>());
+    std::size_t placeholder_pos = html_content.find("<!-- UPLOAD_COOKIE -->");
+    if (placeholder_pos != std::string::npos) {
+        html_content.replace(placeholder_pos, std::string("<!-- UPLOAD_COOKIE -->").length(), "<h1>" + 
+        session_id_ + "</h1>");
+    } else {
+        html_content += "<!-- Error: Upload cookie placeholder not found -->";
     }
     return html_content;
 }
