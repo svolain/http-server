@@ -120,6 +120,7 @@ void WebServ::SendData(Connection& connection, size_t& i) {
 }
 
 void WebServ::CloseConnection(Connection& connection, size_t& i) {
+  logDebug("Closing fd " + std::to_string(connection.fd_));
   connections_.erase(connection.fd_);
   pollFDs_.erase(pollFDs_.begin() + i);
   i--;
@@ -132,7 +133,7 @@ void WebServ::CloseAllConnections() {
 
 std::string WebServ::ToString() const {
   std::string out("***Webserv configuration***\n");
-  out += "Configuuration file used: " + conf_ + "\n";
+  out += "Configuration file used: " + conf_ + "\n";
   for (const auto& socket : sockets_) {
     out += "Server\n";
     out += socket.ToString() + "\n";

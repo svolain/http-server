@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/25 13:37:17 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:44:46 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,6 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
         perror("send :");
         return 1;
   }
-  logDebug("sent ", bytes_read);
   if (bytes_read < chunk_size)
     return 2;
   return 0;

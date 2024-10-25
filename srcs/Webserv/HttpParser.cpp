@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 14:16:10 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:29:01 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -599,7 +599,7 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
       return true; //The path is a file
     }
     } else {
-      logError("The path does not exist", rootPath);
+      logError("The path does not exist: ", rootPath);
       client_.status_ = "404";
       return false;
   }
