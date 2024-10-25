@@ -43,7 +43,25 @@
                 <div class="main-content">
                     <h1>your session id for cookies: </h1>
                     <!-- UPLOAD_COOKIE -->
+                    <h1 id="session-display"></h1>
                 </div>
     </section>
 </body>
 </html>
+
+<script>
+    function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        const sessionId = getCookie('session_id');
+
+        // Display it in the HTML if it exists
+        if (sessionId) {
+            document.getElementById('session-display').textContent = `Session ID: ${sessionId}`;
+        } else {
+            document.getElementById('session-display').textContent = 'Session ID not found';
+        }
+</script>

@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 12:13:36 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/25 17:13:15 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ bool HttpParser::ParseHeader(const std::string& request) {
   request_stream.seekg(0, std::ios::end); /* Beware of off by 1, should be good tho */
   size_t stream_size = request_stream.tellg() - current;
   request_stream.seekg(current);
-  request_body_.reserve(stream_size);
+  request_body_.resize(stream_size);
   request_stream.read(request_body_.data(), stream_size);
   return true;
 }
@@ -79,6 +79,7 @@ bool  HttpParser::HandleRequest() {
   std::string rootDir = locations.at(location).root_;
   std::string relativePath = "/" + request_target_.substr(location.size()); 
   std::string rootPath = rootDir.substr(1) + relativePath;
+  std::cout << rootPath << std::endl;
 
   HandleCookies();
   if (method_ == "GET" && !HandleGet(rootPath, autoIndex))
@@ -86,11 +87,17 @@ bool  HttpParser::HandleRequest() {
   else if (method_ == "DELETE" && !HandleDeleteRequest())
     return false;
   else if (method_ == "POST") {
-    client_.stage_ = ClientConnection::Stage::kBody;
+     if (request_body_.empty()) {
+      client_.stage_ = ClientConnection::Stage::kBody;
+     } else {
+      if (!HandlePostRequest(request_body_)) {
+        return false;
+      }
+     }
   }
+
   return true;
 }
-
 
 bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
   std::string eoc = "0\r\n\r\n";
@@ -98,12 +105,12 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
     if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
       logDebug("bytesIn == MAXBYTES, more data to recieve");
       AppendBody(buffer, bytesIn);
-      /*if (!is_chunked_ &&
-          (!IsBodySizeValid(vhost) || request_body_.size() > content_length_)) {
+      if (!is_chunked_ &&
+          (request_body_.size() > content_length_)) {
         logError("Error: Request Header Fields Too Large");
-        client_.status_ = 431;
+        client_.status_ = "431";
         return false;
-      }*/
+      }
       return true;
     }
     UnChunkBody(request_body_);
@@ -236,7 +243,6 @@ bool HttpParser::CheckPostHeaders() {
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
-    logError(is_chunked_);
     auto it = headers_.find("Content-Length");
     if (it == headers_.end()) {
       logError("Content-lenght missing for request body");
@@ -383,10 +389,9 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   } else if (contentType.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, contentType)) {
-      client_.status_ = "500";// Internal Server Error
+      client_.status_ = "400";// Internal Server Error
       return false;
     }
-    //std::cout << "fileist:\n" << file_list_;
   } else {
     logError("Unsupported Content-Type");
     client_.status_ = "415";
@@ -482,6 +487,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
         logDebug("File ", filename, " saved successfully");
       } else {
         logError("Failed to save file ");
+        
         return false;
       }
     } else if (posName != std::string::npos) {
@@ -725,23 +731,6 @@ std::string HttpParser::InjectFileListIntoHtml(const std::string& html_path) {
     } else {
 
         html_content += "<!-- Error: Upload list placeholder not found -->";
-    }
-    return html_content;
-}
-
-std::string HttpParser::InjectCookieIntoHtml(const std::string& html_path) {
-  std::ifstream html_file(html_path);
-    if (!html_file.is_open()) {
-        return "<html><body><h1>Error: Unable to open HTML file.</h1></body></html>";
-    }
-    std::string html_content((std::istreambuf_iterator<char>(html_file)),
-                              std::istreambuf_iterator<char>());
-    std::size_t placeholder_pos = html_content.find("<!-- UPLOAD_COOKIE -->");
-    if (placeholder_pos != std::string::npos) {
-        html_content.replace(placeholder_pos, std::string("<!-- UPLOAD_COOKIE -->").length(), "<h1>" + 
-        session_id_ + "</h1>");
-    } else {
-        html_content += "<!-- Error: Upload cookie placeholder not found -->";
     }
     return html_content;
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 22:21:22 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/25 16:28:55 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,7 @@ class HttpParser {
   void        CreateDirListing(std::string& directory);
   bool        HandleGet(std::string rootPath, bool autoIndex);
   std::string InjectFileListIntoHtml(const std::string& html_path);
-  std::string InjectCookieIntoHtml(const std::string& html_path);
+  bool        checkFile(std::vector<char> request_body);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;
