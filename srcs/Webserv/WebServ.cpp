@@ -42,22 +42,17 @@ int WebServ::Init() {
   return 0;
 }
 
-#define TIMEOUT   5000
+#define TIMEOUT 500
 
 void WebServ::Run() {
   int socketsReady = 0;
   while (true) {
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
-    if (socketsReady == -1)
-      perror("poll: ");
-    else if (!socketsReady) {
-      logInfo("poll() is closing connections on timeout...");
-      for (size_t i = sockets_.size(); i < pollFDs_.size(); ++i)
-        close(pollFDs_[i].fd);
-      connections_.clear();
-      pollFDs_.resize(sockets_.size());
+    if (socketsReady == -1) {
+      logError("poll() returned -1.");
+      break;
     } else
-        PollAvailableFDs();
+      PollAvailableFDs();
   }
   CloseAllConnections();
   logInfo("--- Shutting down the server ---");
@@ -97,12 +92,13 @@ void WebServ::PollAvailableFDs(void) {
     }
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
-      logError("error or read end has been closed");
+      logInfo("Connection ", fd,
+              ": Error or closed read end detected, closing connection.");
       CloseConnection(connection.fd_, i);
-    } else if (revents & POLLHUP) { 
-      logError("Hang up: ", fd);
+    } else if (revents & POLLHUP) {
+      logInfo("Connection ", fd, ": Hang-up detected, closing connection.");
       CloseConnection(connection.fd_, i);
-    } 
+    }
     // else if (revents & POLLNVAL) {
     //   logError("Invalid fd: ", fd);
     //   CloseConnection(connection, i);} 
@@ -110,6 +106,10 @@ void WebServ::PollAvailableFDs(void) {
       ReceiveData(connection, i);
     } else if (revents & POLLOUT)
       SendData(connection, i);
+    else if (connection.HasTimedOut()) {
+      logInfo("Connection ", fd, ": Timeout detected, closing connection.");
+      CloseConnection(connection.fd_, i);
+    }
   }
 }
 
@@ -129,26 +129,27 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::ReceiveData(Connection& connection, int& i) {
+void WebServ::ReceiveData(Connection& connection, const int& i) {
   if (connection.ReceiveData(pollFDs_[i]))
     CloseConnection(connection.fd_, i);
 }
 
-void WebServ::SendData(Connection& connection, int& i) {
+void WebServ::SendData(Connection& connection, const int& i) {
   if (connection.SendData(pollFDs_[i]))
     CloseConnection(connection.fd_, i);
 }
 
-void WebServ::CloseConnection(int fd, int& i) {
-  close(fd);
+void WebServ::CloseConnection(int fd, const int& i) {
   connections_.erase(fd);
   pollFDs_.erase(pollFDs_.begin() + i);
 }
 
 void WebServ::CloseAllConnections() {
-  for (size_t i = 0; i < pollFDs_.size(); i++) //close all listening sockets and active connections
+  for (size_t i = pollFDs_.size() - 1; i >= sockets_.size(); --i) {
+    CloseConnection(pollFDs_[i].fd, static_cast<const int>(i));
+  }
+  for (size_t i = 0; i < sockets_.size(); i++)
     close(pollFDs_[i].fd);
-  //Destructor should handle map and vector erasing
 }
 
 std::string WebServ::ToString() const {
