@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 12:05:05 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/22 22:21:22 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,8 @@ class HttpParser {
   std::string getLocationHeader();
 
  private:
+  friend ClientConnection;
+
   bool        ParseStartLine(std::istringstream& request_stream);
   bool        ParseHeaderFields(std::istringstream& request_stream);
   bool        CheckPostHeaders();

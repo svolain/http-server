@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/22 11:23:12 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 22:54:42 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,10 +18,12 @@
 
 #define MAXBYTES  8192
 
-VirtualHost::VirtualHost(std::string& max_size,
+VirtualHost::VirtualHost(std::string& name,
+                         std::string& max_size,
                          StringMap& errors,
                          LocationMap& locations)
-    : error_pages_(getDefaultErrorPages()),
+    : name_(name),
+      error_pages_(getDefaultErrorPages()),
       locations_(locations) {
   if (!max_size.empty()) {
     client_max_body_size_ = std::stoi(max_size);
@@ -59,6 +61,10 @@ std::map<std::string, Location>& VirtualHost::getLocations() {
 std::string VirtualHost::getErrorPage(const std::string& error) const {
   auto it = error_pages_.find(error);
   return it->second;
+}
+
+std::string VirtualHost::getName() const {
+  return name_;
 }
 
 const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {

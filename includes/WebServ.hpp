@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/18 11:43:14 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/24 13:09:20 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,13 +34,14 @@ class WebServ {
   int   Init();
   void  Run();
   void  AddNewConnection(pollfd& fd, std::unique_ptr<Connection> connection);
+  void  SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd);
 
  private:
   void        PollAvailableFDs();
   void        CheckForNewConnection(int fd, short revents, int i);
-  void        ReceiveData(Connection& connection, size_t& i);
-  void        SendData(Connection& connection, size_t& i);
-  void        CloseConnection(Connection& connection, size_t& i);
+  void        ReceiveData(Connection& connection, int& i);
+  void        SendData(Connection& connection, int& i);
+  void        CloseConnection(int fd, int& i);
   void        CloseAllConnections();
   std::string ToString() const;
 
