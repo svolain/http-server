@@ -71,7 +71,7 @@ void WebServ::PollAvailableFDs(void) {
     }
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
-      logError("error or read end has been closed");
+      logError("read end has been closed or an error occured");
       CloseConnection(connection, i);
     } else if (revents & POLLHUP) { 
       logError("Hang up: ", fd);
@@ -115,25 +115,25 @@ void WebServ::ReceiveData(Connection& connection, size_t& i) {
 }
 
 void WebServ::SendData(Connection& connection, size_t& i) {
-  if (connection.SendData(pollFDs_[i]))
+  if (connection.SendData(pollFDs_[i])) 
     CloseConnection(connection, i);
 }
 
 void WebServ::CloseConnection(Connection& connection, size_t& i) {
+  logDebug("Closing fd " + std::to_string(connection.fd_));
   connections_.erase(connection.fd_);
   pollFDs_.erase(pollFDs_.begin() + i);
   i--;
 }
 
 void WebServ::CloseAllConnections() {
-  for (size_t i = 0; i < sockets_.size(); i++) //close all listening sockets
+  for (size_t i = 0; i < sockets_.size(); i++)
     close(pollFDs_[i].fd);
-  //Destructor should handle map and vector erasing
 }
 
 std::string WebServ::ToString() const {
   std::string out("***Webserv configuration***\n");
-  out += "Configuuration file used: " + conf_ + "\n";
+  out += "Configuration file used: " + conf_ + "\n";
   for (const auto& socket : sockets_) {
     out += "Server\n";
     out += socket.ToString() + "\n";

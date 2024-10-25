@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/23 18:30:42 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:44:46 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,10 +83,10 @@ void HttpResponse::ComposeHeader(std::string additional_headers_) {
   std::ostringstream oss;
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
-  // oss << "Content-Length: " << 0 << "\r\n";
   if (!additional_headers_.empty())
     oss <<  additional_headers_;
-  oss << "Transfer-Encoding: chunked" << "\r\n";
+  if (additional_headers_.find("Content-Length: ") == std::string::npos)
+    oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();
 }
@@ -110,7 +110,6 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
         perror("send :");
         return 1;
   }
-  logDebug("sent ", bytes_read);
   if (bytes_read < chunk_size)
     return 2;
   return 0;

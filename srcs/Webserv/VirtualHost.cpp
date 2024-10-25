@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   VirtualHost.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/15 17:35:52 by  dshatilo         #+#    #+#             */
-/*   Updated: 2024/10/22 11:23:12 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:05:10 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,8 +57,13 @@ std::map<std::string, Location>& VirtualHost::getLocations() {
 }
 
 std::string VirtualHost::getErrorPage(const std::string& error) const {
+
   auto it = error_pages_.find(error);
-  return it->second;
+  if (it != error_pages_.end()) 
+    return it->second;
+  else
+    return ("");
+
 }
 
 const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {

@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/23 18:28:00 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/24 16:54:09 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ class HttpParser {
   bool        IsBodySizeValid();
   void        ResetParser();
   int         OpenFile(std::string& filename);
-  std::string getHost() const;
+  std::string getHost();
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;

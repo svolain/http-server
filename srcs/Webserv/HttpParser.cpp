@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/23 18:28:00 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:29:01 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,9 @@ bool  HttpParser::HandleRequest() {
   }
   if (!redir.first.empty()) {
     client_.status_ = redir.first;
-    additional_headers_ = "Location: " + redir.second;
+    additional_headers_ = "Location: " + redir.second + "\r\n";
+    additional_headers_ += "Content-Length: 0\r\n";
+    // additional_headers_ += "Connection: close\r\n";
     return false;
   }
 
@@ -139,8 +141,8 @@ void HttpParser::ResetParser() {
   is_chunked_ = false;
 }
 
-std::string HttpParser::getHost() const {
-  return headers_.at("Host");
+std::string HttpParser::getHost() {
+  return headers_["Host"];
 }
 
 std::string HttpParser::getMethod() const {
@@ -216,7 +218,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   if (!headers_.contains("Host")) {
     logError("Bad request 400");
     client_.status_ = "400";
-    headers_["Host"] = "";
     return false;
   }
 
@@ -598,7 +599,7 @@ bool HttpParser::CheckValidPath(std::string rootPath) {
       return true; //The path is a file
     }
     } else {
-      logError("The path does not exist", rootPath);
+      logError("The path does not exist: ", rootPath);
       client_.status_ = "404";
       return false;
   }
