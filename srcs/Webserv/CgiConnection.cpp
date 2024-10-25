@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/24 23:05:12 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/25 12:35:57 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,11 @@ CgiConnection::~CgiConnection() {
   close(pipe_fd_[READ]);
   kill(child_pid_, SIGTERM);
   if (HasTimedOut()) {
-    //something
+    client_.status_ = "504";
+    file_.close();
   }
+    //                                          not ready
+  client_.stage_ = ClientConnection::Stage::kResponse;
 }
 
 pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
@@ -67,14 +70,22 @@ pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
 
 
 void  CgiConnection::StartCgiProcess(int pipe_fd[2], ClientConnection& client) {
-  close(pipe_fd[0]);
-  if (dup2(pipe_fd[1], STDOUT_FILENO) == -1) {
-    close(pipe_fd[1]);
+  if (dup2(pipe_fd[READ], STDIN_FILENO) == -1 ||
+      dup2(pipe_fd[WRITE], STDOUT_FILENO) == -1) {
+    close(pipe_fd[READ]);
+    close(pipe_fd[WRITE]);
     std::_Exit(EXIT_FAILURE);
   }
-  close(pipe_fd[1]);
-  std::vector<std::string> env = client.PrepareCgiEvniron();
-    //call execve
+  close(pipe_fd[READ]);
+  close(pipe_fd[WRITE]);
+  std::vector<std::string> env_vec = client.PrepareCgiEvniron();
+  std::vector<const char*>env;
+  env.reserve(env_vec.size() + 1);
+  for (size_t i = 0; i < env_vec.size(); ++i) {
+    env[i] = env_vec[i].data();
+  }
+  env[env_vec.size()] = nullptr;
+  // execve();
   std::_Exit(EXIT_FAILURE);
 }
 
@@ -88,8 +99,8 @@ int CgiConnection::ReceiveData(pollfd& poll) {
     return 1;
   }
   if (bytes_in == 0) {
-    logInfo("CGI: finished reading from child.");//~~~~~~~~~~~~~~~~~~Is it correct?
-    return 0;
+    logInfo("CGI: finished reading from child.");
+    return 1;
   }
   if (!header_parsed_) {
     header_parsed_ = ParseCgiResponseHeaderFields(buffer);
@@ -160,17 +171,29 @@ bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
     std::string header_value = line.substr(delim + 1);
     headers_[header] = header_value;
   }
+
   if (!headers_.contains("Content-Type:")) {
     logError("CGI: failed to find \"Content-Type\" in headers.");
     return false;
   }
+
   if (headers_.contains("Status:")) {
-    client_.status_ = headers_.at("Status:"); //If status invalid -> 200
+    std::string status_line = headers_.at("Status:");
     headers_.erase("Status:");
+    size_t delim = status_line.find(" ");
+    if (delim != std::string::npos)
+      status_line = status_line.substr(0, delim);
+    client_.status_ = status_line;
   }
 
-  while (std::getline(response_stream, line)) {
-    file_ << line << "\n";
+  if (line != "\r") {
+    logError("CGI: Header Fields Too Large");
+    client_.status_ = "502";
+    return false;
   }
+
+  while (std::getline(response_stream, line))
+    file_ << line << "\n";
+
   return true;
 }
