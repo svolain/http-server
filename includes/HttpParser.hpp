@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/22 22:21:22 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/25 14:24:52 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ class HttpParser {
   bool        IsBodySizeValid();
   void        ResetParser();
   int         OpenFile(std::string& filename);
-  std::string getHost() const;
+  std::string getHost();
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;

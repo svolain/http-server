@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 12:13:36 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/25 14:40:43 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ bool  HttpParser::HandleRequest() {
     client_.status_ = "431";
     return false;
   }
-  
+
   const std::map<std::string, Location>& locations = client_.vhost_->getLocations();
   std::string                         location;
   bool                                autoIndex;
@@ -56,7 +56,7 @@ bool  HttpParser::HandleRequest() {
       autoIndex = it.second.autoindex_;
       redir = it.second.redirection_;
     }
-  }   
+  }
 
   if (location.empty() ||
       request_target_.substr(0, location.size()) != location) {
@@ -138,8 +138,8 @@ void HttpParser::ResetParser() {
   is_chunked_ = false;
 }
 
-std::string HttpParser::getHost() const {
-  return headers_.at("Host");
+std::string HttpParser::getHost() {
+  return headers_["Host"];
 }
 
 std::string HttpParser::getMethod() const {
@@ -215,7 +215,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   if (!headers_.contains("Host")) {
     logError("Bad request 400");
     client_.status_ = "400";
-    headers_["Host"] = "";
     return false;
   }
 

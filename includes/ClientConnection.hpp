@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/24 17:59:21 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/25 13:21:50 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ class ClientConnection : public Connection {
  public:
   ClientConnection(int fd, Socket& sock, WebServ& webserv);
   ClientConnection(const ClientConnection& other)             = delete;
-  ~ClientConnection() override                                = default;
+  ~ClientConnection() override;
 
   int                       ReceiveData(pollfd& poll) override;
   int                       SendData(pollfd& poll) override;
