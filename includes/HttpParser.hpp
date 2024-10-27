@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 14:24:52 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/27 22:39:31 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,10 @@
 class VirtualHost;
 
 class HttpParser {
+ private:
+  using LocationMap = std::map<std::string, Location>;
+  using LocationPair = std::pair<std::string, Location>;
+
  public:
   HttpParser(ClientConnection& client);
   HttpParser(const HttpParser& other)             = delete;
