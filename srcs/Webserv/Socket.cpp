@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/22 22:53:13 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/27 14:32:39 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,7 +81,7 @@ int Socket::InitServer(std::vector<pollfd> &pollFDs) {
 
 VirtualHost*  Socket::FindVhost(const std::string& host) {
   if (host.size() == 0 )
-    return &v_hosts_.at(first_vhost_); //substitute first_vhost_ with pointer to VH if possible (pointer invalidation?)
+    return &v_hosts_.at(first_vhost_);
   if (auto it = v_hosts_.find(host); it != v_hosts_.end())
     return &it->second;
   else
