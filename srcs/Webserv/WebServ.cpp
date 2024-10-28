@@ -53,8 +53,7 @@ int WebServ::Init() {
 
 void WebServ::Run() {
   signal(SIGINT, signalHandler);
-  signal(SIGTERM, signalHandler);
-  
+
   int socketsReady = 0;
   while (run) {
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
