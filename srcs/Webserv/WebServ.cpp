@@ -81,6 +81,17 @@ void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
   pollFDs_.erase(it);
 }
 
+void  WebServ::SwitchClientToSend(int fd) {
+  auto it = std::find_if(
+      pollFDs_.begin(),
+      pollFDs_.end(),
+      [&](const pollfd& poll) {
+        return poll.fd == fd;
+      }
+  );
+  it->fd = POLLOUT;
+}
+
 void WebServ::PollAvailableFDs(void) {
   for (int i = pollFDs_.size() - 1; i >= 0; --i) {
     int fd = pollFDs_[i].fd;
