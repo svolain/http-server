@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/28 08:58:38 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/28 10:22:52 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ class WebServ {
   int   Init();
   void  Run();
   void  AddNewConnection(pollfd& fd, std::unique_ptr<Connection> connection);
-  void  SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd);
+  void  SwitchCgiToReceive(int olg_cgi_fd, int new_cgi_fd);
   void  SwitchClientToSend(int fd);
 
  private:

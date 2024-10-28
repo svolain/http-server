@@ -65,12 +65,14 @@ void WebServ::AddNewConnection(pollfd& fd,
   connections_.emplace(fd.fd, std::move(connection));
 }
 
-void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
+void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int new_cgi_fd) {
   pollfd cgi_poll = {new_cgi_fd, POLLIN, 0};
   fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
-  AddNewConnection(cgi_poll, std::move(connections_.at(olg_cgi_fd)));
+  connections_.emplace(cgi_poll.fd, std::move(connections_.at(olg_cgi_fd)));
 
+  close(olg_cgi_fd);
   connections_.erase(olg_cgi_fd);
+
   auto it = std::find_if(
       pollFDs_.begin(),
       pollFDs_.end(),
@@ -78,7 +80,7 @@ void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
         return poll.fd == olg_cgi_fd;
       }
   );
-  pollFDs_.erase(it);
+  *it = cgi_poll;
 }
 
 void  WebServ::SwitchClientToSend(int fd) {
@@ -89,7 +91,7 @@ void  WebServ::SwitchClientToSend(int fd) {
         return poll.fd == fd;
       }
   );
-  it->fd = POLLOUT;
+  it->events = POLLOUT;
 }
 
 void WebServ::PollAvailableFDs(void) {
@@ -142,12 +144,12 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
 
 void WebServ::ReceiveData(Connection& connection, const int& i) {
   if (connection.ReceiveData(pollFDs_[i]))
-    CloseConnection(connection.fd_, i);
+    CloseConnection(pollFDs_[i].fd, i);
 }
 
 void WebServ::SendData(Connection& connection, const int& i) {
   if (connection.SendData(pollFDs_[i]))
-    CloseConnection(connection.fd_, i);
+    CloseConnection(pollFDs_[i].fd, i);
 }
 
 void WebServ::CloseConnection(int fd, const int& i) {

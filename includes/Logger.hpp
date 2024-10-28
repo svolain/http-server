@@ -47,10 +47,10 @@ void logDebug(const Args&... args) {
 
 template<typename... Args>
 void logError(const Args&... args) {
-  std::cout << "\033[31m[" << currentDateTime() << "] [ERROR] ";
+  std::cerr << "\033[31m[" << currentDateTime() << "] [ERROR] ";
   std::ostringstream oss;
   (oss << ... << args);
-  std::cout << oss.str() << "\033[0m" << std::endl;
+  std::cerr << oss.str() << "\033[0m" << std::endl;
 }
 
 #endif //LOGGER_H

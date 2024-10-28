@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/25 12:35:57 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/28 14:48:40 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,12 +34,14 @@ CgiConnection::~CgiConnection() {
     close(pipe_fd_[WRITE]);
   close(pipe_fd_[READ]);
   kill(child_pid_, SIGTERM);
-  if (HasTimedOut()) {
-    client_.status_ = "504";
-    file_.close();
-  }
-    //                                          not ready
   client_.stage_ = ClientConnection::Stage::kResponse;
+  file_.seekg(0); //temporary ? 
+  if (HasTimedOut())
+    client_.status_ = "504";
+  else if (client_.status_ == "200")
+    return;
+  file_.close();
+  file_.open(client_.vhost_->getErrorPage(client_.status_));
 }
 
 pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
@@ -56,10 +58,9 @@ pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
     return -1;
   }
   if (pid != 0) {
-    pollfd cgi_poll = {0, 0, 0};
-    cgi_poll.fd = pipe_fd[WRITE];
+    pollfd cgi_poll = {pipe_fd[WRITE], POLLOUT, 0};
     fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
-    cgi_poll.events = POLLOUT;
+    client.webserv_.SwitchClientToSend(client.fd_);
     client.webserv_.AddNewConnection(
         cgi_poll, std::make_unique<CgiConnection>(pipe_fd, client, pid));
   }
@@ -79,20 +80,23 @@ void  CgiConnection::StartCgiProcess(int pipe_fd[2], ClientConnection& client) {
   close(pipe_fd[READ]);
   close(pipe_fd[WRITE]);
   std::vector<std::string> env_vec = client.PrepareCgiEvniron();
-  std::vector<const char*>env;
+  std::vector<char*>env;
   env.reserve(env_vec.size() + 1);
   for (size_t i = 0; i < env_vec.size(); ++i) {
     env[i] = env_vec[i].data();
   }
   env[env_vec.size()] = nullptr;
-  // execve();
+  std::vector<char*>cmd(2, nullptr);
+  std::string c = client.parser_.getRequestTarget();
+  cmd[0] = c.data();
+  execve(cmd[0], cmd.data(), env.data());
   std::_Exit(EXIT_FAILURE);
 }
 
 int CgiConnection::ReceiveData(pollfd& poll) {
-  char  buffer[MAXBYTES];
+  char  buffer[MAXBYTES] = {0};
   int   bytes_in;
-
+  logError("Here");
   bytes_in = read(poll.fd, buffer, MAXBYTES);
   if (bytes_in == -1) {
     logError("CGI: failed to read from child process.");
@@ -100,6 +104,7 @@ int CgiConnection::ReceiveData(pollfd& poll) {
   }
   if (bytes_in == 0) {
     logInfo("CGI: finished reading from child.");
+    file_.seekg(0);
     return 1;
   }
   if (!header_parsed_) {

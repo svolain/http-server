@@ -53,22 +53,21 @@ int ClientConnection::ReceiveData(pollfd& poll) {
       stage_ = Stage::kResponse;
     }
   }
-  else if (stage_ == Stage::kCgi) { //move it to response - reference invalidation!!
-    return 0;
-  }
   if (stage_ == Stage::kResponse)
     poll.events = POLLOUT;
   return 0;
 }
 
 int ClientConnection::SendData(pollfd& poll) {
+  if (stage_ == Stage::kCgi) {
+    return 0;
+  }
   if (response_.SendResponse(poll)) {
     file_.close();
     return 1;
-  } 
+  }
   if (poll.events == POLLIN)
     ResetClientConnection();
-  (void)webserv_; //REMOVE_ME                                         
   return 0; //Add protection for send()!
 }
 
