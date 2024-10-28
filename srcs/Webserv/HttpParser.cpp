@@ -6,13 +6,14 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/27 23:44:09 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/28 08:48:08 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 #include "Logger.hpp"
 #include "ClientConnection.hpp"
+#include "CgiConnection.hpp"
 
 
 
@@ -696,16 +697,38 @@ std::string HttpParser::getLocationHeader() {
   return additional_headers_;
 }
 
+// bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
+//   if (autoIndex && index_.empty() && rootPath.back() == '/') {
+//     CreateDirListing(rootPath);
+//   } else {
+//     if (!CheckValidPath(rootPath)) // what if path is a directory?
+//       return false;
+//     else
+//       if  (OpenFile(request_target_))
+//         return false;
+//   }
+//   client_.stage_ = ClientConnection::Stage::kResponse;
+//   return true;
+// }
+
 bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
   if (autoIndex && index_.empty() && rootPath.back() == '/') {
     CreateDirListing(rootPath);
-  } else {
-    if (!CheckValidPath(rootPath))
+    client_.stage_ = ClientConnection::Stage::kResponse;
+    return true;
+  } else if (!CheckValidPath(rootPath))
+    return false;
+  if (rootPath.find("cgi-bin/") == 0) {
+    pid_t pid = CgiConnection::CreateCgiConnection(client_);
+    if (pid == -1) {
+      client_.status_ = "500";
       return false;
-    else
-      if  (OpenFile(request_target_))
-        return false;
+    }
+    client_.stage_ = ClientConnection::Stage::kCgi;
+    return true;
   }
+  if (OpenFile(request_target_))
+    return false;
   client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }

@@ -85,7 +85,7 @@ std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
   std::vector<std::string>  env;
   env.push_back("REQUEST_METHOD=" + parser_.method_);
   env.push_back("QUERY_STRING=" + parser_.query_string_);
-  env.push_back("SCRIPT_NAME=" + parser_.request_target_.substr(1));
+  env.push_back("SCRIPT_NAME=" + parser_.request_target_);
   env.push_back("SERVER_NAME=" + vhost_->getName());
   env.push_back("CONTENT_TYPE=" + parser_.content_type_);
   env.push_back("CONTENT_LENGTH=" + std::to_string(parser_.content_length_));
