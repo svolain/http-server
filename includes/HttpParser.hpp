@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 16:28:55 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/28 10:27:53 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,6 @@ class HttpParser {
                                       const std::string &contentType);
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
   bool        ParseUrlEncodedData(const std::vector<char>& body);
-  bool        IsPathSafe(const std::string& path);
   bool        HandleDeleteRequest();
   void        GenerateFileListHtml();
   bool        CheckValidPath(std::string root);

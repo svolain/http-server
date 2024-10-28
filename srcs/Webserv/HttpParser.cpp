@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/25 17:13:15 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/28 10:56:56 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,6 @@ bool  HttpParser::HandleRequest() {
   std::string rootDir = locations.at(location).root_;
   std::string relativePath = "/" + request_target_.substr(location.size()); 
   std::string rootPath = rootDir.substr(1) + relativePath;
-  std::cout << rootPath << std::endl;
 
   HandleCookies();
   if (method_ == "GET" && !HandleGet(rootPath, autoIndex))
@@ -541,15 +540,25 @@ bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
   return true;
 }
 
-/*bool HttpParser::IsPathSafe(const std::string& path) {
-  if (path.find(".."))
-    return false;
-
-  //this function we can add more checks to check safety
-  return true;
-}*/
+std::string UrlDecode( std::string& query) {
+  std::string decoded;
+    for (size_t i = 0; i < query.length(); i++) {
+        if (query[i] == '%' && i + 2 < query.length()) {
+            std::string hexValue = query.substr(i + 1, 2);
+            char decodedChar = static_cast<char>(std::stoi(hexValue, nullptr, 16));
+            decoded += decodedChar;
+            i += 2;
+        } else if (query[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += query[i];
+        }
+    }
+    return decoded;
+}
 
 bool HttpParser::HandleDeleteRequest() {
+  query_string_ = UrlDecode(query_string_);
   size_t delim = query_string_.find("=");
   if (delim == std::string::npos) {
       logError("Wrong query string format");
@@ -560,17 +569,11 @@ bool HttpParser::HandleDeleteRequest() {
 
   std::string path = "./www/uploads/" + queryname;
   logDebug("Handling DELETE request for: ", path);
-  /*
-  if (!CheckValidPath(path))
-      return false;
 
-  if (!IsPathSafe(path)) {
-    client_.status_ = "400";
+  if (path.find("..") != std::string::npos)
     return false;
-  }*/
 
   if (std::filesystem::exists(path)) {
-     // Try to delete the file
      if (std::remove(path.c_str()) == 0) {
          logDebug("File deleted successfully");
          client_.status_ = "200";
