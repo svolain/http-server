@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/28 14:48:40 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/28 18:26:43 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ CgiConnection::~CgiConnection() {
   close(pipe_fd_[READ]);
   kill(child_pid_, SIGTERM);
   client_.stage_ = ClientConnection::Stage::kResponse;
-  file_.seekg(0); //temporary ? 
+  // file_.seekg(0); //temporary ? 
   if (HasTimedOut())
     client_.status_ = "504";
   else if (client_.status_ == "200")
@@ -59,7 +59,7 @@ pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
   }
   if (pid != 0) {
     pollfd cgi_poll = {pipe_fd[WRITE], POLLOUT, 0};
-    fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
+    // fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
     client.webserv_.SwitchClientToSend(client.fd_);
     client.webserv_.AddNewConnection(
         cgi_poll, std::make_unique<CgiConnection>(pipe_fd, client, pid));
@@ -96,8 +96,8 @@ void  CgiConnection::StartCgiProcess(int pipe_fd[2], ClientConnection& client) {
 int CgiConnection::ReceiveData(pollfd& poll) {
   char  buffer[MAXBYTES] = {0};
   int   bytes_in;
-  logError("Here");
   bytes_in = read(poll.fd, buffer, MAXBYTES);
+  logError("bytes_in:", bytes_in);
   if (bytes_in == -1) {
     logError("CGI: failed to read from child process.");
     return 1;

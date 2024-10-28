@@ -67,7 +67,7 @@ void WebServ::AddNewConnection(pollfd& fd,
 
 void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int new_cgi_fd) {
   pollfd cgi_poll = {new_cgi_fd, POLLIN, 0};
-  fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
+  // fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
   connections_.emplace(cgi_poll.fd, std::move(connections_.at(olg_cgi_fd)));
 
   close(olg_cgi_fd);
@@ -108,14 +108,14 @@ void WebServ::PollAvailableFDs(void) {
       logInfo("Connection ", fd,
               ": Error or closed read end detected, closing connection.");
       CloseConnection(connection.fd_, i);
-    } else if (revents & POLLHUP) {
-      logInfo("Connection ", fd, ": Hang-up detected, closing connection.");
-      CloseConnection(connection.fd_, i);
-    }
+    } // else if (revents & POLLHUP) {
+    //   logInfo("Connection ", fd, ": Hang-up detected, closing connection.");
+    //   CloseConnection(connection.fd_, i);
+    // }
     // else if (revents & POLLNVAL) {
     //   logError("Invalid fd: ", fd);
     //   CloseConnection(connection, i);} 
-    else if (revents & POLLIN) {
+    else if (revents & POLLIN || revents & POLLHUP) {
       ReceiveData(connection, i);
     } else if (revents & POLLOUT)
       SendData(connection, i);
