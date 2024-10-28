@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/28 10:56:56 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/28 11:51:45 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -561,11 +561,11 @@ bool HttpParser::HandleDeleteRequest() {
   query_string_ = UrlDecode(query_string_);
   size_t delim = query_string_.find("=");
   if (delim == std::string::npos) {
-      logError("Wrong query string format");
-      client_.status_ = "400";
-      return false; 
-    }
-    std::string queryname = query_string_.substr(delim + 1);
+    logError("Wrong query string format");
+    client_.status_ = "400";
+    return false; 
+  }
+  std::string queryname = query_string_.substr(delim + 1);
 
   std::string path = "./www/uploads/" + queryname;
   logDebug("Handling DELETE request for: ", path);
