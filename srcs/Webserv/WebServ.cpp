@@ -18,6 +18,13 @@
 #include "CgiConnection.hpp"
 
 #define TODO 123
+bool run = true;
+
+
+static void signalHandler(int signum) {
+    std::cout << "\nSignal " << signum << " received" << std::endl;
+    run = false;
+}
 
 WebServ::WebServ(const char* conf)
     : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
@@ -45,8 +52,11 @@ int WebServ::Init() {
 #define TIMEOUT   5000
 
 void WebServ::Run() {
+  signal(SIGINT, signalHandler);
+  signal(SIGTERM, signalHandler);
+  
   int socketsReady = 0;
-  while (true) {
+  while (run) {
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
     if (socketsReady == -1)
       perror("poll: ");

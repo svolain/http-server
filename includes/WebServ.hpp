@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/05 15:17:45 by shatilovdr        #+#    #+#             */
-/*   Updated: 2024/10/24 13:09:20 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/28 12:23:48 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <deque>
 #include "Socket.hpp"
 #include "Connection.hpp"
+#include <signal.h>
 
 #define DEFAULT_CONF "conf/default.conf"
 
