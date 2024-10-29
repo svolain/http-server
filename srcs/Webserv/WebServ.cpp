@@ -18,6 +18,13 @@
 #include "CgiConnection.hpp"
 
 #define TODO 123
+bool run = true;
+
+
+static void signalHandler(int signum) {
+    std::cout << "\nSignal " << signum << " received" << std::endl;
+    run = false;
+}
 
 WebServ::WebServ(const char* conf)
     : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
@@ -45,8 +52,10 @@ int WebServ::Init() {
 #define TIMEOUT 500
 
 void WebServ::Run() {
+  signal(SIGINT, signalHandler);
+
   int socketsReady = 0;
-  while (true) {
+  while (run) {
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
     if (socketsReady == -1) {
       logError("poll() returned -1.");
@@ -147,6 +156,7 @@ void WebServ::ReceiveData(Connection& connection, const int& i) {
     CloseConnection(pollFDs_[i].fd, i);
 }
 
+
 void WebServ::SendData(Connection& connection, const int& i) {
   if (connection.SendData(pollFDs_[i]))
     CloseConnection(pollFDs_[i].fd, i);
@@ -167,7 +177,7 @@ void WebServ::CloseAllConnections() {
 
 std::string WebServ::ToString() const {
   std::string out("***Webserv configuration***\n");
-  out += "Configuuration file used: " + conf_ + "\n";
+  out += "Configuration file used: " + conf_ + "\n";
   for (const auto& socket : sockets_) {
     out += "Server\n";
     out += socket.ToString() + "\n";

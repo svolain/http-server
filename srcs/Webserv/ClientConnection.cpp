@@ -32,12 +32,15 @@ int ClientConnection::ReceiveData(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
   int               bytesIn;
   bytesIn = recv(fd_, buffer.data(), MAXBYTES, 0);
-  if (bytesIn < 0)
+  if (bytesIn < 0) {
+    logError("recv returned -1, close");
     return 1;
-  if (bytesIn == 0)
+  }
+  if (bytesIn == 0) {
+    logDebug("RecieveData returns 2, close");
     return 2;
+  }
   logDebug("request is:\n", buffer.data());
-
   if (stage_ == Stage::kHeader) {
     bool header_parsed = parser_.ParseHeader(buffer.data());
     vhost_ = sock_.FindVhost(parser_.getHost());
@@ -64,11 +67,16 @@ int ClientConnection::SendData(pollfd& poll) {
   }
   if (response_.SendResponse(poll)) {
     file_.close();
+    logDebug("SendData returned 1, close");
     return 1;
   }
-  if (poll.events == POLLIN)
+  if (poll.events == POLLIN) {
     ResetClientConnection();
-  return 0; //Add protection for send()!
+    //this will close on ANY ERROR
+    if (status_ != "200")
+      return 1;
+  }                                      
+  return 0;
 }
 
 void  ClientConnection::ResetClientConnection() {

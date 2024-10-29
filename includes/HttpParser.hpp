@@ -54,7 +54,7 @@ class HttpParser {
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
-  std::string getLocationHeader();
+  std::string getAdditionalHeaders();
 
  private:
   friend ClientConnection;
@@ -77,7 +77,7 @@ class HttpParser {
   void        CreateDirListing(std::string& directory);
   bool        HandleGet(bool autoIndex);
   std::string InjectFileListIntoHtml(const std::string& html_path);
-  std::string InjectCookieIntoHtml(const std::string& html_path);
+  bool        checkFile(std::vector<char> request_body);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;

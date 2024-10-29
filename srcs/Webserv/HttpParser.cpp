@@ -65,7 +65,14 @@ bool  HttpParser::HandleRequest() {
   const Location& loc = it->second;
   if (loc.methods_.find(method_) == std::string::npos) {
     logError("Method not allowed");
-    client_.status_ = "405";
+      client_.status_ = "405";
+      return false;
+  }
+  if (!redir.first.empty()) {
+    client_.status_ = redir.first;
+    additional_headers_ = "Location: " + redir.second + "\r\n";
+    additional_headers_ += "Content-Length: 0\r\n";
+    // additional_headers_ += "Connection: close\r\n";
     return false;
   }
 
@@ -92,8 +99,15 @@ bool  HttpParser::HandleRequest() {
       client_.status_ = "431";
       return false;
     }
-    client_.stage_ = ClientConnection::Stage::kBody;
+    if (request_body_.empty()) {
+      client_.stage_ = ClientConnection::Stage::kBody;
+    } else if (!HandlePostRequest(request_body_)) {
+        return false;
+    }
+     }
+
   }
+
   return true;
 }
 
@@ -103,12 +117,12 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
     if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
       logDebug("bytesIn == MAXBYTES, more data to recieve");
       AppendBody(buffer, bytesIn);
-      /*if (!is_chunked_ &&
-          (!IsBodySizeValid(vhost) || request_body_.size() > content_length_)) {
+      if (!is_chunked_ &&
+          (request_body_.size() > content_length_)) {
         logError("Error: Request Header Fields Too Large");
-        client_.status_ = 431;
+        client_.status_ = "431";
         return false;
-      }*/
+      }
       return true;
     }
     UnChunkBody(request_body_);
@@ -390,10 +404,9 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   if (contentType.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, contentType)) {
-      client_.status_ = "500";// Internal Server Error
+      client_.status_ = "400";// Internal Server Error
       return false;
     }
-    //std::cout << "fileist:\n" << file_list_;
   } else {
     logError("Unsupported Content-Type");
     client_.status_ = "415";
@@ -489,6 +502,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
         logDebug("File ", filename, " saved successfully");
       } else {
         logError("Failed to save file ");
+        
         return false;
       }
     } else if (posName != std::string::npos) {
@@ -502,28 +516,40 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
   return true;
 }
 
+std::string UrlDecode( std::string& query) {
+  std::string decoded;
+    for (size_t i = 0; i < query.length(); i++) {
+        if (query[i] == '%' && i + 2 < query.length()) {
+            std::string hexValue = query.substr(i + 1, 2);
+            char decodedChar = static_cast<char>(std::stoi(hexValue, nullptr, 16));
+            decoded += decodedChar;
+            i += 2;
+        } else if (query[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += query[i];
+        }
+    }
+    return decoded;
+}
+
 bool HttpParser::HandleDeleteRequest() {
+  query_string_ = UrlDecode(query_string_);
   size_t delim = query_string_.find("=");
   if (delim == std::string::npos) {
-      logError("Wrong query string format");
-      client_.status_ = "400";
-      return false; 
-    }
-    std::string queryname = query_string_.substr(delim + 1);
+    logError("Wrong query string format");
+    client_.status_ = "400";
+    return false; 
+  }
+  std::string queryname = query_string_.substr(delim + 1);
 
   std::string path = "./www/uploads/" + queryname;
   logDebug("Handling DELETE request for: ", path);
-  /*
-  if (!CheckValidPath(path))
-      return false;
 
-  if (!IsPathSafe(path)) {
-    client_.status_ = "400";
+  if (path.find("..") != std::string::npos)
     return false;
-  }*/
 
   if (std::filesystem::exists(path)) {
-     // Try to delete the file
      if (std::remove(path.c_str()) == 0) {
          logDebug("File deleted successfully");
          client_.status_ = "200";
@@ -645,7 +671,7 @@ int HttpParser::OpenFile(std::string& filename) {
 }
 
 
-std::string HttpParser::getLocationHeader() {
+std::string HttpParser::getAdditionalHeaders() {
   return additional_headers_;
 }
 
@@ -686,23 +712,6 @@ std::string HttpParser::InjectFileListIntoHtml(const std::string& html_path) {
     } else {
 
         html_content += "<!-- Error: Upload list placeholder not found -->";
-    }
-    return html_content;
-}
-
-std::string HttpParser::InjectCookieIntoHtml(const std::string& html_path) {
-  std::ifstream html_file(html_path);
-    if (!html_file.is_open()) {
-        return "<html><body><h1>Error: Unable to open HTML file.</h1></body></html>";
-    }
-    std::string html_content((std::istreambuf_iterator<char>(html_file)),
-                              std::istreambuf_iterator<char>());
-    std::size_t placeholder_pos = html_content.find("<!-- UPLOAD_COOKIE -->");
-    if (placeholder_pos != std::string::npos) {
-        html_content.replace(placeholder_pos, std::string("<!-- UPLOAD_COOKIE -->").length(), "<h1>" + 
-        session_id_ + "</h1>");
-    } else {
-        html_content += "<!-- Error: Upload cookie placeholder not found -->";
     }
     return html_content;
 }
