@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 12:55:06 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/21 11:31:31 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/22 22:53:13 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,7 @@ Socket::Socket(std::string& listen,
     address_ = listen.substr(0, colon);
     port_ = listen.substr(colon + 1);
   }
-  if (name.empty())
-    name = "localhost"; //Or leave it emty may be
-  v_hosts_.emplace(name, VirtualHost(max_size, errors, locations));
+  v_hosts_.emplace(name, VirtualHost(name, max_size, errors, locations));
   first_vhost_ = name;
 }
 
@@ -34,7 +32,7 @@ void  Socket::AddVirtualHost(std::string& name,
                              StringMap&   errors,
                              LocationMap& locations) {
   if (!v_hosts_.contains(name))
-    v_hosts_.emplace(name, VirtualHost(max_size, errors, locations));
+    v_hosts_.emplace(name, VirtualHost(name, max_size, errors, locations));
 }
 
 int Socket::InitServer(std::vector<pollfd> &pollFDs) {

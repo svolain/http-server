@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ClientConnection.hpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/22 12:30:05 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/24 17:59:21 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 class Socket;
 class VirtualHost;
 class WebServ;
+class CgiConnection;
 
 class ClientConnection : public Connection {
  public:
@@ -28,30 +29,29 @@ class ClientConnection : public Connection {
   ClientConnection(const ClientConnection& other)             = delete;
   ~ClientConnection() override                                = default;
 
-  int             ReceiveData(pollfd& poll) override;
-  int             SendData(pollfd& poll) override;
-  void            ResetClientConnection();
-  bool            getIsSending();
-  void            setIsSending(bool boolean);
+  int                       ReceiveData(pollfd& poll) override;
+  int                       SendData(pollfd& poll) override;
+  void                      ResetClientConnection();
+  std::vector<std::string>  PrepareCgiEvniron();
 
-private:
+ private:
   friend HttpParser;
   friend HttpResponse;
+  friend CgiConnection;
 
   enum class Stage { kHeader,
                      kBody,
                      kCgi,
                      kResponse };
                      
-  Stage          stage_ = Stage::kHeader;
-  std::string    status_ = "200";
-  Socket&        sock_;
-  WebServ&       webserv_;
-  VirtualHost*   vhost_ = nullptr;
-  HttpParser     parser_;
-  HttpResponse   response_;
-  std::fstream   file_;
-  bool           is_sending_chunks_ = false;
+  Stage         stage_ = Stage::kHeader;
+  std::string   status_ = "200";
+  Socket&       sock_;
+  WebServ&      webserv_;
+  VirtualHost*  vhost_ = nullptr;
+  HttpParser    parser_;
+  HttpResponse  response_;
+  std::fstream  file_;
 };
 
 #endif //CLIENTCONNECTION_HPP

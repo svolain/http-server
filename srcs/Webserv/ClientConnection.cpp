@@ -45,13 +45,13 @@ int ClientConnection::ReceiveData(pollfd& poll) {
     }
   }
   else if (stage_ == Stage::kBody) {
-    bool body_read = parser_.WriteBody(buffer, bytesIn); //not sure that it's correct
+    bool body_read = parser_.WriteBody(buffer, bytesIn);
     if (!body_read) {
       file_.open(vhost_->getErrorPage(status_));
       stage_ = Stage::kResponse;
     }
   }
-  else if (stage_ == Stage::kCgi) {
+  else if (stage_ == Stage::kCgi) { //move it to response - reference invalidation!!
     ;//waitpid
   }
   if (stage_ == Stage::kResponse)
@@ -80,15 +80,20 @@ void  ClientConnection::ResetClientConnection() {
   vhost_ = nullptr;
   parser_.ResetParser();
   response_.ResetResponse();
-  is_sending_chunks_ = false;
   file_.close();
   stage_ = Stage::kHeader;
 }
 
-bool ClientConnection::getIsSending() {
-  return is_sending_chunks_;
-}
+std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
+  std::vector<std::string>  env;
+  env.push_back("REQUEST_METHOD=" + parser_.method_);
+  env.push_back("QUERY_STRING=" + parser_.query_string_);
+  env.push_back("SCRIPT_NAME=" + parser_.request_target_.substr(1));
+  env.push_back("SERVER_NAME=" + vhost_->getName());
+  // env.push_back("CONTENT_TYPE=" + vhost_->getName());
+  // env.push_back("CONTENT_LENGTH=" + vhost_->getName());
+  //env.push_back("PATH_INFO=" + std::filesystem::current_path());
+  env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 
-void ClientConnection::setIsSending(bool boolean) {
-  is_sending_chunks_ = boolean;
+  return env;
 }

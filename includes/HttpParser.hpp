@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/24 16:54:09 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/28 10:27:53 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,8 @@ class HttpParser {
   std::string getAdditionalHeaders();
 
  private:
+  friend ClientConnection;
+
   bool        ParseStartLine(std::istringstream& request_stream);
   bool        ParseHeaderFields(std::istringstream& request_stream);
   bool        CheckPostHeaders();
@@ -66,12 +68,13 @@ class HttpParser {
                                       const std::string &contentType);
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
   bool        ParseUrlEncodedData(const std::vector<char>& body);
-  bool        IsPathSafe(const std::string& path);
-  bool        HandleDeleteRequest(std::string rootPath);
+  bool        HandleDeleteRequest();
   void        GenerateFileListHtml();
   bool        CheckValidPath(std::string root);
   void        CreateDirListing(std::string& directory);
   bool        HandleGet(std::string rootPath, bool autoIndex);
+  std::string InjectFileListIntoHtml(const std::string& html_path);
+  bool        checkFile(std::vector<char> request_body);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;
@@ -86,6 +89,7 @@ class HttpParser {
   std::map<std::string, std::string>  session_store_;
   bool                                is_chunked_ = false;
   std::string                         additional_headers_;
+  std::string                         content_type_;
 };
 
 #endif

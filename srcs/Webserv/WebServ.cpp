@@ -15,8 +15,16 @@
 #include "ConfigParser.hpp"
 #include "WebServ.hpp"
 #include "ClientConnection.hpp"
+#include "CgiConnection.hpp"
 
 #define TODO 123
+bool run = true;
+
+
+static void signalHandler(int signum) {
+    std::cout << "\nSignal " << signum << " received" << std::endl;
+    run = false;
+}
 
 WebServ::WebServ(const char* conf)
     : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
@@ -44,13 +52,17 @@ int WebServ::Init() {
 #define TIMEOUT   5000
 
 void WebServ::Run() {
+  signal(SIGINT, signalHandler);
+
   int socketsReady = 0;
-  while (true) {
+  while (run) {
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
     if (socketsReady == -1)
       perror("poll: ");
     else if (!socketsReady) {
       logInfo("poll() is closing connections on timeout...");
+      for (size_t i = sockets_.size(); i < pollFDs_.size(); ++i)
+        close(pollFDs_[i].fd);
       connections_.clear();
       pollFDs_.resize(sockets_.size());
     } else
@@ -60,22 +72,45 @@ void WebServ::Run() {
   logInfo("--- Shutting down the server ---");
 }
 
+
+void WebServ::AddNewConnection(pollfd& fd,
+                               std::unique_ptr<Connection> connection) {
+  pollFDs_.push_back(fd);
+  connections_.emplace(fd.fd, std::move(connection));
+}
+
+void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
+  pollfd cgi_poll = {new_cgi_fd, POLLIN, 0};
+  fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
+  AddNewConnection(cgi_poll, std::move(connections_.at(olg_cgi_fd)));
+
+  connections_.erase(olg_cgi_fd);
+  auto it = std::find_if(
+      pollFDs_.begin(),
+      pollFDs_.end(),
+      [&](const pollfd& poll) {
+        return poll.fd == olg_cgi_fd;
+      }
+  );
+  pollFDs_.erase(it);
+}
+
 void WebServ::PollAvailableFDs(void) {
-  for (size_t i = 0; i < pollFDs_.size(); i++) {
+  for (int i = pollFDs_.size() - 1; i >= 0; --i) {
     int fd = pollFDs_[i].fd;
     short revents = pollFDs_[i].revents;
 
-    if (i < sockets_.size()) {
+    if (i < static_cast<int>(sockets_.size())) {
       CheckForNewConnection(fd, revents, i);
       continue;
     }
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
-      logError("read end has been closed or an error occured");
-      CloseConnection(connection, i);
+      logError("error or read end has been closed");
+      CloseConnection(connection.fd_, i);
     } else if (revents & POLLHUP) { 
       logError("Hang up: ", fd);
-      CloseConnection(connection, i);
+      CloseConnection(connection.fd_, i);
     } 
     // else if (revents & POLLNVAL) {
     //   logError("Invalid fd: ", fd);
@@ -103,31 +138,26 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::AddNewConnection(pollfd& fd,
-                               std::unique_ptr<Connection> connection) {
-  pollFDs_.push_back(fd);
-  connections_.emplace(fd.fd, std::move(connection));
-}
-
-void WebServ::ReceiveData(Connection& connection, size_t& i) {
+void WebServ::ReceiveData(Connection& connection, int& i) {
   if (connection.ReceiveData(pollFDs_[i]))
-    CloseConnection(connection, i);
+    CloseConnection(connection.fd_, i);
 }
 
-void WebServ::SendData(Connection& connection, size_t& i) {
-  if (connection.SendData(pollFDs_[i])) 
-    CloseConnection(connection, i);
+
+void WebServ::SendData(Connection& connection, int& i) {
+  if (connection.SendData(pollFDs_[i]))
+    CloseConnection(connection.fd_, i);
 }
 
-void WebServ::CloseConnection(Connection& connection, size_t& i) {
-  logDebug("Closing fd " + std::to_string(connection.fd_));
-  connections_.erase(connection.fd_);
+void WebServ::CloseConnection(int fd, int& i) {
+  close(fd);
+  connections_.erase(fd);
   pollFDs_.erase(pollFDs_.begin() + i);
-  i--;
 }
 
 void WebServ::CloseAllConnections() {
-  for (size_t i = 0; i < sockets_.size(); i++)
+  for (size_t i = 0; i < pollFDs_.size(); i++) //close all listening sockets and active connections
+
     close(pollFDs_[i].fd);
 }
 

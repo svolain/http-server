@@ -18,10 +18,12 @@
 
 #define MAXBYTES  8192
 
-VirtualHost::VirtualHost(std::string& max_size,
+VirtualHost::VirtualHost(std::string& name,
+                         std::string& max_size,
                          StringMap& errors,
                          LocationMap& locations)
-    : error_pages_(getDefaultErrorPages()),
+    : name_(name),
+      error_pages_(getDefaultErrorPages()),
       locations_(locations) {
   if (!max_size.empty()) {
     client_max_body_size_ = std::stoi(max_size);
@@ -64,6 +66,10 @@ std::string VirtualHost::getErrorPage(const std::string& error) const {
   else
     return ("");
 
+}
+
+std::string VirtualHost::getName() const {
+  return name_;
 }
 
 const VirtualHost::StringMap& VirtualHost::getDefaultErrorPages() {
