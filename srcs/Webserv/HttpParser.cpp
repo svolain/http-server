@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/28 08:48:08 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/29 12:29:52 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -231,7 +231,7 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   }
 
   if (line != "\r") {
-    logError("Request Header Fields Too Large");
+    logError("Request header fields too large");
     client_.status_ = "431";
     return false;
   }
