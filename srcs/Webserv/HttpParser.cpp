@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 16:54:50 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/29 17:18:14 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,16 +94,15 @@ bool  HttpParser::HandleRequest() {
   // else if (method_ == "POST")
     // ;
   else if (method_ == "POST") {
+    logDebug(request_body_.data());
     if (!IsBodySizeValid()) {
       logError("Body size too big");
       client_.status_ = "431";
       return false;
     }
 
-    std::cout << "clen: " << content_length_ << std::endl;
-    std::cout << "rblen: " << request_body_.size() << std::endl;
-
     if (!request_body_.empty() && content_length_ == request_body_.size()) {
+
       if (!HandlePostRequest(request_body_))
         return false;
       return true;
@@ -385,14 +384,16 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
 }
 
 bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
-  auto it = headers_.find("Content-Type");
-
-  if (it == headers_.end()) {
-    client_.status_ = "400";
+  
+  std::string clientFd = std::to_string(client_.fd_);
+  std::string filename = "/tmp/webserv/upload_list"  + clientFd;
+  std::fstream& outFile = client_.file_;
+  if (OpenFile(filename))
     return false;
-  }
+  std::remove(filename.c_str());
+  outFile << request_body.data();  
 
-  std::string contentType = it->second;
+  std::string contentType = headers_.find("Content-Type")->second;
   content_type_ = contentType;
   if (request_target_.ends_with(".cgi") ||
       request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
@@ -415,6 +416,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     client_.status_ = "415";
     return false;
   }
+  outFile.close();
   std::string clientFd = std::to_string(client_.fd_);
   std::string filename = "/tmp/webserv/upload_list"  + clientFd;
   std::fstream& outFile = client_.file_;
