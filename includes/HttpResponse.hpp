@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/22 12:01:32 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/23 18:29:50 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class HttpResponse {
 
   private:
     void  AssignContType(std::string resourcePath);
-    void  ComposeHeader(std::string location_header);
+    void  ComposeHeader(std::string additional_headers_s_);
     // int   CheckRedirections(ClientConnection& fd_info, Location& loc);
     void  LookupStatusMessage();
     
@@ -57,7 +57,7 @@ class HttpResponse {
     std::string       cont_type_;
     std::string       status_message_;
     // std::map<std::string, std::string>     status_map_;
-    // std::string                            location_header_;
+    // std::string                            additional_headers_;
 };
 
 #endif

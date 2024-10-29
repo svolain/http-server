@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
 /*   Updated: 2024/10/28 10:27:53 by vsavolai         ###   ########.fr       */
@@ -46,11 +46,11 @@ class HttpParser {
   bool        IsBodySizeValid();
   void        ResetParser();
   int         OpenFile(std::string& filename);
-  std::string getHost() const;
+  std::string getHost();
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
-  std::string getLocationHeader();
+  std::string getAdditionalHeaders();
 
  private:
   friend ClientConnection;

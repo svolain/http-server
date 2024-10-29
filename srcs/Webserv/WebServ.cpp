@@ -143,6 +143,7 @@ void WebServ::ReceiveData(Connection& connection, int& i) {
     CloseConnection(connection.fd_, i);
 }
 
+
 void WebServ::SendData(Connection& connection, int& i) {
   if (connection.SendData(pollFDs_[i]))
     CloseConnection(connection.fd_, i);
@@ -156,13 +157,13 @@ void WebServ::CloseConnection(int fd, int& i) {
 
 void WebServ::CloseAllConnections() {
   for (size_t i = 0; i < pollFDs_.size(); i++) //close all listening sockets and active connections
+
     close(pollFDs_[i].fd);
-  //Destructor should handle map and vector erasing
 }
 
 std::string WebServ::ToString() const {
   std::string out("***Webserv configuration***\n");
-  out += "Configuuration file used: " + conf_ + "\n";
+  out += "Configuration file used: " + conf_ + "\n";
   for (const auto& socket : sockets_) {
     out += "Server\n";
     out += socket.ToString() + "\n";
