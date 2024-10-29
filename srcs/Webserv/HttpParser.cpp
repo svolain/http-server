@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 16:15:42 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/29 16:31:44 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,9 +68,9 @@ bool  HttpParser::HandleRequest() {
       client_.status_ = "405";
       return false;
   }
-  if (!redir.first.empty()) {
-    client_.status_ = redir.first;
-    additional_headers_ = "Location: " + redir.second + "\r\n";
+  if (!loc.redirection_.first.empty()) {
+    client_.status_ = loc.redirection_.first;
+    additional_headers_ = "Location: " + loc.redirection_.second + "\r\n";
     additional_headers_ += "Content-Length: 0\r\n";
     // additional_headers_ += "Connection: close\r\n";
     return false;
@@ -105,9 +105,6 @@ bool  HttpParser::HandleRequest() {
         return false;
     }
      }
-
-  }
-
   return true;
 }
 
