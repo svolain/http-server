@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/28 11:51:45 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/29 16:15:42 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpParser.hpp"
 #include "Logger.hpp"
 #include "ClientConnection.hpp"
+#include "CgiConnection.hpp"
 
 
 
@@ -25,47 +26,44 @@ bool HttpParser::ParseHeader(const std::string& request) {
     return false;
   if (!ParseHeaderFields(request_stream))
     return false;
-  if (method_ != "POST")
-    return true;
-  if (!CheckPostHeaders())
-    return false;
+
   std::streampos current = request_stream.tellg();
-  request_stream.seekg(0, std::ios::end); /* Beware of off by 1, should be good tho */
+  request_stream.seekg(0, std::ios::end);
   size_t stream_size = request_stream.tellg() - current;
-  request_stream.seekg(current);
-  request_body_.resize(stream_size);
-  request_stream.read(request_body_.data(), stream_size);
-  return true;
+
+  if (method_ == "POST") {
+    if (!CheckPostHeaders())
+      return false;
+    request_stream.seekg(current);
+    request_body_.resize(stream_size);
+    request_stream.read(request_body_.data(), stream_size);
+    return true;
+  }
+  if (stream_size == 0)
+    return true;
+  else {
+    client_.status_ = "400";
+    logError("Requset contains body.");
+    return false;
+  }
 }
 
 bool  HttpParser::HandleRequest() {
-  if (!IsBodySizeValid()) {
-    logError("Body size too big");
-    client_.status_ = "431";
-    return false;
-  }
-  
-  const std::map<std::string, Location>& locations = client_.vhost_->getLocations();
-  std::string                         location;
-  bool                                autoIndex;
-  std::pair<std::string, std::string> redir;
-  for (const auto& it : locations) {
-    if (request_target_.find(it.first) == 0) {
-      location = it.first;
-      index_ = it.second.index_;
-      autoIndex = it.second.autoindex_;
-      redir = it.second.redirection_;
-    }
-  }   
+  const LocationMap& locations = client_.vhost_->getLocations();
+  const auto& it = std::find_if(locations.begin(),
+                                locations.end(),
+                                [&](const LocationPair& pair) {
+      return request_target_.find(pair.first) == 0;
+  });
 
-  if (location.empty() ||
-      request_target_.substr(0, location.size()) != location) {
+  if (it == locations.end()) {
     logError("Location not found");
     client_.status_ = "404";
     return false;
   }
-  std::string allowedMethods = locations.at(location).methods_;
-  if (allowedMethods.find(method_) == std::string::npos) {
+
+  const Location& loc = it->second;
+  if (loc.methods_.find(method_) == std::string::npos) {
     logError("Method not allowed");
       client_.status_ = "405";
       return false;
@@ -78,23 +76,36 @@ bool  HttpParser::HandleRequest() {
     return false;
   }
 
-  std::string rootDir = locations.at(location).root_;
-  std::string relativePath = "/" + request_target_.substr(location.size()); 
-  std::string rootPath = rootDir.substr(1) + relativePath;
+  if (!loc.redirection_.first.empty()) {
+    client_.status_ = loc.redirection_.first;
+    additional_headers_ = "Location: " + loc.redirection_.second + "\r\n";
+    client_.stage_ = ClientConnection::Stage::kResponse;
+    return true;
+  }
 
+  index_ = loc.index_;
   HandleCookies();
-  if (method_ == "GET" && !HandleGet(rootPath, autoIndex))
+  request_target_ = loc.root_ + request_target_.substr(it->first.size());
+
+  if (method_ == "GET" && !HandleGet(loc.autoindex_))
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest())
     return false;
+  // else if (method_ == "POST")
+    // ;
   else if (method_ == "POST") {
-     if (request_body_.empty()) {
+    if (!IsBodySizeValid()) {
+      logError("Body size too big");
+      client_.status_ = "431";
+      return false;
+    }
+    if (request_body_.empty()) {
       client_.stage_ = ClientConnection::Stage::kBody;
-     } else {
-      if (!HandlePostRequest(request_body_)) {
+    } else if (!HandlePostRequest(request_body_)) {
         return false;
-      }
+    }
      }
+
   }
 
   return true;
@@ -143,6 +154,7 @@ void HttpParser::ResetParser() {
   query_string_.clear();
   request_body_.clear();
   headers_.clear();
+  index_.clear();
   is_chunked_ = false;
 }
 
@@ -191,6 +203,7 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
     client_.status_ = "400";
     return false;
   }
+  request_target_.erase(request_target_.begin());
 
   if (http_version != "HTTP/1.1") {
     logError("HTTP Version Not Supported 505");
@@ -232,7 +245,7 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   }
 
   if (line != "\r") {
-    logError("Request Header Fields Too Large");
+    logError("Request header fields too large");
     client_.status_ = "431";
     return false;
   }
@@ -300,13 +313,13 @@ static std::string CreateSessionID() {
 
 void HttpParser::HandleCookies() {
   if (session_store_.find("session_id") != session_store_.end()) {
-        session_id_ = session_store_["session_id"];
-        logDebug("Returning User with session_id: ", session_id_);
-    } else {
-        session_id_ = CreateSessionID();
-        logDebug("New User. Generated session_id: ", session_id_);
-        additional_headers_ += "Set-Cookie: session_id=" + session_id_ + "\r\n";
-    }
+    session_id_ = session_store_["session_id"];
+    logDebug("Returning User with session_id: ", session_id_);
+  } else {
+    session_id_ = CreateSessionID();
+    logDebug("New User. Generated session_id: ", session_id_);
+    additional_headers_ += "Set-Cookie: session_id=" + session_id_ + "\r\n";
+  }
 }
 
 bool HttpParser::UnChunkBody(std::vector<char>& buf) {
@@ -378,15 +391,17 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
 
   std::string contentType = it->second;
   content_type_ = contentType;
-
-  if (contentType.find("application/x-www-form-urlencoded") !=
-      std::string::npos) {
-    logDebug("Handling URL-encoded form submission");
-    if (!ParseUrlEncodedData(request_body)) {
-      client_.status_ = "500";// Internal Server Error
+  if (request_target_.ends_with(".cgi") ||
+      request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
+    pid_t pid = CgiConnection::CreateCgiConnection(client_);
+    if (pid == -1) {
+      client_.status_ = "500";
       return false;
     }
-  } else if (contentType.find("multipart/form-data") != std::string::npos) {
+    client_.stage_ = ClientConnection::Stage::kCgi;
+    return true;
+  }
+  if (contentType.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, contentType)) {
       client_.status_ = "400";// Internal Server Error
@@ -501,46 +516,6 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
   return true;
 }
 
-bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
-  std::string requestBody(body.begin(), body.end());
-
-  std::istringstream stream(requestBody);
-  std::string pair;
-
-  std::string clientFd = std::to_string(client_.fd_);
-  std::string filename = "/tmp/webserv/dir_list"  + clientFd;
-  std::fstream& outputFile = client_.file_;
-  outputFile.open(filename);
-    if (!outputFile.is_open()) {
-        logError("Could not open file: " + filename);
-        client_.status_ = "500";
-        request_target_ = "www/error_pages/500.html";
-        return false;
-    }
-
-  while (std::getline(stream, pair, '&')) {
-    size_t delim = pair.find('=');
-    if (delim == std::string::npos) {
-      logError("URL encoding has wrong format.");
-      return false;
-    }
-    std::string key = pair.substr(0, delim);
-    std::string value = pair.substr(delim + 1);
-
-    size_t keyLength = key.size();
-    outputFile.write(reinterpret_cast<const char*>(&keyLength),
-                     sizeof(keyLength));
-    outputFile.write(key.data(), keyLength);
-
-    size_t valueLength = value.size();
-    outputFile.write(reinterpret_cast<const char*>(&valueLength),
-                     sizeof(valueLength));
-    outputFile.write(value.data(), valueLength);
-  }
-  std::remove(filename.c_str());
-  return true;
-}
-
 std::string UrlDecode( std::string& query) {
   std::string decoded;
     for (size_t i = 0; i < query.length(); i++) {
@@ -620,26 +595,20 @@ void HttpParser::GenerateFileListHtml() {
 }
 
 
-bool HttpParser::CheckValidPath(std::string rootPath) {
-  if (request_target_.at(0) != '/') {
-    logError("Wrong path");
-    client_.status_ = "404";
-    return false;
-  }
+bool HttpParser::CheckValidPath() {
   try {
-  if (std::filesystem::exists(rootPath)) {
-    if (std::filesystem::is_directory(rootPath)) {
-      if (rootPath.back() != '/')
-        request_target_ = rootPath + "/" + index_;
+  if (std::filesystem::exists(request_target_)) {
+    if (std::filesystem::is_directory(request_target_)) {
+      if (request_target_.back() != '/')
+        request_target_ += "/" + index_;
       else
-        request_target_ = rootPath + index_;
+        request_target_ += index_;
       return true; //The path is a directory
-    } else if (std::filesystem::is_regular_file(rootPath)) {
-      request_target_ = rootPath;
+    } else if (std::filesystem::is_regular_file(request_target_)) {
       return true; //The path is a file
     }
     } else {
-      logError("The path does not exist: ", rootPath);
+      logError("The path does not exist: ", request_target_);
       client_.status_ = "404";
       return false;
   }
@@ -706,17 +675,25 @@ std::string HttpParser::getAdditionalHeaders() {
   return additional_headers_;
 }
 
-bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
-  
-  if (autoIndex && index_.empty() && rootPath.back() == '/') {
-    CreateDirListing(rootPath);  
-  } else {
-    if (!CheckValidPath(rootPath))
+bool HttpParser::HandleGet(bool autoIndex) {
+  if (autoIndex && index_.empty() && request_target_.back() == '/') {
+    CreateDirListing(request_target_);
+    client_.stage_ = ClientConnection::Stage::kResponse;
+    return true;
+  } else if (!CheckValidPath())
+    return false;
+  if (request_target_.ends_with(".cgi") ||
+      request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
+    pid_t pid = CgiConnection::CreateCgiConnection(client_);
+    if (pid == -1) {
+      client_.status_ = "500";
       return false;
-    else
-      if  (OpenFile(request_target_))
-        return false;
+    }
+    client_.stage_ = ClientConnection::Stage::kCgi;
+    return true;
   }
+  if (OpenFile(request_target_))
+    return false;
   client_.stage_ = ClientConnection::Stage::kResponse;
   return true;
 }

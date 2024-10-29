@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/28 10:27:53 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/29 15:53:15 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,10 @@
 class VirtualHost;
 
 class HttpParser {
+ private:
+  using LocationMap = std::map<std::string, Location>;
+  using LocationPair = std::pair<std::string, Location>;
+
  public:
   HttpParser(ClientConnection& client);
   HttpParser(const HttpParser& other)             = delete;
@@ -67,12 +71,11 @@ class HttpParser {
   bool        HandleMultipartFormData(const std::vector<char> &body,
                                       const std::string &contentType);
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
-  bool        ParseUrlEncodedData(const std::vector<char>& body);
   bool        HandleDeleteRequest();
   void        GenerateFileListHtml();
-  bool        CheckValidPath(std::string root);
+  bool        CheckValidPath();
   void        CreateDirListing(std::string& directory);
-  bool        HandleGet(std::string rootPath, bool autoIndex);
+  bool        HandleGet(bool autoIndex);
   std::string InjectFileListIntoHtml(const std::string& html_path);
   bool        checkFile(std::vector<char> request_body);
 

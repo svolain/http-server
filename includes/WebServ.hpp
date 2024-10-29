@@ -35,14 +35,15 @@ class WebServ {
   int   Init();
   void  Run();
   void  AddNewConnection(pollfd& fd, std::unique_ptr<Connection> connection);
-  void  SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd);
+  void  SwitchCgiToReceive(int olg_cgi_fd, int new_cgi_fd);
+  void  SwitchClientToSend(int fd);
 
  private:
   void        PollAvailableFDs();
   void        CheckForNewConnection(int fd, short revents, int i);
-  void        ReceiveData(Connection& connection, int& i);
-  void        SendData(Connection& connection, int& i);
-  void        CloseConnection(int fd, int& i);
+  void        ReceiveData(Connection& connection, const int& i);
+  void        SendData(Connection& connection, const int& i);
+  void        CloseConnection(int fd, const int& i);
   void        CloseAllConnections();
   std::string ToString() const;
 

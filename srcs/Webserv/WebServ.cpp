@@ -49,7 +49,7 @@ int WebServ::Init() {
   return 0;
 }
 
-#define TIMEOUT   5000
+#define TIMEOUT 500
 
 void WebServ::Run() {
   signal(SIGINT, signalHandler);
@@ -57,16 +57,11 @@ void WebServ::Run() {
   int socketsReady = 0;
   while (run) {
     socketsReady = poll(pollFDs_.data(), pollFDs_.size(), TIMEOUT);
-    if (socketsReady == -1)
-      perror("poll: ");
-    else if (!socketsReady) {
-      logInfo("poll() is closing connections on timeout...");
-      for (size_t i = sockets_.size(); i < pollFDs_.size(); ++i)
-        close(pollFDs_[i].fd);
-      connections_.clear();
-      pollFDs_.resize(sockets_.size());
+    if (socketsReady == -1) {
+      logError("poll() returned -1.");
+      break;
     } else
-        PollAvailableFDs();
+      PollAvailableFDs();
   }
   CloseAllConnections();
   logInfo("--- Shutting down the server ---");
@@ -79,12 +74,14 @@ void WebServ::AddNewConnection(pollfd& fd,
   connections_.emplace(fd.fd, std::move(connection));
 }
 
-void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
+void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int new_cgi_fd) {
   pollfd cgi_poll = {new_cgi_fd, POLLIN, 0};
-  fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
-  AddNewConnection(cgi_poll, std::move(connections_.at(olg_cgi_fd)));
+  // fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
+  connections_.emplace(cgi_poll.fd, std::move(connections_.at(olg_cgi_fd)));
 
+  close(olg_cgi_fd);
   connections_.erase(olg_cgi_fd);
+
   auto it = std::find_if(
       pollFDs_.begin(),
       pollFDs_.end(),
@@ -92,7 +89,18 @@ void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int& new_cgi_fd) {
         return poll.fd == olg_cgi_fd;
       }
   );
-  pollFDs_.erase(it);
+  *it = cgi_poll;
+}
+
+void  WebServ::SwitchClientToSend(int fd) {
+  auto it = std::find_if(
+      pollFDs_.begin(),
+      pollFDs_.end(),
+      [&](const pollfd& poll) {
+        return poll.fd == fd;
+      }
+  );
+  it->events = POLLOUT;
 }
 
 void WebServ::PollAvailableFDs(void) {
@@ -106,19 +114,24 @@ void WebServ::PollAvailableFDs(void) {
     }
     Connection& connection = *connections_.at(fd);
     if (revents & POLLERR) {
-      logError("error or read end has been closed");
+      logInfo("Connection ", fd,
+              ": Error or closed read end detected, closing connection.");
       CloseConnection(connection.fd_, i);
-    } else if (revents & POLLHUP) { 
-      logError("Hang up: ", fd);
-      CloseConnection(connection.fd_, i);
-    } 
+    } // else if (revents & POLLHUP) {
+    //   logInfo("Connection ", fd, ": Hang-up detected, closing connection.");
+    //   CloseConnection(connection.fd_, i);
+    // }
     // else if (revents & POLLNVAL) {
     //   logError("Invalid fd: ", fd);
     //   CloseConnection(connection, i);} 
-    else if (revents & POLLIN) {
+    else if (revents & POLLIN || revents & POLLHUP) {
       ReceiveData(connection, i);
     } else if (revents & POLLOUT)
       SendData(connection, i);
+    else if (connection.HasTimedOut()) {
+      logInfo("Connection ", fd, ": Timeout detected, closing connection.");
+      CloseConnection(connection.fd_, i);
+    }
   }
 }
 
@@ -138,26 +151,27 @@ void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   }
 }
 
-void WebServ::ReceiveData(Connection& connection, int& i) {
+void WebServ::ReceiveData(Connection& connection, const int& i) {
   if (connection.ReceiveData(pollFDs_[i]))
-    CloseConnection(connection.fd_, i);
+    CloseConnection(pollFDs_[i].fd, i);
 }
 
 
-void WebServ::SendData(Connection& connection, int& i) {
+void WebServ::SendData(Connection& connection, const int& i) {
   if (connection.SendData(pollFDs_[i]))
-    CloseConnection(connection.fd_, i);
+    CloseConnection(pollFDs_[i].fd, i);
 }
 
-void WebServ::CloseConnection(int fd, int& i) {
-  close(fd);
+void WebServ::CloseConnection(int fd, const int& i) {
   connections_.erase(fd);
   pollFDs_.erase(pollFDs_.begin() + i);
 }
 
 void WebServ::CloseAllConnections() {
-  for (size_t i = 0; i < pollFDs_.size(); i++) //close all listening sockets and active connections
-
+  for (size_t i = pollFDs_.size() - 1; i >= sockets_.size(); --i) {
+    CloseConnection(pollFDs_[i].fd, static_cast<int>(i));
+  }
+  for (size_t i = 0; i < sockets_.size(); i++)
     close(pollFDs_[i].fd);
 }
 

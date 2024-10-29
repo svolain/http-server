@@ -23,6 +23,11 @@ ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
       parser_(*this),
       response_(*this) {}
 
+ClientConnection::~ClientConnection() {
+  close(fd_);
+  //may be something else here?
+}
+
 int ClientConnection::ReceiveData(pollfd& poll) {
   std::vector<char> buffer(MAXBYTES);
   int               bytesIn;
@@ -51,15 +56,15 @@ int ClientConnection::ReceiveData(pollfd& poll) {
       stage_ = Stage::kResponse;
     }
   }
-  else if (stage_ == Stage::kCgi) { //move it to response - reference invalidation!!
-    ;//waitpid
-  }
   if (stage_ == Stage::kResponse)
     poll.events = POLLOUT;
   return 0;
 }
 
 int ClientConnection::SendData(pollfd& poll) {
+  if (stage_ == Stage::kCgi) {
+    return 0;
+  }
   if (response_.SendResponse(poll)) {
     file_.close();
     logDebug("SendData returned 1, close");
@@ -70,8 +75,7 @@ int ClientConnection::SendData(pollfd& poll) {
     //this will close on ANY ERROR
     if (status_ != "200")
       return 1;
-  }
-  (void)webserv_; //REMOVE_ME                                         
+  }                                      
   return 0;
 }
 
@@ -88,12 +92,12 @@ std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
   std::vector<std::string>  env;
   env.push_back("REQUEST_METHOD=" + parser_.method_);
   env.push_back("QUERY_STRING=" + parser_.query_string_);
-  env.push_back("SCRIPT_NAME=" + parser_.request_target_.substr(1));
+  env.push_back("SCRIPT_NAME=" + parser_.request_target_);
   env.push_back("SERVER_NAME=" + vhost_->getName());
-  // env.push_back("CONTENT_TYPE=" + vhost_->getName());
-  // env.push_back("CONTENT_LENGTH=" + vhost_->getName());
-  //env.push_back("PATH_INFO=" + std::filesystem::current_path());
+  env.push_back("CONTENT_TYPE=" + parser_.content_type_);
+  env.push_back("CONTENT_LENGTH=" + std::to_string(parser_.content_length_));
+  std::filesystem::path current_path = std::filesystem::current_path();
+  env.push_back("PATH_INFO=" + current_path.generic_string());
   env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-
   return env;
 }
