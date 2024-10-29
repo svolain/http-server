@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 16:31:44 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/29 16:54:50 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,10 +99,16 @@ bool  HttpParser::HandleRequest() {
       client_.status_ = "431";
       return false;
     }
-    if (request_body_.empty()) {
-      client_.stage_ = ClientConnection::Stage::kBody;
-    } else if (!HandlePostRequest(request_body_)) {
+
+    std::cout << "clen: " << content_length_ << std::endl;
+    std::cout << "rblen: " << request_body_.size() << std::endl;
+
+    if (!request_body_.empty() && content_length_ == request_body_.size()) {
+      if (!HandlePostRequest(request_body_))
         return false;
+      return true;
+    } else {
+        client_.stage_ = ClientConnection::Stage::kBody;
     }
      }
   return true;
