@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 17:18:14 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/29 17:22:39 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -417,16 +417,16 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     return false;
   }
   outFile.close();
-  std::string clientFd = std::to_string(client_.fd_);
-  std::string filename = "/tmp/webserv/upload_list"  + clientFd;
-  std::fstream& outFile = client_.file_;
-  if (OpenFile(filename))
+  std::string clientFd2 = std::to_string(client_.fd_);
+  std::string filename2 = "/tmp/webserv/upload_list"  + clientFd2;
+  std::fstream& outFile2 = client_.file_;
+  if (OpenFile(filename2))
     return false;
-  std::remove(filename.c_str());
+  std::remove(filename2.c_str());
   std::string htmlStr = InjectFileListIntoHtml("www/index.html");
-  outFile << htmlStr;
+  outFile2 << htmlStr;
   client_.stage_ = ClientConnection::Stage::kResponse;
-  outFile.seekg(0);
+  outFile2.seekg(0);
   return true;
 }
 
