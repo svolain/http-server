@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 12:29:52 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/29 16:15:42 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,9 +78,9 @@ bool  HttpParser::HandleRequest() {
 
   index_ = loc.index_;
   HandleCookies();
-  std::string rootPath = loc.root_ + request_target_.substr(it->first.size());
+  request_target_ = loc.root_ + request_target_.substr(it->first.size());
 
-  if (method_ == "GET" && !HandleGet(rootPath, loc.autoindex_))
+  if (method_ == "GET" && !HandleGet(loc.autoindex_))
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest())
     return false;
@@ -242,7 +242,6 @@ bool HttpParser::CheckPostHeaders() {
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
-    logError(is_chunked_);
     auto it = headers_.find("Content-Length");
     if (it == headers_.end()) {
       logError("Content-lenght missing for request body");
@@ -378,15 +377,17 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
 
   std::string contentType = it->second;
   content_type_ = contentType;
-
-  if (contentType.find("application/x-www-form-urlencoded") !=
-      std::string::npos) {
-    logDebug("Handling URL-encoded form submission");
-    if (!ParseUrlEncodedData(request_body)) {
-      client_.status_ = "500";// Internal Server Error
+  if (request_target_.ends_with(".cgi") ||
+      request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
+    pid_t pid = CgiConnection::CreateCgiConnection(client_);
+    if (pid == -1) {
+      client_.status_ = "500";
       return false;
     }
-  } else if (contentType.find("multipart/form-data") != std::string::npos) {
+    client_.stage_ = ClientConnection::Stage::kCgi;
+    return true;
+  }
+  if (contentType.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, contentType)) {
       client_.status_ = "500";// Internal Server Error
@@ -501,54 +502,6 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
   return true;
 }
 
-bool HttpParser::ParseUrlEncodedData(const std::vector<char>& body) {
-  std::string requestBody(body.begin(), body.end());
-
-  std::istringstream stream(requestBody);
-  std::string pair;
-
-  std::string clientFd = std::to_string(client_.fd_);
-  std::string filename = "/tmp/webserv/dir_list"  + clientFd;
-  std::fstream& outputFile = client_.file_;
-  outputFile.open(filename);
-    if (!outputFile.is_open()) {
-        logError("Could not open file: " + filename);
-        client_.status_ = "500";
-        request_target_ = "www/error_pages/500.html";
-        return false;
-    }
-
-  while (std::getline(stream, pair, '&')) {
-    size_t delim = pair.find('=');
-    if (delim == std::string::npos) {
-      logError("URL encoding has wrong format.");
-      return false;
-    }
-    std::string key = pair.substr(0, delim);
-    std::string value = pair.substr(delim + 1);
-
-    size_t keyLength = key.size();
-    outputFile.write(reinterpret_cast<const char*>(&keyLength),
-                     sizeof(keyLength));
-    outputFile.write(key.data(), keyLength);
-
-    size_t valueLength = value.size();
-    outputFile.write(reinterpret_cast<const char*>(&valueLength),
-                     sizeof(valueLength));
-    outputFile.write(value.data(), valueLength);
-  }
-  std::remove(filename.c_str());
-  return true;
-}
-
-/*bool HttpParser::IsPathSafe(const std::string& path) {
-  if (path.find(".."))
-    return false;
-
-  //this function we can add more checks to check safety
-  return true;
-}*/
-
 bool HttpParser::HandleDeleteRequest() {
   size_t delim = query_string_.find("=");
   if (delim == std::string::npos) {
@@ -616,21 +569,20 @@ void HttpParser::GenerateFileListHtml() {
 }
 
 
-bool HttpParser::CheckValidPath(std::string rootPath) {
+bool HttpParser::CheckValidPath() {
   try {
-  if (std::filesystem::exists(rootPath)) {
-    if (std::filesystem::is_directory(rootPath)) {
-      if (rootPath.back() != '/')
-        request_target_ = rootPath + "/" + index_;
+  if (std::filesystem::exists(request_target_)) {
+    if (std::filesystem::is_directory(request_target_)) {
+      if (request_target_.back() != '/')
+        request_target_ += "/" + index_;
       else
-        request_target_ = rootPath + index_;
+        request_target_ += index_;
       return true; //The path is a directory
-    } else if (std::filesystem::is_regular_file(rootPath)) {
-      request_target_ = rootPath;
+    } else if (std::filesystem::is_regular_file(request_target_)) {
       return true; //The path is a file
     }
     } else {
-      logError("The path does not exist: ", rootPath);
+      logError("The path does not exist: ", request_target_);
       client_.status_ = "404";
       return false;
   }
@@ -697,28 +649,15 @@ std::string HttpParser::getLocationHeader() {
   return additional_headers_;
 }
 
-// bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
-//   if (autoIndex && index_.empty() && rootPath.back() == '/') {
-//     CreateDirListing(rootPath);
-//   } else {
-//     if (!CheckValidPath(rootPath)) // what if path is a directory?
-//       return false;
-//     else
-//       if  (OpenFile(request_target_))
-//         return false;
-//   }
-//   client_.stage_ = ClientConnection::Stage::kResponse;
-//   return true;
-// }
-
-bool HttpParser::HandleGet(std::string rootPath, bool autoIndex) {
-  if (autoIndex && index_.empty() && rootPath.back() == '/') {
-    CreateDirListing(rootPath);
+bool HttpParser::HandleGet(bool autoIndex) {
+  if (autoIndex && index_.empty() && request_target_.back() == '/') {
+    CreateDirListing(request_target_);
     client_.stage_ = ClientConnection::Stage::kResponse;
     return true;
-  } else if (!CheckValidPath(rootPath))
+  } else if (!CheckValidPath())
     return false;
-  if (rootPath.find("cgi-bin/") == 0) {
+  if (request_target_.ends_with(".cgi") ||
+      request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";

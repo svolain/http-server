@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/27 22:39:31 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/29 15:53:15 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,13 +71,11 @@ class HttpParser {
   bool        HandleMultipartFormData(const std::vector<char> &body,
                                       const std::string &contentType);
   bool        ParseMultiPartData(std::vector<char> &bodyPart);
-  bool        ParseUrlEncodedData(const std::vector<char>& body);
-  bool        IsPathSafe(const std::string& path);
   bool        HandleDeleteRequest();
   void        GenerateFileListHtml();
-  bool        CheckValidPath(std::string root);
+  bool        CheckValidPath();
   void        CreateDirListing(std::string& directory);
-  bool        HandleGet(std::string rootPath, bool autoIndex);
+  bool        HandleGet(bool autoIndex);
   std::string InjectFileListIntoHtml(const std::string& html_path);
   std::string InjectCookieIntoHtml(const std::string& html_path);
 
