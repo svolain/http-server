@@ -255,6 +255,14 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
 }
 
 bool HttpParser::CheckPostHeaders() {
+  {
+    auto it = headers_.find("Content-Type");
+    if (it == headers_.end()) {
+      logError("Content-Type missing for request body");
+      client_.status_ = "400";
+      return false;
+    }
+  }
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
   if (!is_chunked_) {
