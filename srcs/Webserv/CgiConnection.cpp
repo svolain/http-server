@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/29 15:18:44 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/30 12:52:37 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,19 +158,20 @@ int CgiConnection::SendData(pollfd& poll) {
 
   if (!file_.is_open())
     return SwitchToRecieve();
+
   file_.read(buffer, MAXBYTES);
-  if (file_.fail()) {
+  if (file_.fail() && !file_.eof()) {
     logError("CGI: failed to read from fstream.");
-    client_.status_ = "500";
-    return 1;
-  }
-  if (write(poll.fd, buffer, file_.gcount()) == -1) {
-    logError("CGI: failed to write data to child process.");
     client_.status_ = "500";
     return 1;
   }
   if (file_.eof())
     return SwitchToRecieve();
+  if (write(poll.fd, buffer, file_.gcount()) == -1) {
+    logError("CGI: failed to write data to child process.");
+    client_.status_ = "500";
+    return 1;
+  }
   return 0;
 }
 
