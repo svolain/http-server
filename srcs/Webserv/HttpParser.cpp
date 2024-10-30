@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/30 18:23:50 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/30 18:28:19 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -516,8 +516,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
       size_t posEnd = headersStr.find('"', posStart);
       std::string filename = headersStr.substr(posStart, posEnd - posStart);
       logDebug("File upload: ", filename);
-      uploads_.erase(0, 1);
-      std::ofstream outFile(uploads_ + "/" + filename, std::ios::binary);
+      std::ofstream outFile(uploads_ + filename, std::ios::binary);
       if (outFile.is_open()) {
         outFile.write(content.data(), content.size());
         outFile.close();
@@ -567,8 +566,7 @@ bool HttpParser::HandleDeleteRequest() {
     return false; 
   }
   std::string queryname = query_string_.substr(delim + 1);
-  uploads_.erase(0, 1);
-  std::string path = uploads_ + "/" + queryname;
+  std::string path = uploads_ + queryname;
   logDebug("Handling DELETE request for: ", path);
 
   if (path.find("..") != std::string::npos)
