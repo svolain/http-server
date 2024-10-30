@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/30 16:51:48 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/30 17:35:08 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,7 @@ bool  HttpParser::HandleRequest() {
   }
 
   index_ = loc.index_;
+  uploads_ = loc.upload_;
   HandleCookies();
   request_target_ = loc.root_ + request_target_.substr(it->first.size());
 
@@ -410,7 +411,6 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   if (content_type_.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, content_type_)) {
-      client_.status_ = "400";// Internal Server Error
       return false;
     }
   } else {
@@ -496,14 +496,15 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
       size_t posEnd = headersStr.find('"', posStart);
       std::string filename = headersStr.substr(posStart, posEnd - posStart);
       logDebug("File upload: ", filename);
-      std::ofstream outFile("www/uploads/" + filename, std::ios::binary);
+      std::ofstream outFile(uploads_ + filename, std::ios::binary);
       if (outFile.is_open()) {
         outFile.write(content.data(), content.size());
         outFile.close();
         logDebug("File ", filename, " saved successfully");
       } else {
         logError("Failed to save file ");
-        
+        client_.status_ = "500";
+        client_.file_.open(client_.vhost_->getErrorPage("500"));
         return false;
       }
     } else if (posName != std::string::npos) {
@@ -543,8 +544,7 @@ bool HttpParser::HandleDeleteRequest() {
     return false; 
   }
   std::string queryname = query_string_.substr(delim + 1);
-
-  std::string path = "./www/uploads/" + queryname;
+  std::string path = uploads_ + queryname;
   logDebug("Handling DELETE request for: ", path);
 
   if (path.find("..") != std::string::npos)
@@ -580,7 +580,7 @@ bool HttpParser::HandleDeleteRequest() {
 void HttpParser::GenerateFileListHtml() {
     file_list_ = "<ul>";
     try {
-        for (const auto &entry : std::filesystem::directory_iterator("www/uploads")) {
+        for (const auto &entry : std::filesystem::directory_iterator(uploads_)) {
             std::string filename = entry.path().filename().string();
             file_list_ += "<li>";
             file_list_ += "<span>" + filename + "</span>";
