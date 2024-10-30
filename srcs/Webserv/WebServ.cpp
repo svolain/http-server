@@ -117,10 +117,7 @@ void WebServ::PollAvailableFDs(void) {
       logInfo("Connection ", fd,
               ": Error or closed read end detected, closing connection.");
       CloseConnection(connection.fd_, i);
-    } // else if (revents & POLLHUP) {
-    //   logInfo("Connection ", fd, ": Hang-up detected, closing connection.");
-    //   CloseConnection(connection.fd_, i);
-    // }
+    }
     // else if (revents & POLLNVAL) {
     //   logError("Invalid fd: ", fd);
     //   CloseConnection(connection, i);} 
@@ -137,17 +134,24 @@ void WebServ::PollAvailableFDs(void) {
 
 void WebServ::CheckForNewConnection(int fd, short revents, int i) {
   if (revents & POLLIN) {
-    pollfd new_client = {0, 0, 0};
-    new_client.fd = accept(fd, nullptr, nullptr);
-    if (new_client.fd != -1) {
-      /* O_NONBLOCK: No I/O operations on the file descriptor will cause the
-            calling process to wait. */
-      fcntl(new_client.fd, F_SETFL, O_NONBLOCK);
-      new_client.events = POLLIN;
-      AddNewConnection(new_client,
-                       std::make_unique<ClientConnection>(new_client.fd,
-                                                          sockets_[i], *this));
+    if (connections_.size() > 500) {
+      logInfo("Too many active connections. Rejecting new connection attempts");
+      return;
     }
+    pollfd new_client = {0, POLLIN, 0};
+    new_client.fd = accept(fd, nullptr, nullptr);
+    if (new_client.fd == -1) {
+      logError("Socket ", fd, ": Failed to accept new ClientConnection");
+      return;
+    }
+    if (fcntl(new_client.fd, F_SETFL, O_NONBLOCK) == -1) {
+      logInfo("Client ", new_client.fd,
+              ": Failed to set fd to non-blocking mode");
+      return;
+    }
+    AddNewConnection(new_client,
+                     std::make_unique<ClientConnection>(new_client.fd,
+                                                        sockets_[i], *this));
   }
 }
 
