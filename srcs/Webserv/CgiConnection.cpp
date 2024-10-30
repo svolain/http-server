@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/30 12:52:37 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 01:19:38 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,11 @@ CgiConnection::~CgiConnection() {
   client_.stage_ = ClientConnection::Stage::kResponse;
   if (HasTimedOut())
     client_.status_ = "504";
-  else if (client_.status_ == "200")
+  else if (client_.status_ == "200") {
+    client_.additional_headers_.insert(additional_headers_.begin(),
+                                       additional_headers_.end());
     return;
+  }
   file_.close();
   file_.open(client_.vhost_->getErrorPage(client_.status_));
 }
@@ -208,10 +211,10 @@ bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
     line.pop_back();
     std::string header = line.substr(0, delim + 1);
     std::string header_value = line.substr(delim + 1);
-    headers_[header] = header_value;
+    additional_headers_[header] = header_value;
   }
 
-  if (!headers_.contains("Content-Type:")) {
+  if (!additional_headers_.contains("Content-Type:")) {
     logError("CGI: failed to find \"Content-Type\" in headers.");
     return false;
   }

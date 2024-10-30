@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/30 23:57:03 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 01:13:33 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,7 +173,7 @@ void ConfigParser::ParseLocation(LocationMap& locations,
   ss >> token;
   if (token != "{")
     throw token;
-  while (true) { //what if location is in format location / {} ?
+  while (true) {
     ss >> token;
     logDebug(token);
     if (token == "limit_except")
@@ -193,6 +193,8 @@ void ConfigParser::ParseLocation(LocationMap& locations,
     else
       throw token;
   }
+  if (root.empty())
+    throw "Incomplete location configuration";
   if (!locations.contains(location))
     locations.emplace(
       location, Location(methods, redirection, root, autoindex, index, upload));
@@ -235,9 +237,9 @@ void ConfigParser::ParseRoot(std::string& root, std::stringstream& ss) {
   ss >> token;
   if (!std::regex_match(token, format))
     throw "root " + token;
-  token.pop_back();
+  token.back() = '/';
   if (root.empty())
-    root = token.substr(1) + "/";
+    root = token.substr(1);
 }
 
 void ConfigParser::ParseAutoindex(std::string& autoindex,
@@ -272,7 +274,7 @@ void ConfigParser::ParseUpload(std::string& upload, std::stringstream& ss) {
   ss >> token;
   if (!std::regex_match(token, format))
     throw "upload " + token;
-  token.pop_back();
+  token.back() = '/';
   if (upload.empty())
-    upload = token;
+    upload = token.substr(1);
 }

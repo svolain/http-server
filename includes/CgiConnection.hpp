@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/29 14:06:35 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/31 01:16:42 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,6 @@ class CgiConnection : public Connection {
   std::fstream&                       file_;
   pid_t                               child_pid_;
   bool                                header_parsed_ = false;
-  std::map<std::string, std::string>  headers_;
 };
 
 #endif //CGICONNECTION_HPP
