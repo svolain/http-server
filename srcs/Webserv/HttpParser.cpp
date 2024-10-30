@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 00:12:27 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 01:03:28 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,6 @@ bool HttpParser::ParseHeader(const std::string& request) {
   else {
     client_.status_ = "400";
     logError("Requset contains body.");
-    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
 }
@@ -62,16 +61,14 @@ bool  HttpParser::HandleRequest() {
   if (it == locations.end()) {
     logError("Location not found");
     client_.status_ = "404";
-    client_.file_.open(client_.vhost_->getErrorPage("404"));
     return false;
   }
 
   const Location& loc = it->second;
   if (loc.methods_.find(method_) == std::string::npos) {
     logError("Method not allowed");
-      client_.status_ = "405";
-      client_.file_.open(client_.vhost_->getErrorPage("405"));
-      return false;
+    client_.status_ = "405";
+    return false;
   }
 
   if (!loc.redirection_.first.empty()) {
@@ -97,10 +94,7 @@ bool  HttpParser::HandleRequest() {
       return false;
 
     if (!request_body_.empty() && content_length_ == request_body_.size()) {
-
-      if (!HandlePostRequest(request_body_))
-        return false;
-      return true;
+      return HandlePostRequest(request_body_);
     } else {
         client_.stage_ = ClientConnection::Stage::kBody;
     }
@@ -118,7 +112,6 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
           (request_body_.size() > content_length_)) {
         logError("Error: Request Header Fields Too Large");
         client_.status_ = "431";
-        client_.file_.open(client_.vhost_->getErrorPage("431"));
         return false;
       }
       return true;
@@ -140,7 +133,6 @@ bool HttpParser::IsBodySizeValid() {
   if (request_body_.size() > client_.vhost_->getMaxBodySize()) {
     logError("Request Header Fields Too Large");
     client_.status_ = "431";
-    client_.file_.open(client_.vhost_->getErrorPage("431"));
     return false;
   }
   return true;
@@ -161,16 +153,8 @@ std::string HttpParser::getHost() {
   return headers_["Host"];
 }
 
-std::string HttpParser::getMethod() const {
-  return method_;
-}
-
 std::string HttpParser::getRequestTarget() const {
   return request_target_;
-}
-
-std::string HttpParser::getFileList() const {
-  return file_list_;
 }
 
 bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
@@ -185,7 +169,6 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
       || http_version.empty() || line != "\r") {
     logError("Bad request 400");
     client_.status_ = "400";
-    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
 
@@ -194,14 +177,12 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
       allowed_methods.end()) {
     logError("Not supported method requested");
     client_.status_ = "501";
-    client_.file_.open(client_.vhost_->getErrorPage("501"));
     return false;
   }
 
   if (request_target_[0] != '/') {
     logError("Bad request 400");
     client_.status_ = "400";
-    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
   request_target_.erase(request_target_.begin());
@@ -209,7 +190,6 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
   if (http_version != "HTTP/1.1") {
     logError("HTTP Version Not Supported 505");
     client_.status_ = "505";
-    client_.file_.open(client_.vhost_->getErrorPage("505"));
     return false;
   }
 
@@ -228,7 +208,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
     if (delim == std::string::npos || line.back() != '\r') {
       logError("Wrong header line format");
       client_.status_ = "400";
-      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false; 
     }
     line.pop_back();
@@ -239,7 +218,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   if (!headers_.contains("Host")) {
     logError("Bad request 400");
     client_.status_ = "400";
-    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
 
@@ -251,7 +229,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   if (line != "\r") {
     logError("Request header fields too large");
     client_.status_ = "431";
-    client_.file_.open(client_.vhost_->getErrorPage("431"));
     return false;
   }
   return true;
@@ -263,7 +240,6 @@ bool HttpParser::CheckPostHeaders() {
     if (it == headers_.end()) {
       logError("Content-Type missing for request body");
       client_.status_ = "400";
-      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
     content_type_ =it->second;
@@ -275,7 +251,6 @@ bool HttpParser::CheckPostHeaders() {
     if (it == headers_.end()) {
       logError("Content-lenght missing for request body");
       client_.status_ = "411";
-      client_.file_.open(client_.vhost_->getErrorPage("411"));
       return false;
     } else {
       std::string& content_length_str = it->second;
@@ -288,12 +263,10 @@ bool HttpParser::CheckPostHeaders() {
       } catch (const std::invalid_argument& e) {
         logError("Invalid Content-Length");
         client_.status_ = "400";
-        client_.file_.open(client_.vhost_->getErrorPage("400"));
         return false;
       } catch (const std::out_of_range& e) {
         logError("Content-Length out of range");
         client_.status_ = "413";
-        client_.file_.open(client_.vhost_->getErrorPage("413"));
         return false;
       }
     }
@@ -356,7 +329,6 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
     if (readIndex >= buf.size()) {
       logError("UnChunkBody: \\r\\n missing");
       client_.status_ = "400";
-      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
 
@@ -376,7 +348,6 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
     if (readIndex + chunkSize > buf.size()) {
       logError("UnChunkBody: empty line missing");
       client_.status_ = "400";
-      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
 
@@ -389,7 +360,6 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
       client_.status_ = "400";
       logError("UnChunkBody: \\r\\n missing");
       client_.status_ = "400";
-      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
   }
@@ -414,7 +384,6 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";
-      client_.file_.open(client_.vhost_->getErrorPage("500"));
       return false;
     }
     client_.stage_ = ClientConnection::Stage::kCgi;
@@ -429,7 +398,6 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   } else {
     logError("Unsupported Content-Type");
     client_.status_ = "415";
-    client_.file_.open(client_.vhost_->getErrorPage("415"));
     return false;
   }
   std::string htmlStr = InjectFileListIntoHtml(request_target_ + "/" + index_);
@@ -444,7 +412,6 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
   size_t boundaryPosition = contentType.find("boundary=");
   if (boundaryPosition == std::string::npos) {
     client_.status_ = "500";
-    client_.file_.open(client_.vhost_->getErrorPage("500"));
     return false;
   }
 
@@ -521,7 +488,6 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
         logError("Failed to save file ");
         client_.status_ = "500";
         client_.file_.close();
-        client_.file_.open(client_.vhost_->getErrorPage("500"));
         return false;
       }
     } else if (posName != std::string::npos) {
@@ -558,7 +524,6 @@ bool HttpParser::HandleDeleteRequest() {
   if (delim == std::string::npos) {
     logError("Wrong query string format");
     client_.status_ = "400";
-    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false; 
   }
   std::string queryname = query_string_.substr(delim + 1);
@@ -575,13 +540,11 @@ bool HttpParser::HandleDeleteRequest() {
     } else {
       logError("Failed to delete file: " + path);
       client_.status_ = "500";
-      client_.file_.open(client_.vhost_->getErrorPage("500"));
       return false;
     }
   } else {
     logError("File not found: ", path);
     client_.status_ = "404";
-    client_.file_.open(client_.vhost_->getErrorPage("404"));
     return false;
   }
   std::string clientFd = std::to_string(client_.fd_);
@@ -630,28 +593,24 @@ bool HttpParser::CheckValidPath() {
       } else {
         logError("The path does not exist: ", request_target_);
         client_.status_ = "404";
-        client_.file_.open(client_.vhost_->getErrorPage("404"));
         return false;
     }
   } catch (const std::filesystem::filesystem_error& e) {
     logError("Filesystem error: ");
     std::cerr << e.what() << std::endl;
     client_.status_ = "500";
-    client_.file_.open(client_.vhost_->getErrorPage("500"));
     return false;
   } catch (const std::exception& e) {
     logError("Unexpected error: "); 
     std::cerr << e.what() << std::endl;
     client_.status_ = "500";
-    client_.file_.open(client_.vhost_->getErrorPage("500"));
     return false;
   }
   return true;
 }
 
 void HttpParser::CreateDirListing(std::string& directory) {
-  std::string clientFd = std::to_string(client_.fd_);
-  std::string filename = "/tmp/webserv/dir_list"  + clientFd;
+  std::string filename = "/tmp/webserv/dir_list"  + std::to_string(client_.fd_);
   std::fstream& outFile = client_.file_;
   if (OpenFile(filename))
     return;
@@ -662,9 +621,9 @@ void HttpParser::CreateDirListing(std::string& directory) {
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
       std::string name = entry.path().filename().string();
       if (std::filesystem::is_directory(entry.path())) {
-          outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+        outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
       } else {
-          outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+        outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
       }
     }
   } catch (const std::filesystem::filesystem_error& e) {
@@ -674,7 +633,7 @@ void HttpParser::CreateDirListing(std::string& directory) {
   }
   outFile<< "</ul></body></html>";
   logDebug("Directory listing created");
-  outFile.seekg(0); 
+  outFile.seekg(0);
 }
 
 int HttpParser::OpenFile(std::string& filename) {
@@ -682,9 +641,7 @@ int HttpParser::OpenFile(std::string& filename) {
   std::fstream& file = client_.file_;
   file.open(filename, std::fstream::in | std::fstream::out| std::fstream::app | std::ios::binary);
   if (!file.is_open()) {
-    logError("1");
     client_.status_ = "500";
-    file.open(client_.vhost_->getErrorPage("500"));
     return 1;
   }
   return 0;
@@ -702,7 +659,6 @@ bool HttpParser::HandleGet(bool autoIndex) {
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";
-      client_.file_.open(client_.vhost_->getErrorPage("500"));
       return false;
     }
     client_.stage_ = ClientConnection::Stage::kCgi;
