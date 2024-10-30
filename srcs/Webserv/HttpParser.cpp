@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/30 17:35:08 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/30 17:59:23 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -418,8 +418,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     client_.status_ = "415";
     return false;
   }
-
-  std::string htmlStr = InjectFileListIntoHtml("www/index.html");
+  std::string htmlStr = InjectFileListIntoHtml(request_target_ + "/" + index_);
   client_.file_ << htmlStr;
   client_.stage_ = ClientConnection::Stage::kResponse;
   client_.file_.seekg(0);
@@ -496,7 +495,8 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
       size_t posEnd = headersStr.find('"', posStart);
       std::string filename = headersStr.substr(posStart, posEnd - posStart);
       logDebug("File upload: ", filename);
-      std::ofstream outFile(uploads_ + filename, std::ios::binary);
+      uploads_.erase(0, 1);
+      std::ofstream outFile(uploads_ + "/" + filename, std::ios::binary);
       if (outFile.is_open()) {
         outFile.write(content.data(), content.size());
         outFile.close();
@@ -544,7 +544,8 @@ bool HttpParser::HandleDeleteRequest() {
     return false; 
   }
   std::string queryname = query_string_.substr(delim + 1);
-  std::string path = uploads_ + queryname;
+  uploads_.erase(0, 1);
+  std::string path = uploads_ + "/" + queryname;
   logDebug("Handling DELETE request for: ", path);
 
   if (path.find("..") != std::string::npos)
@@ -570,7 +571,7 @@ bool HttpParser::HandleDeleteRequest() {
   if (OpenFile(filename))
     return false;
   std::remove(filename.c_str());
-  std::string htmlStr = InjectFileListIntoHtml("www/index.html");
+  std::string htmlStr = InjectFileListIntoHtml(request_target_ + "/" + index_);
   outFile << htmlStr;
   client_.stage_ = ClientConnection::Stage::kResponse;
   outFile.seekg(0);
