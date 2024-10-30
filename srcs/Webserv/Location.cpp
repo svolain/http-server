@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/16 11:49:17 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/20 23:14:10 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/30 23:57:33 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,8 +31,6 @@ std::string Location::ToString() const {
   out += std::string(31, ' ') + "Allowed methods: ";
   if (methods_.find("GET") != std::string::npos)
     out += "GET ";
-  if (methods_.find("HEAD") != std::string::npos)
-    out += "HEAD ";
   if (methods_.find("POST") != std::string::npos)
     out += "POST ";
   if (methods_.find("DELETE") != std::string::npos)

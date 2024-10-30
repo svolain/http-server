@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/30 18:02:34 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/30 23:57:03 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,7 @@ void ConfigParser::ParseServerName(std::string& name, std::stringstream& ss) {
 void ConfigParser::ParseMaxBodySize(std::string& max_size,
                                     std::stringstream& ss) {
   std::regex format("0;|((0|[1-9][0-9]{0,5}|1000000)K;)"
-                      "|((0|[1-9][0-9]{0,2}|1000)M;)");
+                    "|((0|[1-9][0-9]{0,2}|1000)M;)");
 
   std::string token;
   ss >> token;
@@ -136,7 +136,8 @@ void ConfigParser::ParseMaxBodySize(std::string& max_size,
 }
 
 void ConfigParser::ParseErrorPage(StringMap& errors, std::stringstream& ss) {
-  static std::regex code_format("404|500"); //input all possible error codes here
+  static std::regex code_format("404|403|404|405|411|413|415|431|"
+                                "500|501|502|504|505");
   static std::regex path_format("/([a-zA-Z0-9_-]*/)*[a-zA-Z0-9_-]+\\.html;");
 
   std::string code;
@@ -199,8 +200,8 @@ void ConfigParser::ParseLocation(LocationMap& locations,
 
 void ConfigParser::ParseAllowedMethods(std::string& methods,
                                        std::stringstream& ss) {
-  static std::regex format("\\s*((GET|HEAD|POST|DELETE)\\s+)*"
-                                "(GET|HEAD|POST|DELETE)\\s*"); 
+  static std::regex format("\\s*((GET|POST|DELETE)\\s+)*"
+                                "(GET|POST|DELETE)\\s*"); 
   std::string line;
   std::getline(ss, line);
   if (!std::regex_match(line, format))

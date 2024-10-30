@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/30 18:28:19 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/31 00:12:27 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,6 @@ bool  HttpParser::HandleRequest() {
     client_.additional_headers_["Location:"] = loc.redirection_.second + "\r\n";
     client_.additional_headers_["Content-Length:"] = "0\r\n";
     client_.stage_ = ClientConnection::Stage::kResponse;
-    // additional_headers_ += "Connection: close\r\n";
     return true;
   }
 
@@ -92,8 +91,6 @@ bool  HttpParser::HandleRequest() {
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest())
     return false;
-  // else if (method_ == "POST")
-    // ;
   else if (method_ == "POST") {
     logDebug(request_body_.data());
     if (!IsBodySizeValid())
@@ -135,7 +132,7 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
   }
   if (!HandlePostRequest(request_body_))
     return false;
-  
+
   return true;
 }
 
@@ -192,8 +189,7 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
     return false;
   }
 
-  static std::array<std::string, 4> allowed_methods = {
-      "GET", "POST", "DELETE", "HEAD"};
+  static std::array<std::string, 3> allowed_methods = {"GET", "POST", "DELETE"};
   if (std::find(allowed_methods.begin(), allowed_methods.end(), method_) ==
       allowed_methods.end()) {
     logError("Not supported method requested");
@@ -306,31 +302,31 @@ bool HttpParser::CheckPostHeaders() {
 }
 
 void HttpParser::ParseCookies(const std::string& cookie_header) {
-    std::istringstream cookie_stream(cookie_header);
-    std::string cookie_pair;
+  std::istringstream cookie_stream(cookie_header);
+  std::string cookie_pair;
 
-    while (std::getline(cookie_stream, cookie_pair, ';')) {
-        size_t delim = cookie_pair.find('=');
-        if (delim != std::string::npos) {
-            std::string name = cookie_pair.substr(0, delim);
-            std::string value = cookie_pair.substr(delim + 1);
-            name = TrimWhitespace(name);
-            value = TrimWhitespace(value);
-            session_store_[name] = value;
-        }
+  while (std::getline(cookie_stream, cookie_pair, ';')) {
+    size_t delim = cookie_pair.find('=');
+    if (delim != std::string::npos) {
+      std::string name = cookie_pair.substr(0, delim);
+      std::string value = cookie_pair.substr(delim + 1);
+      name = TrimWhitespace(name);
+      value = TrimWhitespace(value);
+      session_store_[name] = value;
     }
+  }
 }
 
 std::string HttpParser::TrimWhitespace(const std::string& str) {
-    size_t first = str.find_first_not_of(' ');
-    size_t last = str.find_last_not_of(' ');
-    return str.substr(first, (last - first + 1));
+  size_t first = str.find_first_not_of(' ');
+  size_t last = str.find_last_not_of(' ');
+  return str.substr(first, (last - first + 1));
 }
 
 static std::string CreateSessionID() {
   std::ostringstream ss;
-    ss << std::hex << std::random_device{}();
-    return ss.str();
+  ss << std::hex << std::random_device{}();
+  return ss.str();
 }
 
 
@@ -342,7 +338,6 @@ void HttpParser::HandleCookies() {
     session_id_ = CreateSessionID();
     logDebug("New User. Generated session_id: ", session_id_);
     client_.additional_headers_["Set-Cookie: session_id="] = session_id_ + "\r\n";
-    // std::cout << "Tried to add cookie" << std::endl;
   }
 }
 
@@ -374,9 +369,9 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
 
     readIndex += 2;
 
-    if (chunkSize == 0) {
+    if (chunkSize == 0)
       break;
-    }
+
 
     if (readIndex + chunkSize > buf.size()) {
       logError("UnChunkBody: empty line missing");
@@ -385,9 +380,8 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
       return false;
     }
 
-    for (std::size_t i = 0; i < chunkSize; ++i) {
+    for (std::size_t i = 0; i < chunkSize; ++i)
       buf[writeIndex++] = buf[readIndex++];
-    }
 
     if (buf[readIndex] == '\r' && buf[readIndex + 1] == '\n') {
       readIndex += 2;
@@ -413,6 +407,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   if (OpenFile(filename))
     return false;
   std::remove(filename.c_str());
+
   if (request_target_.ends_with(".cgi") ||
       request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
     client_.file_ << request_body.data();
@@ -425,6 +420,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     client_.stage_ = ClientConnection::Stage::kCgi;
     return true;
   }
+
   if (content_type_.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
     if (!HandleMultipartFormData(request_body, content_type_)) {
@@ -495,8 +491,8 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
 
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
   std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
-    auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(),
-                                   crlf.begin(), crlf.end());
+  auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(),
+                                 crlf.begin(), crlf.end());
   if (headerEndIt == bodyPart.end()) {
     logError("Invalid multi part format");
     return false;
@@ -542,16 +538,16 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
 std::string UrlDecode( std::string& query) {
   std::string decoded;
     for (size_t i = 0; i < query.length(); i++) {
-        if (query[i] == '%' && i + 2 < query.length()) {
-            std::string hexValue = query.substr(i + 1, 2);
-            char decodedChar = static_cast<char>(std::stoi(hexValue, nullptr, 16));
-            decoded += decodedChar;
-            i += 2;
-        } else if (query[i] == '+') {
-            decoded += ' ';
-        } else {
-            decoded += query[i];
-        }
+      if (query[i] == '%' && i + 2 < query.length()) {
+        std::string hexValue = query.substr(i + 1, 2);
+        char decodedChar = static_cast<char>(std::stoi(hexValue, nullptr, 16));
+        decoded += decodedChar;
+        i += 2;
+      } else if (query[i] == '+') {
+        decoded += ' ';
+      } else {
+        decoded += query[i];
+      }
     }
     return decoded;
 }
@@ -573,15 +569,15 @@ bool HttpParser::HandleDeleteRequest() {
     return false;
 
   if (std::filesystem::exists(path)) {
-     if (std::remove(path.c_str()) == 0) {
-         logDebug("File deleted successfully");
-         client_.status_ = "200";
-     } else {
-         logError("Failed to delete file: " + path);
-         client_.status_ = "500";
-         client_.file_.open(client_.vhost_->getErrorPage("500"));
-         return false;
-     }
+    if (std::remove(path.c_str()) == 0) {
+      logDebug("File deleted successfully");
+      client_.status_ = "200";
+    } else {
+      logError("Failed to delete file: " + path);
+      client_.status_ = "500";
+      client_.file_.open(client_.vhost_->getErrorPage("500"));
+      return false;
+    }
   } else {
     logError("File not found: ", path);
     client_.status_ = "404";
@@ -602,42 +598,41 @@ bool HttpParser::HandleDeleteRequest() {
 }
 
 void HttpParser::GenerateFileListHtml() {
-    file_list_ = "<ul>";
-    try {
-        for (const auto &entry : std::filesystem::directory_iterator(uploads_)) {
-            std::string filename = entry.path().filename().string();
-            file_list_ += "<li>";
-            file_list_ += "<span>" + filename + "</span>";
-            file_list_ += "<button onclick=\"deleteFile('" + filename + "')\">Delete</button>";
-            file_list_ += "</li>";
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        file_list_ += "<li>Error reading directory: " + std::string(e.what()) + "</li>";
-    } catch (const std::exception& e) {
-        file_list_ += "<li>Unexpected error: " + std::string(e.what()) + "</li>";
+  file_list_ = "<ul>";
+  try {
+    for (const auto &entry : std::filesystem::directory_iterator(uploads_)) {
+      std::string filename = entry.path().filename().string();
+      file_list_ += "<li>";
+      file_list_ += "<span>" + filename + "</span>";
+      file_list_ += "<button onclick=\"deleteFile('" + filename + "')\">Delete</button>";
+      file_list_ += "</li>";
     }
-    file_list_ += "</ul>";
+  } catch (const std::filesystem::filesystem_error& e) {
+    file_list_ += "<li>Error reading directory: " + std::string(e.what()) + "</li>";
+  } catch (const std::exception& e) {
+    file_list_ += "<li>Unexpected error: " + std::string(e.what()) + "</li>";
+  }
+  file_list_ += "</ul>";
 }
-
 
 bool HttpParser::CheckValidPath() {
   try {
-  if (std::filesystem::exists(request_target_)) {
-    if (std::filesystem::is_directory(request_target_)) {
-      if (request_target_.back() != '/')
-        request_target_ += "/" + index_;
-      else
-        request_target_ += index_;
-      return true; //The path is a directory
-    } else if (std::filesystem::is_regular_file(request_target_)) {
-      return true; //The path is a file
+    if (std::filesystem::exists(request_target_)) {
+      if (std::filesystem::is_directory(request_target_)) {
+        if (request_target_.back() != '/')
+          request_target_ += "/" + index_;
+        else
+          request_target_ += index_;
+        return true; //The path is a directory
+      } else if (std::filesystem::is_regular_file(request_target_)) {
+        return true; //The path is a file
+      }
+      } else {
+        logError("The path does not exist: ", request_target_);
+        client_.status_ = "404";
+        client_.file_.open(client_.vhost_->getErrorPage("404"));
+        return false;
     }
-    } else {
-      logError("The path does not exist: ", request_target_);
-      client_.status_ = "404";
-      client_.file_.open(client_.vhost_->getErrorPage("404"));
-      return false;
-  }
   } catch (const std::filesystem::filesystem_error& e) {
     logError("Filesystem error: ");
     std::cerr << e.what() << std::endl;
@@ -662,28 +657,25 @@ void HttpParser::CreateDirListing(std::string& directory) {
     return;
   std::remove(filename.c_str());
 
-    
   outFile << "<html><body><h1>Index of " << directory << "</h1><ul>";
   try {
-      for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-          std::string name = entry.path().filename().string();
-          if (std::filesystem::is_directory(entry.path())) {
-              outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
-          } else {
-              outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
-          }
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+      std::string name = entry.path().filename().string();
+      if (std::filesystem::is_directory(entry.path())) {
+          outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+      } else {
+          outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
       }
+    }
   } catch (const std::filesystem::filesystem_error& e) {
-      outFile << "<h1>Directory not found</h1>";
-      logError("Error accessing directory: ", directory);
-      client_.status_ = "500";
+    outFile << "<h1>Directory not found</h1>";
+    logError("Error accessing directory: ", directory);
+    client_.status_ = "500";
   }
-  //request_target_ = "www/dir_list.html";
   outFile<< "</ul></body></html>";
   logDebug("Directory listing created");
   outFile.seekg(0); 
 }
-
 
 int HttpParser::OpenFile(std::string& filename) {
   logDebug(filename);
@@ -697,11 +689,6 @@ int HttpParser::OpenFile(std::string& filename) {
   }
   return 0;
 }
-
-
-// std::string HttpParser::getAdditionalHeaders() {
-//   return additional_headers_;
-// }
 
 bool HttpParser::HandleGet(bool autoIndex) {
   if (autoIndex && index_.empty() && request_target_.back() == '/') {
@@ -728,19 +715,18 @@ bool HttpParser::HandleGet(bool autoIndex) {
 }
 
 std::string HttpParser::InjectFileListIntoHtml(const std::string& html_path) {
-    std::ifstream html_file(html_path);
-    if (!html_file.is_open()) {
-        return "<html><body><h1>Error: Unable to open HTML file.</h1></body></html>";
-    }
-    std::string html_content((std::istreambuf_iterator<char>(html_file)),
-                              std::istreambuf_iterator<char>());
-    GenerateFileListHtml();
-    std::size_t placeholder_pos = html_content.find("<!-- UPLOAD_LIST -->");
-    if (placeholder_pos != std::string::npos) {
-        html_content.replace(placeholder_pos, std::string("<!-- UPLOAD_LIST -->").length(), file_list_);
-    } else {
-
-        html_content += "<!-- Error: Upload list placeholder not found -->";
-    }
-    return html_content;
+  std::ifstream html_file(html_path);
+  if (!html_file.is_open()) {
+      return "<html><body><h1>Error: Unable to open HTML file.</h1></body></html>";
+  }
+  std::string html_content((std::istreambuf_iterator<char>(html_file)),
+                           std::istreambuf_iterator<char>());
+  GenerateFileListHtml();
+  std::size_t placeholder_pos = html_content.find("<!-- UPLOAD_LIST -->");
+  if (placeholder_pos != std::string::npos) {
+      html_content.replace(placeholder_pos, std::string("<!-- UPLOAD_LIST -->").length(), file_list_);
+  } else {
+    html_content += "<!-- Error: Upload list placeholder not found -->";
+  }
+  return html_content;
 }

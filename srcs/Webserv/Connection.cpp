@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/17 10:16:03 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/24 17:57:14 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/30 23:52:09 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,7 @@ Connection::Connection(int fd, size_t timeout)
       last_active_(std::chrono::steady_clock::now()),
       timeout_(timeout) {}
 
-Connection::~Connection() {
-  close(fd_);
-}
+Connection::~Connection() {}
 
 bool Connection::HasTimedOut() const {
   timepoint now = std::chrono::steady_clock::now();

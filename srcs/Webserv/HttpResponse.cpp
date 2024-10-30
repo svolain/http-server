@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/30 12:14:43 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/31 00:28:36 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -186,12 +186,26 @@ const std::map<std::string, std::string>& HttpResponse::getStatusMap() {
   static const std::map<std::string, std::string> status_map  = 
   {
     {"200", "200 OK"},
+    {"300", "300 Multiple Choices"},
+    {"301", "301 Moved Permanently"},
     {"302", "302 Found"},
+    {"303", "303 See Other"},
+    {"304", "304 Not Modified"},
+    {"307", "307 Temporary Redirect"},
+    {"308", "308 Permanent Redirect"},
     {"400", "400 Bad Request"},
+    {"403", "403 Forbidden"},
     {"404", "404 Not Found"},
     {"405", "405 Method Not Allowed"},
     {"411", "411 Length Required"},
-    {"500", "500 Internal Server Error"}
+    {"413", "413 Content Too Large"},
+    {"415", "415 Unsupported Media Type"},
+    {"431", "431 Request Header Fields Too Large"},
+    {"500", "500 Internal Server Error"},
+    {"501", "501 Not Implemented"},
+    {"502", "502 Bad Gateway"},
+    {"504", "504 Gateway Timeout"},
+    {"505", "505 HTTP Version Not Supported"},
   };
   return status_map;
 }

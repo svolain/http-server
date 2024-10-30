@@ -24,7 +24,6 @@ ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
 
 ClientConnection::~ClientConnection() {
   close(fd_);
-  //may be something else here?
 }
 
 int ClientConnection::ReceiveData(pollfd& poll) {
@@ -32,11 +31,11 @@ int ClientConnection::ReceiveData(pollfd& poll) {
   int               bytesIn;
   bytesIn = recv(fd_, buffer.data(), MAXBYTES, 0);
   if (bytesIn < 0) {
-    logError("recv returned -1, close");
+    logError("Client ", poll.fd, ": recv returned -1, closing connection.");
     return 1;
   }
   if (bytesIn == 0) {
-    logDebug("RecieveData returns 2, close");
+    logDebug("Client ", poll.fd, ": EOF received, closing connection.");
     return 2;
   }
   logDebug("request is:\n", buffer.data());
@@ -71,10 +70,9 @@ int ClientConnection::SendData(pollfd& poll) {
   }
   if (poll.events == POLLIN) {
     ResetClientConnection();
-    //this will close on ANY ERROR after we sent the response
     if (status_ != "200")
       return 1;
-  }                                      
+  }
   return 0;
 }
 

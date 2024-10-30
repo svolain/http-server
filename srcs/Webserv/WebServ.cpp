@@ -27,7 +27,7 @@ static void signalHandler(int signum) {
 WebServ::WebServ(const char* conf)
     : conf_(conf != nullptr ? conf : DEFAULT_CONF) {
   if (conf == nullptr)
-    logInfo("Configuration file not provided.\n\t\t\t"
+    logInfo("Configuration file not provided."
             "Using the default configuration file: /", DEFAULT_CONF);
 }
 
