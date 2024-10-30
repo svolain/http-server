@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/27 23:31:07 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/30 18:02:34 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ int ConfigParser::ParseConfig(std::deque<Socket>& sockets) {
     try {
       ParseServer(ss, sockets);
     } catch (std::string& error_token) {
-      logError("invalid input: \"", error_token, "\"");
+      logError("Invalid input: \"", error_token, "\".");
       return 1;
     } catch (const char* e) {
       logError(e);

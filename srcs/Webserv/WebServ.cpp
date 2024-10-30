@@ -17,13 +17,11 @@
 #include "ClientConnection.hpp"
 #include "CgiConnection.hpp"
 
-#define TODO 123
 bool run = true;
 
-
 static void signalHandler(int signum) {
-    std::cout << "\nSignal " << signum << " received" << std::endl;
-    run = false;
+  logInfo("Signal ", signum, " received");
+  run = false;
 }
 
 WebServ::WebServ(const char* conf)
@@ -34,22 +32,23 @@ WebServ::WebServ(const char* conf)
 }
 
 int WebServ::Init() {
-  {
-    ConfigParser parser(conf_);
-    if (parser.ParseConfig(this->sockets_))
-      return 1;
+  if (!conf_.ends_with(".conf")) {
+    logError("Incorrect config file format.");
+    return 1;
   }
-  logDebug(ToString());
+  ConfigParser parser(conf_);
+  if (parser.ParseConfig(this->sockets_))
+    return 1;
+
   for (Socket& socket : sockets_) {
     if (socket.InitServer(pollFDs_))
       return 2;
-    logDebug("init the server on socket ", socket.getSocket());
+    logDebug("Init the server on socket ", socket.getSocket());
   }
-  logInfo("Servers are ready");
+  logInfo("Server initialized successfully. Starting up.");
+  logDebug(ToString());
   return 0;
 }
-
-#define TIMEOUT 500
 
 void WebServ::Run() {
   signal(SIGINT, signalHandler);
@@ -64,7 +63,7 @@ void WebServ::Run() {
       PollAvailableFDs();
   }
   CloseAllConnections();
-  logInfo("--- Shutting down the server ---");
+  logInfo("Shutting down the server");
 }
 
 
