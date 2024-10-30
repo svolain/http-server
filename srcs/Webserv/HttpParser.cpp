@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/30 12:16:49 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/30 16:51:48 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -259,6 +259,7 @@ bool HttpParser::CheckPostHeaders() {
       client_.status_ = "400";
       return false;
     }
+    content_type_ =it->second;
   }
   auto it = headers_.find("transfer-encoding");
   is_chunked_ = (it != headers_.end() && it->second == "chunked");
@@ -391,19 +392,13 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
 }
 
 bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
-  
-  std::string clientFd = std::to_string(client_.fd_);
-  std::string filename = "/tmp/webserv/upload_list"  + clientFd;
-  std::fstream& outFile = client_.file_;
+  std::string filename = "/tmp/webserv/post_" + std::to_string(client_.fd_);
   if (OpenFile(filename))
     return false;
   std::remove(filename.c_str());
-  outFile << request_body.data();  
-
-  std::string contentType = headers_.find("Content-Type")->second;
-  content_type_ = contentType;
   if (request_target_.ends_with(".cgi") ||
       request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
+    client_.file_ << request_body.data();
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";
@@ -412,9 +407,9 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     client_.stage_ = ClientConnection::Stage::kCgi;
     return true;
   }
-  if (contentType.find("multipart/form-data") != std::string::npos) {
+  if (content_type_.find("multipart/form-data") != std::string::npos) {
     logDebug("Handling multipart form data");
-    if (!HandleMultipartFormData(request_body, contentType)) {
+    if (!HandleMultipartFormData(request_body, content_type_)) {
       client_.status_ = "400";// Internal Server Error
       return false;
     }
@@ -423,17 +418,11 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     client_.status_ = "415";
     return false;
   }
-  outFile.close();
-  std::string clientFd2 = std::to_string(client_.fd_);
-  std::string filename2 = "/tmp/webserv/upload_list"  + clientFd2;
-  std::fstream& outFile2 = client_.file_;
-  if (OpenFile(filename2))
-    return false;
-  std::remove(filename2.c_str());
+
   std::string htmlStr = InjectFileListIntoHtml("www/index.html");
-  outFile2 << htmlStr;
+  client_.file_ << htmlStr;
   client_.stage_ = ClientConnection::Stage::kResponse;
-  outFile2.seekg(0);
+  client_.file_.seekg(0);
   return true;
 }
 
@@ -547,7 +536,7 @@ std::string UrlDecode( std::string& query) {
 
 bool HttpParser::HandleDeleteRequest() {
   query_string_ = UrlDecode(query_string_);
-  size_t delim = query_string_.find("=");
+  size_t delim = query_string_.find("="); 
   if (delim == std::string::npos) {
     logError("Wrong query string format");
     client_.status_ = "400";
