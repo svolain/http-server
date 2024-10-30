@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/24 17:26:17 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/30 11:49:36 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <iostream>
 #include <cstddef>
 #include <poll.h>
+#include <map>
 
 
 class Connection
@@ -24,6 +25,7 @@ class Connection
  private:
  using timepoint = std::chrono::steady_clock::time_point;
  using sec = std::chrono::seconds;
+ using StringMap = std::map<std::string, std::string>;
 
  public:
   Connection(int fd, size_t timeout);
@@ -39,11 +41,12 @@ class Connection
   bool          HasTimedOut() const;
   void          UpdateLastActive();
 
-  int       fd_;
-  timepoint last_active_;
+  int            fd_;
+  timepoint      last_active_;
+  StringMap      additional_headers_;
 
  protected:
-  const long  timeout_;
+  const long     timeout_;
 };
 
 #endif //CONNECTION_HPP

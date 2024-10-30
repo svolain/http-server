@@ -14,7 +14,6 @@
 #include "CgiConnection.hpp"
 #include "Socket.hpp"
 #include "Logger.hpp"
-#include <vector>
 
 ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
     : Connection(fd, 20),
@@ -72,7 +71,7 @@ int ClientConnection::SendData(pollfd& poll) {
   }
   if (poll.events == POLLIN) {
     ResetClientConnection();
-    //this will close on ANY ERROR
+    //this will close on ANY ERROR after we sent the response
     if (status_ != "200")
       return 1;
   }                                      

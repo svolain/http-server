@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/23 18:29:50 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/30 11:48:09 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class HttpResponse {
 
   private:
     void  AssignContType(std::string resourcePath);
-    void  ComposeHeader(std::string additional_headers_s_);
+    void  ComposeHeader();
     // int   CheckRedirections(ClientConnection& fd_info, Location& loc);
     void  LookupStatusMessage();
     

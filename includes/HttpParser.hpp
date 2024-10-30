@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 17:15:10 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/30 11:48:05 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 # include <random>
 # include <cstdio>
 
-#define MAXBYTES 8192
+# define MAXBYTES 8192
 
 class VirtualHost;
 
@@ -54,7 +54,6 @@ class HttpParser {
   std::string getMethod() const;
   std::string getRequestTarget() const;
   std::string getFileList() const;
-  std::string getAdditionalHeaders();
 
  private:
   friend ClientConnection;
@@ -91,7 +90,6 @@ class HttpParser {
   std::map<std::string, std::string>  headers_;
   std::map<std::string, std::string>  session_store_;
   bool                                is_chunked_ = false;
-  std::string                         additional_headers_;
   std::string                         content_type_;
 };
 

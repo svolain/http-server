@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/25 14:44:46 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/30 12:14:43 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
 
   AssignContType(parser.getRequestTarget());
   LookupStatusMessage();
-  ComposeHeader(parser.getAdditionalHeaders());
+  ComposeHeader();
   std::cout << header_ << std::endl;
   if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
     return 0;
@@ -78,14 +78,17 @@ void HttpResponse::LookupStatusMessage(void) {
   }
 }
 
-void HttpResponse::ComposeHeader(std::string additional_headers_) {
-
+void HttpResponse::ComposeHeader() {
+  StringMap&         addhead = client_.additional_headers_;
   std::ostringstream oss;
+
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
 	oss << "Content-Type: " << cont_type_ << "\r\n";
-  if (!additional_headers_.empty())
-    oss <<  additional_headers_;
-  if (additional_headers_.find("Content-Length: ") == std::string::npos)
+  if (!addhead.empty()) { //otherwise might add extra space
+    for (auto it : addhead)
+      oss << it.first << " " << it.second;
+  } 
+  if (!addhead.empty() && addhead.find("Content-Length:") == addhead.end())
     oss << "Transfer-Encoding: chunked" << "\r\n";
 	oss << "\r\n";
 	this->header_ = oss.str();

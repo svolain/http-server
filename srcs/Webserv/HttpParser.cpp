@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/29 17:22:39 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/30 12:16:49 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,8 @@ bool  HttpParser::HandleRequest() {
       return request_target_.find(pair.first) == 0;
   });
 
+  client_.additional_headers_["Server:"] = "miniserv-vsdskl\r\n";
+
   if (it == locations.end()) {
     logError("Location not found");
     client_.status_ = "404";
@@ -68,18 +70,13 @@ bool  HttpParser::HandleRequest() {
       client_.status_ = "405";
       return false;
   }
-  if (!loc.redirection_.first.empty()) {
-    client_.status_ = loc.redirection_.first;
-    additional_headers_ = "Location: " + loc.redirection_.second + "\r\n";
-    additional_headers_ += "Content-Length: 0\r\n";
-    // additional_headers_ += "Connection: close\r\n";
-    return false;
-  }
 
   if (!loc.redirection_.first.empty()) {
     client_.status_ = loc.redirection_.first;
-    additional_headers_ = "Location: " + loc.redirection_.second + "\r\n";
+    client_.additional_headers_["Location:"] = loc.redirection_.second + "\r\n";
+    client_.additional_headers_["Content-Length:"] = "0\r\n";
     client_.stage_ = ClientConnection::Stage::kResponse;
+    // additional_headers_ += "Connection: close\r\n";
     return true;
   }
 
@@ -313,6 +310,7 @@ static std::string CreateSessionID() {
     return ss.str();
 }
 
+
 void HttpParser::HandleCookies() {
   if (session_store_.find("session_id") != session_store_.end()) {
     session_id_ = session_store_["session_id"];
@@ -320,7 +318,8 @@ void HttpParser::HandleCookies() {
   } else {
     session_id_ = CreateSessionID();
     logDebug("New User. Generated session_id: ", session_id_);
-    additional_headers_ += "Set-Cookie: session_id=" + session_id_ + "\r\n";
+    client_.additional_headers_["Set-Cookie: session_id="] = session_id_ + "\r\n";
+    // std::cout << "Tried to add cookie" << std::endl;
   }
 }
 
@@ -676,9 +675,9 @@ int HttpParser::OpenFile(std::string& filename) {
 }
 
 
-std::string HttpParser::getAdditionalHeaders() {
-  return additional_headers_;
-}
+// std::string HttpParser::getAdditionalHeaders() {
+//   return additional_headers_;
+// }
 
 bool HttpParser::HandleGet(bool autoIndex) {
   if (autoIndex && index_.empty() && request_target_.back() == '/') {
