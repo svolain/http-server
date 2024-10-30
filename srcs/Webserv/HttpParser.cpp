@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/30 17:59:23 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/30 18:23:50 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,7 @@ bool HttpParser::ParseHeader(const std::string& request) {
   else {
     client_.status_ = "400";
     logError("Requset contains body.");
+    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
 }
@@ -61,6 +62,7 @@ bool  HttpParser::HandleRequest() {
   if (it == locations.end()) {
     logError("Location not found");
     client_.status_ = "404";
+    client_.file_.open(client_.vhost_->getErrorPage("404"));
     return false;
   }
 
@@ -68,6 +70,7 @@ bool  HttpParser::HandleRequest() {
   if (loc.methods_.find(method_) == std::string::npos) {
     logError("Method not allowed");
       client_.status_ = "405";
+      client_.file_.open(client_.vhost_->getErrorPage("405"));
       return false;
   }
 
@@ -84,7 +87,7 @@ bool  HttpParser::HandleRequest() {
   uploads_ = loc.upload_;
   HandleCookies();
   request_target_ = loc.root_ + request_target_.substr(it->first.size());
-
+  std::cout << request_target_ << std::endl;
   if (method_ == "GET" && !HandleGet(loc.autoindex_))
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest())
@@ -93,11 +96,8 @@ bool  HttpParser::HandleRequest() {
     // ;
   else if (method_ == "POST") {
     logDebug(request_body_.data());
-    if (!IsBodySizeValid()) {
-      logError("Body size too big");
-      client_.status_ = "431";
+    if (!IsBodySizeValid())
       return false;
-    }
 
     if (!request_body_.empty() && content_length_ == request_body_.size()) {
 
@@ -107,7 +107,7 @@ bool  HttpParser::HandleRequest() {
     } else {
         client_.stage_ = ClientConnection::Stage::kBody;
     }
-     }
+  }
   return true;
 }
 
@@ -121,6 +121,7 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
           (request_body_.size() > content_length_)) {
         logError("Error: Request Header Fields Too Large");
         client_.status_ = "431";
+        client_.file_.open(client_.vhost_->getErrorPage("431"));
         return false;
       }
       return true;
@@ -142,6 +143,7 @@ bool HttpParser::IsBodySizeValid() {
   if (request_body_.size() > client_.vhost_->getMaxBodySize()) {
     logError("Request Header Fields Too Large");
     client_.status_ = "431";
+    client_.file_.open(client_.vhost_->getErrorPage("431"));
     return false;
   }
   return true;
@@ -186,6 +188,7 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
       || http_version.empty() || line != "\r") {
     logError("Bad request 400");
     client_.status_ = "400";
+    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
 
@@ -195,12 +198,14 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
       allowed_methods.end()) {
     logError("Not supported method requested");
     client_.status_ = "501";
+    client_.file_.open(client_.vhost_->getErrorPage("501"));
     return false;
   }
 
   if (request_target_[0] != '/') {
     logError("Bad request 400");
     client_.status_ = "400";
+    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
   request_target_.erase(request_target_.begin());
@@ -208,6 +213,7 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
   if (http_version != "HTTP/1.1") {
     logError("HTTP Version Not Supported 505");
     client_.status_ = "505";
+    client_.file_.open(client_.vhost_->getErrorPage("505"));
     return false;
   }
 
@@ -226,6 +232,7 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
     if (delim == std::string::npos || line.back() != '\r') {
       logError("Wrong header line format");
       client_.status_ = "400";
+      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false; 
     }
     line.pop_back();
@@ -236,6 +243,7 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   if (!headers_.contains("Host")) {
     logError("Bad request 400");
     client_.status_ = "400";
+    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false;
   }
 
@@ -247,6 +255,7 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   if (line != "\r") {
     logError("Request header fields too large");
     client_.status_ = "431";
+    client_.file_.open(client_.vhost_->getErrorPage("431"));
     return false;
   }
   return true;
@@ -258,6 +267,7 @@ bool HttpParser::CheckPostHeaders() {
     if (it == headers_.end()) {
       logError("Content-Type missing for request body");
       client_.status_ = "400";
+      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
     content_type_ =it->second;
@@ -269,6 +279,7 @@ bool HttpParser::CheckPostHeaders() {
     if (it == headers_.end()) {
       logError("Content-lenght missing for request body");
       client_.status_ = "411";
+      client_.file_.open(client_.vhost_->getErrorPage("411"));
       return false;
     } else {
       std::string& content_length_str = it->second;
@@ -281,10 +292,12 @@ bool HttpParser::CheckPostHeaders() {
       } catch (const std::invalid_argument& e) {
         logError("Invalid Content-Length");
         client_.status_ = "400";
+        client_.file_.open(client_.vhost_->getErrorPage("400"));
         return false;
       } catch (const std::out_of_range& e) {
         logError("Content-Length out of range");
         client_.status_ = "413";
+        client_.file_.open(client_.vhost_->getErrorPage("413"));
         return false;
       }
     }
@@ -348,6 +361,7 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
     if (readIndex >= buf.size()) {
       logError("UnChunkBody: \\r\\n missing");
       client_.status_ = "400";
+      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
 
@@ -367,6 +381,7 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
     if (readIndex + chunkSize > buf.size()) {
       logError("UnChunkBody: empty line missing");
       client_.status_ = "400";
+      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
 
@@ -380,6 +395,7 @@ bool HttpParser::UnChunkBody(std::vector<char>& buf) {
       client_.status_ = "400";
       logError("UnChunkBody: \\r\\n missing");
       client_.status_ = "400";
+      client_.file_.open(client_.vhost_->getErrorPage("400"));
       return false;
     }
   }
@@ -403,6 +419,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";
+      client_.file_.open(client_.vhost_->getErrorPage("500"));
       return false;
     }
     client_.stage_ = ClientConnection::Stage::kCgi;
@@ -416,6 +433,7 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
   } else {
     logError("Unsupported Content-Type");
     client_.status_ = "415";
+    client_.file_.open(client_.vhost_->getErrorPage("415"));
     return false;
   }
   std::string htmlStr = InjectFileListIntoHtml(request_target_ + "/" + index_);
@@ -428,8 +446,11 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
 bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
                                          const std::string &contentType) {
   size_t boundaryPosition = contentType.find("boundary=");
-  if (boundaryPosition == std::string::npos)
+  if (boundaryPosition == std::string::npos) {
+    client_.status_ = "500";
+    client_.file_.open(client_.vhost_->getErrorPage("500"));
     return false;
+  }
 
   std::string boundary = "--" + contentType.substr(boundaryPosition + 9);
   std::string fullBoundary = "\r\n" + boundary;
@@ -504,6 +525,7 @@ bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
       } else {
         logError("Failed to save file ");
         client_.status_ = "500";
+        client_.file_.close();
         client_.file_.open(client_.vhost_->getErrorPage("500"));
         return false;
       }
@@ -541,6 +563,7 @@ bool HttpParser::HandleDeleteRequest() {
   if (delim == std::string::npos) {
     logError("Wrong query string format");
     client_.status_ = "400";
+    client_.file_.open(client_.vhost_->getErrorPage("400"));
     return false; 
   }
   std::string queryname = query_string_.substr(delim + 1);
@@ -558,11 +581,13 @@ bool HttpParser::HandleDeleteRequest() {
      } else {
          logError("Failed to delete file: " + path);
          client_.status_ = "500";
+         client_.file_.open(client_.vhost_->getErrorPage("500"));
          return false;
      }
   } else {
     logError("File not found: ", path);
     client_.status_ = "404";
+    client_.file_.open(client_.vhost_->getErrorPage("404"));
     return false;
   }
   std::string clientFd = std::to_string(client_.fd_);
@@ -612,17 +637,20 @@ bool HttpParser::CheckValidPath() {
     } else {
       logError("The path does not exist: ", request_target_);
       client_.status_ = "404";
+      client_.file_.open(client_.vhost_->getErrorPage("404"));
       return false;
   }
   } catch (const std::filesystem::filesystem_error& e) {
     logError("Filesystem error: ");
     std::cerr << e.what() << std::endl;
     client_.status_ = "500";
+    client_.file_.open(client_.vhost_->getErrorPage("500"));
     return false;
   } catch (const std::exception& e) {
     logError("Unexpected error: "); 
     std::cerr << e.what() << std::endl;
     client_.status_ = "500";
+    client_.file_.open(client_.vhost_->getErrorPage("500"));
     return false;
   }
   return true;
@@ -689,6 +717,7 @@ bool HttpParser::HandleGet(bool autoIndex) {
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";
+      client_.file_.open(client_.vhost_->getErrorPage("500"));
       return false;
     }
     client_.stage_ = ClientConnection::Stage::kCgi;
