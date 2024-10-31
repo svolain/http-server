@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 14:19:52 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/31 14:22:41 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ class HttpParser {
   void            HandleCookies();
   bool            UnChunkBody(std::vector<char>& buf);
   void            AppendBody(std::vector<char> buffer, int bytesIn);
-  bool            HandlePostRequest(std::vector<char> request_body);
+  bool            HandlePostRequest(std::vector<char>& request_body);
   bool            HandleMultipartFormData(const std::vector<char> &body,
                                           const std::string &contentType);
   bool            ParseMultiPartData(std::vector<char> &bodyPart);
