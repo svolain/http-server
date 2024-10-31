@@ -117,8 +117,8 @@
             </div>
             <div class="form">
                 <form action="/" method="POST" enctype="multipart/form-data">
-                    <input type="file" id="file" name="file" accept="*/*">
-                    <input type="submit" value="Upload file">
+                    <input type="file" id="file" name="file" accept="*/*" onchange="enableSubmitBtn()">
+                    <input type="submit" id="submitBtn" value="Upload file" disabled>
                 </form>  
             </div>
             <div class="file-list">
@@ -128,13 +128,20 @@
 </html>
 
 <script>
+    function enableSubmitBtn() {
+        const fileInput = document.getElementById("file");
+        const submitButton = document.getElementById("submitBtn");
+        // Enable the submit button when a file is selected
+        submitButton.disabled = !fileInput.files.length;
+    }
+
     function deleteFile(filename, element) {
         fetch(`/?name=${encodeURIComponent(filename)}`, {
             method: 'DELETE',
         })
         .then(response => {
             if (response.ok) {
-                // Check if the server sends back new HTML
+                // server sends back new HTML
                 return response.text(); // Get the response body as text
             } else {
                 console.error("Failed to delete the file on the server");
@@ -142,8 +149,8 @@
             }
         })
         .then(newHtml => {
-            // Replace the current document body with the new HTML
-            document.open(); // Clear the current document
+            // Replace the old HTML with the new
+            document.open(); // Clear the old HTML
             document.write(newHtml); // Write the new HTML
             document.close(); // Close the document stream
         })
