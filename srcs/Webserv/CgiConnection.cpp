@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/31 02:11:53 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 14:25:41 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,13 +53,22 @@ pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
   int from_cgi_pipe[2] = {-1, -1};
 
   if (pipe(to_cgi_pipe) == -1) {
-    logError("CGI: failed to pipe()");
+    logError("CGI: failed to pipe().");
     return -1;
   }
   if (pipe(from_cgi_pipe) == -1) {
     close(to_cgi_pipe[READ]);
     close(to_cgi_pipe[WRITE]);
-    logError("CGI: failed to pipe()");
+    logError("CGI: failed to pipe().");
+    return -1;
+  }
+  if (fcntl(to_cgi_pipe[WRITE], F_SETFL, O_NONBLOCK) == -1 || 
+      fcntl(from_cgi_pipe[READ], F_SETFL, O_NONBLOCK) == -1 ) {
+    close(to_cgi_pipe[READ]);
+    close(to_cgi_pipe[WRITE]);
+    close(from_cgi_pipe[READ]);
+    close(from_cgi_pipe[WRITE]);
+    logError("CGI: failed to fcnt().");
     return -1;
   }
   pid_t pid = fork();
@@ -68,14 +77,13 @@ pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
     close(to_cgi_pipe[WRITE]);
     close(from_cgi_pipe[READ]);
     close(from_cgi_pipe[WRITE]);
-    logError("CGI: failed to fork()");
+    logError("CGI: failed to fork().");
     return -1;
   }
   if (pid != 0) {
     close(to_cgi_pipe[READ]);
     close(from_cgi_pipe[WRITE]);
     pollfd cgi_poll = {to_cgi_pipe[WRITE], POLLOUT, 0};
-    fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
     client.webserv_.SwitchClientToSend(client.fd_);
     client.webserv_.AddNewConnection(
         cgi_poll,

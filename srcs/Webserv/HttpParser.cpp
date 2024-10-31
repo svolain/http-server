@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 14:20:32 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/31 15:05:59 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -383,7 +383,6 @@ void HttpParser::AppendBody(std::vector<char> buffer, int bytesIn) {
 }
 
 bool HttpParser::HandlePostRequest(std::vector<char>& request_body) {
-  request_body.push_back('\0');
   std::string filename = "/tmp/webserv/post_" + std::to_string(client_.fd_);
   if (OpenFile(filename))
     return false;
@@ -391,6 +390,10 @@ bool HttpParser::HandlePostRequest(std::vector<char>& request_body) {
 
   if (request_target_.ends_with(".cgi") ||
       request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
+    if (!CheckValidPath()) {
+      client_.file_.close();
+      return false;
+    }
     client_.file_ << request_body.data() << std::flush;
     client_.file_.seekg(0);
     pid_t pid = CgiConnection::CreateCgiConnection(client_);

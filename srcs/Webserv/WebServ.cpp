@@ -12,6 +12,7 @@
 /* ************************************************************************** */
 
 #include <string>
+#include <fcntl.h>
 #include "ConfigParser.hpp"
 #include "WebServ.hpp"
 #include "ClientConnection.hpp"
@@ -75,7 +76,6 @@ void WebServ::AddNewConnection(pollfd& fd,
 
 void  WebServ::SwitchCgiToReceive(int olg_cgi_fd, int new_cgi_fd) {
   pollfd cgi_poll = {new_cgi_fd, POLLIN, 0};
-  // fcntl(cgi_poll.fd, F_SETFL, O_NONBLOCK);
   connections_.emplace(cgi_poll.fd, std::move(connections_.at(olg_cgi_fd)));
 
   close(olg_cgi_fd);

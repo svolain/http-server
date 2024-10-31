@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/02 15:28:14 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/08 15:53:01 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/31 14:27:36 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,8 @@
 
 #include <unistd.h>
 #include <poll.h>
-#include <fcntl.h>
 #include <vector>
-// #include <string.h>
+
 
 
 class Socket {
