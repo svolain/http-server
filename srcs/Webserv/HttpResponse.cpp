@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/31 00:28:36 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 19:36:28 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,6 @@ int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
   AssignContType(parser.getRequestTarget());
   LookupStatusMessage();
   ComposeHeader();
-  std::cout << header_ << std::endl;
   if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
     return 0;
   } else {
@@ -81,12 +80,14 @@ void HttpResponse::LookupStatusMessage(void) {
 void HttpResponse::ComposeHeader() {
   StringMap&         addhead = client_.additional_headers_;
   std::ostringstream oss;
-
+  
+  //cgi status mght be weird if its not contained in the map its 200
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
-	oss << "Content-Type: " << cont_type_ << "\r\n";
+  //if cgi returns strange type change to text/html back
+  client_.additional_headers_["Content-Type:"] = cont_type_;
   if (!addhead.empty()) { //otherwise might add extra space
     for (auto it : addhead)
-      oss << it.first << " " << it.second;
+      oss << it.first << " " << it.second + "\r\n";
   } 
   if (!addhead.empty() && addhead.find("Content-Length:") == addhead.end())
     oss << "Transfer-Encoding: chunked" << "\r\n";

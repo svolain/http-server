@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 16:22:16 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/31 19:20:28 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ bool  HttpParser::HandleRequest() {
   const LocationMap& locations = client_.vhost_->getLocations();
   const Location* loc_ptr = FindLocation(locations);
 
-  client_.additional_headers_["Server:"] = "miniserv-vsdskl\r\n";
+  client_.additional_headers_["Server:"] = "miniserv-vsdskl";
 
   if (loc_ptr == nullptr) {
     logError("Location not found");
@@ -69,8 +69,8 @@ bool  HttpParser::HandleRequest() {
 
   if (!loc.redirection_.first.empty()) {
     client_.status_ = loc.redirection_.first;
-    client_.additional_headers_["Location:"] = loc.redirection_.second + "\r\n";
-    client_.additional_headers_["Content-Length:"] = "0\r\n";
+    client_.additional_headers_["Location:"] = loc.redirection_.second;
+    client_.additional_headers_["Content-Length:"] = "0";
     client_.stage_ = ClientConnection::Stage::kResponse;
     return true;
   }
@@ -320,7 +320,7 @@ void HttpParser::HandleCookies() {
   } else {
     session_id_ = CreateSessionID();
     logDebug("New User. Generated session_id: ", session_id_);
-    client_.additional_headers_["Set-Cookie: session_id="] = session_id_ + "\r\n";
+    client_.additional_headers_["Set-Cookie: session_id="] = session_id_;
   }
 }
 
