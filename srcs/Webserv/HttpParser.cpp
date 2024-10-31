@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 01:03:28 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 02:03:15 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,7 +106,7 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
   std::string eoc = "0\r\n\r\n";
   if (is_chunked_) {
     if (bytesIn > 5 || !std::equal(buffer.begin(), buffer.end(), eoc.begin())) {
-      logDebug("bytesIn == MAXBYTES, more data to recieve");
+      logDebug("bytesIn == MAXBYTES, more data to receieve");
       AppendBody(buffer, bytesIn);
       if (!is_chunked_ &&
           (request_body_.size() > content_length_)) {
@@ -380,7 +380,8 @@ bool HttpParser::HandlePostRequest(std::vector<char> request_body) {
 
   if (request_target_.ends_with(".cgi") ||
       request_target_.ends_with(".py") || request_target_.ends_with(".php") ) {
-    client_.file_ << request_body.data();
+    client_.file_ << request_body.data() << std::flush;
+    client_.file_.seekg(0);
     pid_t pid = CgiConnection::CreateCgiConnection(client_);
     if (pid == -1) {
       client_.status_ = "500";

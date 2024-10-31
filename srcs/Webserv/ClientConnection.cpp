@@ -16,7 +16,7 @@
 #include "Logger.hpp"
 
 ClientConnection::ClientConnection(int fd, Socket& sock, WebServ& webserv)
-    : Connection(fd, 20),
+    : Connection(fd, 10),
       sock_(sock),
       webserv_(webserv),
       parser_(*this),

@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/31 01:19:38 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 02:11:53 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ CgiConnection::CgiConnection(int read_fd,
                              int write_fd,
                              ClientConnection& client,
                              pid_t child_pid)
-    : Connection(write_fd, 10),
+    : Connection(write_fd, 5),
       client_(client),
       file_(client.file_),
       child_pid_(child_pid) {
@@ -160,7 +160,7 @@ int CgiConnection::SendData(pollfd& poll) {
   char  buffer[MAXBYTES];
 
   if (!file_.is_open())
-    return SwitchToRecieve();
+    return SwitchToReceive();
 
   file_.read(buffer, MAXBYTES);
   if (file_.fail() && !file_.eof()) {
@@ -168,8 +168,8 @@ int CgiConnection::SendData(pollfd& poll) {
     client_.status_ = "500";
     return 1;
   }
-  if (file_.eof())
-    return SwitchToRecieve();
+  if (file_.gcount() == 0 && file_.eof())
+    return SwitchToReceive();
   if (write(poll.fd, buffer, file_.gcount()) == -1) {
     logError("CGI: failed to write data to child process.");
     client_.status_ = "500";
@@ -178,7 +178,7 @@ int CgiConnection::SendData(pollfd& poll) {
   return 0;
 }
 
-int CgiConnection::SwitchToRecieve() {
+int CgiConnection::SwitchToReceive() {
   client_.webserv_.SwitchCgiToReceive(pipe_fd_[WRITE], pipe_fd_[READ]);
   fd_ = pipe_fd_[READ];
   pipe_fd_[WRITE] = -1;
@@ -206,6 +206,7 @@ bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
     size_t delim = line.find(":");
     if (delim == std::string::npos || line.back() != '\r') {
       logError("CGI: Wrong header line format.");
+      client_.status_ = "502";
       return false;
     }
     line.pop_back();
@@ -216,6 +217,7 @@ bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
 
   if (!additional_headers_.contains("Content-Type:")) {
     logError("CGI: failed to find \"Content-Type\" in headers.");
+    client_.status_ = "502";
     return false;
   }
 

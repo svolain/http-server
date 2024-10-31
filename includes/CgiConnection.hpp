@@ -6,7 +6,7 @@
 /*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/31 01:16:42 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 01:25:29 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ class CgiConnection : public Connection {
  private:
   static void StartCgiProcess(int read_fd, int write_fd,
                               ClientConnection& client);
-  int         SwitchToRecieve();
+  int         SwitchToReceive();
   bool        ParseCgiResponseHeaderFields(char* buffer);
 
   int                                 pipe_fd_[2];
