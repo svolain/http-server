@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 14:40:49 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/31 16:21:39 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,7 @@ class HttpParser {
   bool            HandleDeleteRequest();
   void            GenerateFileListHtml();
   bool            CheckValidPath();
-  void            CreateDirListing(std::string& directory);
+  bool            CreateDirListing(std::string& directory);
   bool            HandleGet(bool autoIndex);
   std::string     InjectFileListIntoHtml(const std::string& html_path);
 

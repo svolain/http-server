@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 16:16:51 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/10/31 16:22:16 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -624,11 +624,11 @@ bool HttpParser::CheckValidPath() {
   return true;
 }
 
-void HttpParser::CreateDirListing(std::string& directory) {
+bool HttpParser::CreateDirListing(std::string& directory) {
   std::string filename = "/tmp/webserv/dir_list"  + std::to_string(client_.fd_);
   std::fstream& outFile = client_.file_;
-  if (OpenFile(filename))
-    return;
+  if (OpenFile(filename)) 
+    return false;
   std::remove(filename.c_str());
 
   outFile << "<html><body><h1>Index of " << directory << "</h1><ul>";
@@ -645,10 +645,12 @@ void HttpParser::CreateDirListing(std::string& directory) {
     outFile << "<h1>Directory not found</h1>";
     logError("Error accessing directory: ", directory);
     client_.status_ = "500";
+    return false;
   }
   outFile<< "</ul></body></html>";
   logDebug("Directory listing created");
   outFile.seekg(0);
+  return true;
 }
 
 int HttpParser::OpenFile(std::string& filename) {
@@ -673,7 +675,8 @@ static bool existIndex(std::string& target, std::string& index) {
 
 bool HttpParser::HandleGet(bool autoIndex) {
   if (autoIndex && (!existIndex(request_target_, index_)) && request_target_.back() == '/') {
-    CreateDirListing(request_target_);
+    if (!CreateDirListing(request_target_))
+      return false;
     client_.stage_ = ClientConnection::Stage::kResponse;
     return true;
   } else if (!CheckValidPath())
