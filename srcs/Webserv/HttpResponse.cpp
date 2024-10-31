@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/31 19:36:28 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/10/31 20:08:30 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ HttpResponse::HttpResponse(ClientConnection& client)
       cont_type_("text/html") {}
 
 int HttpResponse::SendResponse(pollfd& poll) {
-  std::fstream&   file = client_.file_; //
+  std::fstream&   file = client_.file_;
   int             client_socket = client_.fd_;
   int             send_status;
 
@@ -29,14 +29,10 @@ int HttpResponse::SendResponse(pollfd& poll) {
     send_status = SendOneChunk(client_socket, file);
     if (send_status == 0 || send_status == 1)
       return send_status;
-    if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1) {
-      perror("send 2:");
+    if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1)
       return 1;
-    }
-  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n", 37) == -1) {
-    perror("send 3:");
+  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n", 37) == -1)
     return 1;
-  }
     
   file.close();
   poll.events = POLLIN;
@@ -58,10 +54,12 @@ int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
 }
 
 void HttpResponse::AssignContType(std::string request_target) {
-  try{
+  try {
     auto it = getContTypeMap().find(request_target.substr(request_target.find_last_of('.')));
     if (it != getContTypeMap().end())
       cont_type_ = it->second;
+    else
+      cont_type_ = "text/html";
   } catch (const std::out_of_range &e) {
     logDebug("AssignContType: no '.' found in the filename");
   }
@@ -72,8 +70,8 @@ void HttpResponse::LookupStatusMessage(void) {
   if (it != getStatusMap().end()) {
     status_message_ = it->second;
   } else {
-    logError("LookupStatusMessage: couldn't find the proper status message for ", client_.status_, ", not assigning anything");
-    status_message_ = client_.status_;
+    logError("LookupStatusMessage: couldn't find the proper status message for ", client_.status_, ", assuming CGI, assigning 200");
+    status_message_ = "200 OK";
   }
 }
 
@@ -81,13 +79,11 @@ void HttpResponse::ComposeHeader() {
   StringMap&         addhead = client_.additional_headers_;
   std::ostringstream oss;
   
-  //cgi status mght be weird if its not contained in the map its 200
 	oss << "HTTP/1.1 " << status_message_ << "\r\n";
-  //if cgi returns strange type change to text/html back
   client_.additional_headers_["Content-Type:"] = cont_type_;
-  if (!addhead.empty()) { //otherwise might add extra space
+  if (!addhead.empty()) {
     for (auto it : addhead)
-      oss << it.first << " " << it.second + "\r\n";
+      oss << it.first << " " << it.second << "\r\n";
   } 
   if (!addhead.empty() && addhead.find("Content-Length:") == addhead.end())
     oss << "Transfer-Encoding: chunked" << "\r\n";
@@ -110,10 +106,8 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
   chunk_size_hex << std::hex << bytes_read << "\r\n";
   if (SendToClient(client_socket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1 || 
     SendToClient(client_socket, buffer, bytes_read) == -1 ||
-    SendToClient(client_socket, "\r\n", 2) == -1) {
-        perror("send :");
-        return 1;
-  }
+    SendToClient(client_socket, "\r\n", 2) == -1)
+      return 1;
   if (bytes_read < chunk_size)
     return 2;
   return 0;
@@ -121,7 +115,6 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
 
 int HttpResponse::SendToClient(const int client_socket, const char* msg, int length) {
   int bytes_sent;
-  /* https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly */
   bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
   if (bytes_sent != length) {
     logError("send: amount sent != amount requested for send");

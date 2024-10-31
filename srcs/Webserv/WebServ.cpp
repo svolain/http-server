@@ -117,9 +117,6 @@ void WebServ::PollAvailableFDs(void) {
               ": Error or closed read end detected, closing connection.");
       CloseConnection(connection.fd_, i);
     }
-    // else if (revents & POLLNVAL) {
-    //   logError("Invalid fd: ", fd);
-    //   CloseConnection(connection, i);} 
     else if (revents & POLLIN || revents & POLLHUP) {
       ReceiveData(connection, i);
     } else if (revents & POLLOUT)
