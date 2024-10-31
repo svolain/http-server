@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/31 15:05:15 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/31 16:01:57 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,9 @@ CgiConnection::~CgiConnection() {
     if (result == 0)
       kill(child_pid_, SIGTERM);
     client_.status_ = "504";
+  } else if (client_.status_ != "200") {
+    if (result == 0)
+      kill(child_pid_, SIGTERM);
   } else if ((WIFEXITED(status) && WEXITSTATUS(status) != 0) ||
               WIFSIGNALED(status)) {
     client_.status_ = "502";
