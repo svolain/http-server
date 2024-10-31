@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/31 16:01:57 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/31 16:17:02 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
