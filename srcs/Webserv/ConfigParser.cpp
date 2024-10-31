@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/31 01:13:33 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 13:44:02 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -160,7 +160,6 @@ void ConfigParser::ParseLocation(LocationMap& locations,
   ss >> location;
   if (!std::regex_match(location, location_format))
     throw "location " + location;
-  location = location.substr(1);
 
   std::string methods;
   StringPair  redirection;

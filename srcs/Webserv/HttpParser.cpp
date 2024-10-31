@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 02:03:15 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 14:14:14 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,21 +50,17 @@ bool HttpParser::ParseHeader(const std::string& request) {
 
 bool  HttpParser::HandleRequest() {
   const LocationMap& locations = client_.vhost_->getLocations();
-  const auto& it = std::find_if(locations.begin(),
-                                locations.end(),
-                                [&](const LocationPair& pair) {
-      return request_target_.find(pair.first) == 0;
-  });
+  const Location* loc_ptr = FindLocation(locations);
 
   client_.additional_headers_["Server:"] = "miniserv-vsdskl\r\n";
 
-  if (it == locations.end()) {
+  if (loc_ptr == nullptr) {
     logError("Location not found");
     client_.status_ = "404";
     return false;
   }
 
-  const Location& loc = it->second;
+  const Location& loc = *loc_ptr;
   if (loc.methods_.find(method_) == std::string::npos) {
     logError("Method not allowed");
     client_.status_ = "405";
@@ -82,8 +78,6 @@ bool  HttpParser::HandleRequest() {
   index_ = loc.index_;
   uploads_ = loc.upload_;
   HandleCookies();
-  request_target_ = loc.root_ + request_target_.substr(it->first.size());
-  std::cout << request_target_ << std::endl;
   if (method_ == "GET" && !HandleGet(loc.autoindex_))
     return false;
   else if (method_ == "DELETE" && !HandleDeleteRequest())
@@ -100,6 +94,23 @@ bool  HttpParser::HandleRequest() {
     }
   }
   return true;
+}
+
+const Location* HttpParser::FindLocation(const LocationMap& locations) {
+  const Location* out = nullptr;
+  size_t        max_length = 0;
+  for (const auto& pair : locations) {
+    if (request_target_.find(pair.first) == 0 && 
+        pair.first.length() > max_length) {
+      out = &(pair.second);
+      max_length =  pair.first.length();
+    }
+  }
+  if (out != nullptr) {
+    request_target_ = out->root_ + request_target_.substr(max_length);
+    logDebug("Updated request_target:", request_target_);
+  }
+  return out;
 }
 
 bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
@@ -185,7 +196,6 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
     client_.status_ = "400";
     return false;
   }
-  request_target_.erase(request_target_.begin());
 
   if (http_version != "HTTP/1.1") {
     logError("HTTP Version Not Supported 505");
@@ -648,8 +658,17 @@ int HttpParser::OpenFile(std::string& filename) {
   return 0;
 }
 
+static bool existIndex(std::string& target, std::string& index) {
+  if (index.size() == 0)
+    return false;
+  std::string path = target + index;
+  if (access(path.c_str(), R_OK) == -1)
+    return false;
+  return true;
+}
+
 bool HttpParser::HandleGet(bool autoIndex) {
-  if (autoIndex && index_.empty() && request_target_.back() == '/') {
+  if (autoIndex && (!existIndex(request_target_, index_)) && request_target_.back() == '/') {
     CreateDirListing(request_target_);
     client_.stage_ = ClientConnection::Stage::kResponse;
     return true;

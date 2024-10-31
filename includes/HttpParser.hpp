@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 12:16:12 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 00:57:52 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/10/31 13:33:38 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,24 +56,25 @@ class HttpParser {
  private:
   friend ClientConnection;
 
-  bool        ParseStartLine(std::istringstream& request_stream);
-  bool        ParseHeaderFields(std::istringstream& request_stream);
-  bool        CheckPostHeaders();
-  void        ParseCookies(const std::string& cookie_header);
-  std::string TrimWhitespace(const std::string& str);
-  void        HandleCookies();
-  bool        UnChunkBody(std::vector<char>& buf);
-  void        AppendBody(std::vector<char> buffer, int bytesIn);
-  bool        HandlePostRequest(std::vector<char> request_body);
-  bool        HandleMultipartFormData(const std::vector<char> &body,
-                                      const std::string &contentType);
-  bool        ParseMultiPartData(std::vector<char> &bodyPart);
-  bool        HandleDeleteRequest();
-  void        GenerateFileListHtml();
-  bool        CheckValidPath();
-  void        CreateDirListing(std::string& directory);
-  bool        HandleGet(bool autoIndex);
-  std::string InjectFileListIntoHtml(const std::string& html_path);
+  bool            ParseStartLine(std::istringstream& request_stream);
+  bool            ParseHeaderFields(std::istringstream& request_stream);
+  bool            CheckPostHeaders();
+  const Location* FindLocation(const LocationMap& locations);
+  void            ParseCookies(const std::string& cookie_header);
+  std::string     TrimWhitespace(const std::string& str);
+  void            HandleCookies();
+  bool            UnChunkBody(std::vector<char>& buf);
+  void            AppendBody(std::vector<char> buffer, int bytesIn);
+  bool            HandlePostRequest(std::vector<char> request_body);
+  bool            HandleMultipartFormData(const std::vector<char> &body,
+                                          const std::string &contentType);
+  bool            ParseMultiPartData(std::vector<char> &bodyPart);
+  bool            HandleDeleteRequest();
+  void            GenerateFileListHtml();
+  bool            CheckValidPath();
+  void            CreateDirListing(std::string& directory);
+  bool            HandleGet(bool autoIndex);
+  std::string     InjectFileListIntoHtml(const std::string& html_path);
 
   ClientConnection&                   client_;
   size_t                              content_length_ = 0;
