@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/31 14:25:41 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/10/31 15:05:15 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "CgiConnection.hpp"
 #include "Logger.hpp"
 #include <signal.h>
+#include <sys/wait.h>
 
 #define READ 0
 #define WRITE 1
@@ -35,11 +36,24 @@ CgiConnection::~CgiConnection() {
   if (pipe_fd_[WRITE] != -1)
     close(pipe_fd_[WRITE]);
   close(pipe_fd_[READ]);
-  kill(child_pid_, SIGTERM);
   client_.stage_ = ClientConnection::Stage::kResponse;
-  if (HasTimedOut())
+
+  int status;
+  pid_t result = waitpid(child_pid_, &status, WNOHANG);
+
+  if (result == -1) {
+    kill(child_pid_, SIGTERM);
+    client_.status_ = "500";
+    return;
+  }
+  if (HasTimedOut()) {
+    if (result == 0)
+      kill(child_pid_, SIGTERM);
     client_.status_ = "504";
-  else if (client_.status_ == "200") {
+  } else if ((WIFEXITED(status) && WEXITSTATUS(status) != 0) ||
+              WIFSIGNALED(status)) {
+    client_.status_ = "502";
+  } else if (client_.status_ == "200") {
     client_.additional_headers_.insert(additional_headers_.begin(),
                                        additional_headers_.end());
     return;
