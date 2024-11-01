@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/01 13:59:59 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/01 14:43:39 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -641,9 +641,9 @@ bool HttpParser::CreateDirListing(std::string& directory) {
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
       std::string name = entry.path().filename().string();
       if (std::filesystem::is_directory(entry.path())) {
-        outFile << "<li><a href=\"" << name << "/\">" << name << "/</a></li>";
+        outFile << "<li>" << name << "</li>";
       } else {
-        outFile << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+        outFile << "<li>" << name << "</li>";
       }
     }
   } catch (const std::filesystem::filesystem_error& e) {
