@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/01 14:43:39 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/11/01 14:56:27 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -586,7 +586,7 @@ void HttpParser::GenerateFileListHtml() {
     for (const auto &entry : std::filesystem::directory_iterator(uploads_)) {
       std::string filename = entry.path().filename().string();
       file_list_ += "<li>";
-      file_list_ += "<span>" + filename + "</span>";
+      file_list_ += "<span><a href=\"/" + uploads_ + filename + "\">/" + uploads_ + filename + "</a></span>";
       file_list_ += "<button onclick=\"deleteFile('" + filename + "')\">Delete</button>";
       file_list_ += "</li>";
     }
