@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/30 11:48:09 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/01 14:00:17 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,8 @@ class HttpResponse {
 
     ClientConnection& client_;
     std::string       header_;
-    // StringMap                              cont_type_map_;
     std::string       cont_type_;
     std::string       status_message_;
-    // std::map<std::string, std::string>     status_map_;
-    // std::string                            additional_headers_;
 };
 
 #endif

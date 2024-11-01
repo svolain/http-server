@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/10/31 19:20:28 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/01 13:59:59 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,10 +154,15 @@ void HttpParser::ResetParser() {
   method_.clear();
   request_target_.clear();
   query_string_.clear();
+  file_list_.clear();
+  index_.clear();
+  session_id_.clear();
   request_body_.clear();
   headers_.clear();
-  index_.clear();
+  session_store_.clear();
   is_chunked_ = false;
+  content_type_.clear();
+  uploads_.clear();
 }
 
 std::string HttpParser::getHost() {
