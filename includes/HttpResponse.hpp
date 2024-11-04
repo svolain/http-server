@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:51:16 by klukiano          #+#    #+#             */
-/*   Updated: 2024/11/01 14:00:17 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/04 18:45:35 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include <poll.h>
+#include <vector>
 #include "Location.hpp"
 
 class ClientConnection;
@@ -40,7 +41,6 @@ class HttpResponse {
   private:
     void  AssignContType(std::string resourcePath);
     void  ComposeHeader();
-    // int   CheckRedirections(ClientConnection& fd_info, Location& loc);
     void  LookupStatusMessage();
     
     int   SendHeader(int client_socket, HttpParser& parser);
@@ -55,6 +55,7 @@ class HttpResponse {
     std::string       header_;
     std::string       cont_type_;
     std::string       status_message_;
+    std::vector<char> unsent_msg;
 };
 
 #endif
