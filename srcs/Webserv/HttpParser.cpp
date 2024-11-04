@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/01 14:56:27 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/11/04 17:49:58 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,7 +142,7 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
 
 bool HttpParser::IsBodySizeValid() {
   if (request_body_.size() > client_.vhost_->getMaxBodySize()) {
-    logError("Request Header Fields Too Large");
+    logError("Request body is too large");
     client_.status_ = "431";
     return false;
   }
@@ -416,9 +416,24 @@ bool HttpParser::HandlePostRequest(std::vector<char>& request_body) {
       return false;
     }
   } else {
-    logError("Unsupported Content-Type");
-    client_.status_ = "415";
-    return false;
+    static const std::map<std::string, std::string> types = getContTypeMap();
+    std::string extension;
+    auto it = types.find(content_type_);
+    if (it == types.end())
+      extension =  ".txt";
+    else 
+      extension = it->second;
+    std::ofstream outFile(uploads_ + "upload" + std::to_string(client_.fd_) + extension, std::ios::binary);
+    if (outFile.is_open()) {
+      outFile << request_body.data();
+      outFile.close();
+      logDebug("File ", filename, " saved successfully");
+    } else {
+      logError("Failed to save file ");
+      client_.status_ = "500";
+      client_.file_.close();
+      return false;  
+    }
   }
   std::string htmlStr = InjectFileListIntoHtml(request_target_ + "/" + index_);
   client_.file_ << htmlStr;
@@ -475,7 +490,6 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
   }
   return true;
 }
-
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
   std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
   auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(),
@@ -717,4 +731,49 @@ std::string HttpParser::InjectFileListIntoHtml(const std::string& html_path) {
     html_content += "<!-- Error: Upload list placeholder not found -->";
   }
   return html_content;
+}
+
+const std::map<std::string, std::string>& HttpParser::getContTypeMap() {
+  static const std::map<std::string, std::string> cont_type_map = {
+    {"audio/mpeg", ".mp3"},
+    {"audio/x-ms-wma", ".wma"},
+    {"audio/x-wav", ".wav"},
+
+    {"image/png", ".png"},
+    {"image/jpeg", ".jpg"},
+    {"image/gif", ".gif"},
+    {"image/tiff", ".tiff"},
+    {"image/x-icon", ".ico"},
+    {"image/vnd.djvu", ".djvu"},
+    {"image/svg+xml", ".svg"},
+
+    {"text/css", ".css"},
+    {"text/csv", ".csv"},
+    {"text/html", ".html"},
+    {"text/plain", ".txt"},
+
+    {"video/mp4", ".mp4"},
+    {"video/x-msvideo", ".avi"},
+    {"video/x-ms-wmv", ".wmv"},
+    {"video/x-flv", ".flv"},
+    {"video/webm", ".webm"},
+
+    {"application/pdf", ".pdf"},
+    {"application/json", ".json"},
+    {"application/xml", ".xml"},
+    {"application/zip", ".zip"},
+    {"application/javascript", ".js"},
+    {"application/vnd.oasis.opendocument.text", ".odt"},
+    {"application/vnd.oasis.opendocument.spreadsheet", ".ods"},
+    {"application/vnd.oasis.opendocument.presentation", ".odp"},
+    {"application/vnd.oasis.opendocument.graphics", ".odg"},
+    {"application/vnd.ms-excel", ".xls"},
+    {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx"},
+    {"application/vnd.ms-powerpoint", ".ppt"},
+    {"application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx"},
+    {"application/msword", ".doc"},
+    {"application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx"},
+    {"application/vnd.mozilla.xul+xml", ".xul"}
+};
+return cont_type_map;
 }
