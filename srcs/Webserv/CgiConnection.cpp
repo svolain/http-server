@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/10/31 16:17:02 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/11/04 17:02:55 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ CgiConnection::~CgiConnection() {
       kill(child_pid_, SIGTERM);
   } else if ((WIFEXITED(status) && WEXITSTATUS(status) != 0) ||
               WIFSIGNALED(status)) {
-    client_.status_ = "502";
+    client_.status_ = "500";
   } else if (client_.status_ == "200") {
     client_.additional_headers_.insert(additional_headers_.begin(),
                                        additional_headers_.end());
@@ -111,6 +111,8 @@ pid_t  CgiConnection::CreateCgiConnection(ClientConnection& client) {
   else {
     close(to_cgi_pipe[WRITE]);
     close(from_cgi_pipe[READ]);
+    if (chdir("cgi-bin") == -1)
+      std::_Exit(EXIT_FAILURE);
     StartCgiProcess(to_cgi_pipe[READ], from_cgi_pipe[WRITE], client);
   }
   return pid;
@@ -135,7 +137,7 @@ void  CgiConnection::StartCgiProcess(int read_fd,
     env[i] = env_vec[i].data();
   env[env_vec.size()] = nullptr;
 
-  std::string target = client.parser_.getRequestTarget();
+  std::string target = client.parser_.getRequestTarget().data() + 9;
   std::string executable;
   char* cmd[3];
 

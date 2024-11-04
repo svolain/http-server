@@ -87,6 +87,7 @@ void  ClientConnection::ResetClientConnection() {
 
 std::vector<std::string>  ClientConnection::PrepareCgiEvniron() {
   std::vector<std::string>  env;
+
   env.push_back("REQUEST_METHOD=" + parser_.method_);
   env.push_back("QUERY_STRING=" + parser_.query_string_);
   env.push_back("SCRIPT_NAME=" + parser_.request_target_);

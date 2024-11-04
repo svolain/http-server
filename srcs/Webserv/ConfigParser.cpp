@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/19 15:55:31 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/31 13:44:02 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/11/04 16:43:05 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,7 +149,7 @@ void ConfigParser::ParseErrorPage(StringMap& errors, std::stringstream& ss) {
     throw "error_page " + code + " " + path;
   path.pop_back();
   if (!errors.contains(code))
-    errors.emplace(code, path);
+    errors.emplace(code, path.data() + 1);
 }
 
 void ConfigParser::ParseLocation(LocationMap& locations,
