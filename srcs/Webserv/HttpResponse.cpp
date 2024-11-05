@@ -6,7 +6,7 @@
 /*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/11/01 14:34:22 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/05 13:23:09 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,8 @@ int HttpResponse::SendResponse(pollfd& poll) {
     send_status = SendOneChunk(client_socket, file);
     if (send_status == 0 || send_status == 1)
       return send_status;
-    if (SendToClient(client_socket, "0\r\n\r\n", 6) == -1)
-      return 1;
   } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n", 37) == -1)
     return 1;
-    
   file.close();
   poll.events = POLLIN;
   logDebug("\n-----response sent-----\n");
@@ -48,7 +45,7 @@ int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
   if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
     return 0;
   } else {
-    logError("SendResponse: error on send");
+    logError("SendHeader: error on send");
     return 1;
   }
 }
@@ -102,25 +99,33 @@ int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
     logDebug("bytes_read returned -1");
     return 1;
   }
-  std::ostringstream chunk_size_hex;
-  chunk_size_hex << std::hex << bytes_read << "\r\n";
-  if (SendToClient(client_socket, chunk_size_hex.str().c_str(), chunk_size_hex.str().length()) == -1 || 
-    SendToClient(client_socket, buffer, bytes_read) == -1 ||
-    SendToClient(client_socket, "\r\n", 2) == -1)
-      return 1;
+  std::ostringstream chunk_stream;
+  chunk_stream << std::hex << bytes_read << "\r\n"; 
+  // size_t chunk_hex_size = chunk_stream.str().length();
+  chunk_stream.write(buffer, bytes_read);
+  chunk_stream << "\r\n";
+  if (bytes_read < chunk_size)
+    chunk_stream << "0\r\n\r\n";
+  if (SendToClient(client_socket, chunk_stream.str().c_str(), chunk_stream.str().length()) == -1)
+    return 1;
   if (bytes_read < chunk_size)
     return 2;
   return 0;
 }
 
 int HttpResponse::SendToClient(const int client_socket, const char* msg, int length) {
+
   int bytes_sent;
   bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
-  if (bytes_sent != length) {
-    logError("send: amount sent != amount requested for send");
-    return -1;
+  if (bytes_sent == -1) {
+    logError("send returned -1");
+    return 1;
   }
-  return bytes_sent;
+  else if (bytes_sent == 0 || bytes_sent != length) {
+    logError("send returned 0 or less than length");
+    return 1;
+  }
+  return 0;
 }
 
 void HttpResponse::ResetResponse() {
