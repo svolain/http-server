@@ -136,7 +136,7 @@
     }
 
     function deleteFile(filename, element) {
-        fetch(`/?name=${encodeURIComponent(filename)}`, {
+        fetch(`/${filename}`, {
             method: 'DELETE',
         })
         .then(response => {

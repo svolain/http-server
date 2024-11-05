@@ -6,7 +6,7 @@
 /*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/04 17:49:58 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/11/05 13:14:56 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -490,6 +490,7 @@ bool HttpParser::HandleMultipartFormData(const std::vector<char> &body,
   }
   return true;
 }
+
 bool HttpParser::ParseMultiPartData(std::vector<char> &bodyPart) {
   std::vector<char> crlf = {'\r', '\n', '\r', '\n'};
   auto headerEndIt = std::search(bodyPart.begin(), bodyPart.end(),
@@ -553,17 +554,14 @@ std::string UrlDecode( std::string& query) {
 }
 
 bool HttpParser::HandleDeleteRequest() {
-  query_string_ = UrlDecode(query_string_);
-  size_t delim = query_string_.find("="); 
-  if (delim == std::string::npos) {
-    logError("Wrong query string format");
-    client_.status_ = "400";
-    return false; 
-  }
-  std::string queryname = query_string_.substr(delim + 1);
-  std::string path = uploads_ + queryname;
+  size_t pos = request_target_.find("/");
+  std::string file;
+  if (pos != std::string::npos)
+    file = request_target_.substr(pos);
+  else
+    return false;
+  std::string path = uploads_ + file;
   logDebug("Handling DELETE request for: ", path);
-
   if (path.find("..") != std::string::npos)
     return false;
 
@@ -587,7 +585,8 @@ bool HttpParser::HandleDeleteRequest() {
   if (OpenFile(filename))
     return false;
   std::remove(filename.c_str());
-  std::string htmlStr = InjectFileListIntoHtml(request_target_ + "/" + index_);
+  std::string root = request_target_.substr(0, pos);
+  std::string htmlStr = InjectFileListIntoHtml(root + "/" + index_);
   outFile << htmlStr;
   client_.stage_ = ClientConnection::Stage::kResponse;
   outFile.seekg(0);
