@@ -84,6 +84,7 @@ void  ClientConnection::ResetClientConnection() {
   vhost_ = nullptr;
   parser_.ResetParser();
   response_.ResetResponse();
+  additional_headers_.clear();
   file_.close();
   stage_ = Stage::kHeader;
 }
