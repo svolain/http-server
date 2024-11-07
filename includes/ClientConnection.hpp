@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/25 13:21:50 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/11/06 11:13:48 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,9 @@ class ClientConnection : public Connection {
   enum class Stage { kHeader,
                      kBody,
                      kCgi,
-                     kResponse };
-                     
+                     kResponse,
+                     kSending };
+
   Stage         stage_ = Stage::kHeader;
   std::string   status_ = "200";
   Socket&       sock_;

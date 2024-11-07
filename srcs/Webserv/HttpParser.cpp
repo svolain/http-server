@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/05 13:14:56 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/11/07 16:10:27 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,8 +51,6 @@ bool HttpParser::ParseHeader(const std::string& request) {
 bool  HttpParser::HandleRequest() {
   const LocationMap& locations = client_.vhost_->getLocations();
   const Location* loc_ptr = FindLocation(locations);
-
-  client_.additional_headers_["Server:"] = "miniserv-vsdskl";
 
   if (loc_ptr == nullptr) {
     logError("Location not found");

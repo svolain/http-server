@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CgiConnection.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/24 17:38:49 by klukiano          #+#    #+#             */
-/*   Updated: 2024/10/31 01:25:29 by  dshatilo        ###   ########.fr       */
+/*   Updated: 2024/11/07 15:35:40 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,12 @@
 #include "WebServ.hpp"
 
 #include <fstream>
+#include <set>
 
 class CgiConnection : public Connection {
+ private:
+  using StringSet = std::set<std::string>;
+
  public:
   CgiConnection(int read_fd,
                 int write_fd,
@@ -35,16 +39,18 @@ class CgiConnection : public Connection {
   int           SendData(pollfd& poll) override;
 
  private:
-  static void StartCgiProcess(int read_fd, int write_fd,
-                              ClientConnection& client);
-  int         SwitchToReceive();
-  bool        ParseCgiResponseHeaderFields(char* buffer);
+  static void             StartCgiProcess(int read_fd, int write_fd,
+                                          ClientConnection& client);
+  static const StringSet& getContentTypeSet();
+  static const StringSet& getStatusSet();
+  int                     SwitchToReceive();
+  bool                    ParseCgiResponseHeaderFields(char* buffer);
 
-  int                                 pipe_fd_[2];
-  ClientConnection&                   client_;
-  std::fstream&                       file_;
-  pid_t                               child_pid_;
-  bool                                header_parsed_ = false;
+  int               pipe_fd_[2];
+  ClientConnection& client_;
+  std::fstream&     file_;
+  pid_t             child_pid_;
+  bool              header_parsed_ = false;
 };
 
 #endif //CGICONNECTION_HPP

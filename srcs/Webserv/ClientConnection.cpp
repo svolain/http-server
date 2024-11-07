@@ -60,8 +60,11 @@ int ClientConnection::ReceiveData(pollfd& poll) {
 }
 
 int ClientConnection::SendData(pollfd& poll) {
-  if (stage_ == Stage::kCgi) {
+  if (stage_ == Stage::kCgi)
     return 0;
+  if (stage_ == Stage::kResponse) {
+    response_.PrepareResponse();
+    stage_ = Stage::kSending;
   }
   if (response_.SendResponse(poll)) {
     file_.close();
@@ -69,9 +72,9 @@ int ClientConnection::SendData(pollfd& poll) {
     return 1;
   }
   if (poll.events == POLLIN) {
-    ResetClientConnection();
     if (status_ != "200")
       return 1;
+    ResetClientConnection();
   }
   return 0;
 }

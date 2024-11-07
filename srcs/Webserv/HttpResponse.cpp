@@ -3,113 +3,152 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/11/05 13:23:09 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/07 16:19:56 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 #include "ClientConnection.hpp"
 #include "Logger.hpp"
+#include <cstring>
 
-HttpResponse::HttpResponse(ClientConnection& client)
-    : client_(client),
-      cont_type_("text/html") {}
+HttpResponse::HttpResponse(ClientConnection& client) : client_(client) {}
 
-int HttpResponse::SendResponse(pollfd& poll) {
-  std::fstream&   file = client_.file_;
-  int             client_socket = client_.fd_;
-  int             send_status;
-
-  if (header_.empty())
-    return (SendHeader(client_socket, client_.parser_));
-  if (file.is_open()) {
-    send_status = SendOneChunk(client_socket, file);
-    if (send_status == 0 || send_status == 1)
-      return send_status;
-  } else if (SendToClient(client_socket, "<h1>500 Internal Server Error</h1>\r\n", 37) == -1)
-    return 1;
-  file.close();
-  poll.events = POLLIN;
-  logDebug("\n-----response sent-----\n");
-  return 0;
-}
-
-int HttpResponse::SendHeader(int client_socket, HttpParser& parser) {
-
-  AssignContType(parser.getRequestTarget());
-  LookupStatusMessage();
-  ComposeHeader();
-  if (SendToClient(client_socket, header_.c_str(), header_.size()) != -1) {
-    return 0;
-  } else {
-    logError("SendHeader: error on send");
-    return 1;
+void HttpResponse::PrepareResponse() {
+  std::string& status = client_.status_;
+  if ((status.starts_with("4") || status.starts_with("5")) &&
+      !client_.file_.is_open()) {
+    client_.additional_headers_.clear();
+    client_.additional_headers_["Content-Type:"] = "text/html";
+    client_.additional_headers_["Content-Length:"] = "36";
   }
+  StringMap&  headers = client_.additional_headers_;
+  if (auto it = headers.find("Content-Type:"); it == headers.end()) 
+    AssignContType();
+
+  if (auto it = headers.find("Status:"); it != headers.end()) {
+    status_message_ = it->second;
+    headers.erase(it);
+  } else
+    status_message_ = getStatusMap().find(client_.status_)->second;
+  if (status.starts_with("3"))
+    body_sent_ = true;
+  client_.additional_headers_["Server:"] = "miniserv-vsdskl";
+  ComposeHeader();
 }
 
-void HttpResponse::AssignContType(std::string request_target) {
-  try {
-    auto it = getContTypeMap().find(request_target.substr(request_target.find_last_of('.')));
-    if (it != getContTypeMap().end())
-      cont_type_ = it->second;
-    else
-      cont_type_ = "text/html";
-  } catch (const std::out_of_range &e) {
+void HttpResponse::AssignContType() {
+  std::string request_target = client_.parser_.getRequestTarget();
+
+  if (size_t delim = request_target.find_last_of('.'); delim != std::string::npos) {
+    auto it = getContTypeMap().find(request_target.substr(delim));
+    if (it != getContTypeMap().end()) {
+      client_.additional_headers_["Content-Type:"] = it->second;
+      return;
+    }
     logDebug("AssignContType: no '.' found in the filename");
   }
-}
-
-void HttpResponse::LookupStatusMessage(void) {
-  auto it = getStatusMap().find(client_.status_);
-  if (it != getStatusMap().end()) {
-    status_message_ = it->second;
-  } else {
-    logError("LookupStatusMessage: couldn't find the proper status message for ", client_.status_, ", assuming CGI, assigning 200");
-    status_message_ = "200 OK";
-  }
+  client_.additional_headers_["Content-Type:"] = "text/html";
 }
 
 void HttpResponse::ComposeHeader() {
   StringMap&         addhead = client_.additional_headers_;
   std::ostringstream oss;
-  
-	oss << "HTTP/1.1 " << status_message_ << "\r\n";
-  client_.additional_headers_["Content-Type:"] = cont_type_;
-  if (!addhead.empty()) {
-    for (auto it : addhead)
-      oss << it.first << " " << it.second << "\r\n";
-  } 
-  if (!addhead.empty() && addhead.find("Content-Length:") == addhead.end())
+
+  oss << "HTTP/1.1 " << status_message_ << "\r\n";
+  for (auto it : addhead)
+    oss << it.first << " " << it.second << "\r\n";
+
+  if (addhead.find("Content-Length:") == addhead.end())
     oss << "Transfer-Encoding: chunked" << "\r\n";
-	oss << "\r\n";
-	this->header_ = oss.str();
+  oss << "\r\n";
+  this->header_ = oss.str();
 }
 
-int HttpResponse::SendOneChunk(int client_socket, std::fstream& file) {
-  std::streamsize bytes_read;
-  const int chunk_size = 1024;
-  char buffer[chunk_size]{};
+int HttpResponse::SendResponse(pollfd& poll) {
+  int             fd = client_.fd_;
+  int             send_status = 0;
 
-  file.read(buffer, chunk_size);
-  bytes_read = file.gcount();
-  if (bytes_read == -1) {
-    logDebug("bytes_read returned -1");
+  if (buffer_length_ != 0)
+    send_status = SendBuffer(fd);
+  else if (!header_sent_)
+    send_status = SendHeader(fd);
+  else if (!body_sent_)
+    send_status = SendBody(fd);
+  if (send_status == -1)
     return 1;
+  if (buffer_length_ == 0 && header_sent_ && body_sent_) {
+    poll.events = POLLIN;
+    logDebug("\n-----response sent-----\n");
+  }
+  return 0;
+}
+
+int HttpResponse::SendBuffer(int fd) {
+  int send_status = SendToClient(fd, buffer_, buffer_length_);
+  if (send_status == -1)
+    return -1;
+  if (send_status != buffer_length_) {
+    buffer_length_ -= send_status;
+    std::memcpy(buffer_, buffer_ + send_status, buffer_length_);
+  } else
+    buffer_length_ = 0;
+  return 0;
+}
+
+int HttpResponse::SendHeader(int fd) {
+  int len = std::min(header_.size(), static_cast<size_t>(MAXBYTES));
+  int send_status = SendToClient(fd, header_.c_str(), len);
+  if (send_status == -1)
+    return -1;
+  if (send_status != len) {
+    buffer_length_ = len - send_status;
+    std::memcpy(buffer_, header_.c_str() + send_status, buffer_length_);
+  }
+  header_ = header_.substr(len);
+  if (header_.size() == 0) {
+    logDebug("Header sent");
+    header_sent_ = true;
+  }
+  return 0;
+}
+
+int HttpResponse::SendBody(int fd) {
+  if (client_.status_ == "500" && !client_.file_.is_open()) {
+    body_sent_ = true;
+    buffer_length_ = 36;
+    std::memcpy(buffer_, "<h1>500 Internal Server Error</h1>\r\n", buffer_length_);
+    body_sent_ = true;
+    return SendBuffer(fd);
+  }
+  if (getOneChunk(client_.file_) == -1)
+    return -1;
+ return SendBuffer(fd);
+}
+
+int HttpResponse::getOneChunk(std::fstream& file) {
+  file.read(buffer_, 8000);
+  if (file.fail() && !file.eof()) {
+    return -1;
+  }
+  buffer_length_ = file.gcount();
+  std::string test(buffer_, buffer_length_);
+  if (buffer_length_ == 0 && file.eof()) {
+    buffer_length_ = 5;
+    std::memcpy(buffer_, "0\r\n\r\n", buffer_length_);
+    body_sent_ = true;
+    return 0;
   }
   std::ostringstream chunk_stream;
-  chunk_stream << std::hex << bytes_read << "\r\n"; 
-  // size_t chunk_hex_size = chunk_stream.str().length();
-  chunk_stream.write(buffer, bytes_read);
+  chunk_stream << std::hex << buffer_length_ << "\r\n"; 
+  chunk_stream.write(buffer_, buffer_length_);
   chunk_stream << "\r\n";
-  if (bytes_read < chunk_size)
-    chunk_stream << "0\r\n\r\n";
-  if (SendToClient(client_socket, chunk_stream.str().c_str(), chunk_stream.str().length()) == -1)
-    return 1;
-  if (bytes_read < chunk_size)
-    return 2;
+  std::string chunk_string = chunk_stream.str();
+  buffer_length_ = chunk_string.size();
+  std::memcpy(buffer_, chunk_string.c_str(), buffer_length_);
   return 0;
 }
 
@@ -119,19 +158,16 @@ int HttpResponse::SendToClient(const int client_socket, const char* msg, int len
   bytes_sent = send(client_socket, msg, length, MSG_NOSIGNAL);
   if (bytes_sent == -1) {
     logError("send returned -1");
-    return 1;
+    return -1;
   }
-  else if (bytes_sent == 0 || bytes_sent != length) {
-    logError("send returned 0 or less than length");
-    return 1;
-  }
-  return 0;
+  return bytes_sent;
 }
 
 void HttpResponse::ResetResponse() {
   header_.clear();
-  cont_type_ = "text/html";
   status_message_.clear();
+  header_sent_ = false;
+  body_sent_ = false;
 }
 
 const std::map<std::string, std::string>& HttpResponse::getContTypeMap() {

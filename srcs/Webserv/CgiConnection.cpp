@@ -6,7 +6,7 @@
 /*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/18 14:07:41 by dshatilo          #+#    #+#             */
-/*   Updated: 2024/11/04 17:02:55 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/11/07 15:35:01 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -227,8 +227,9 @@ int CgiConnection::SwitchToReceive() {
 }
 
 bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
-  std::stringstream  response_stream(buffer);
-  std::string         line;
+  std::stringstream response_stream(buffer);
+  std::string       line;
+
   while (std::getline(response_stream, line) && line != "\r") {
     size_t delim = line.find(":");
     if (delim == std::string::npos || line.back() != '\r') {
@@ -242,20 +243,114 @@ bool CgiConnection::ParseCgiResponseHeaderFields(char* buffer) {
     additional_headers_[header] = header_value;
   }
 
-  if (!additional_headers_.contains("Content-Type:")) {
-    logError("CGI: failed to find \"Content-Type\" in headers.");
-    client_.status_ = "502";
-    return false;
-  }
-
   if (line != "\r") {
     logError("CGI: Response header fields too large");
     client_.status_ = "502";
     return false;
   }
 
+  auto it = additional_headers_.find("Content-Type:");
+  if (it == additional_headers_.end() ) {
+    logError("CGI: failed to find \"Content-Type\" in headers.");
+    client_.status_ = "502";
+    return false;
+  }
+
+  const StringSet& content_types = getContentTypeSet();
+  if (content_types.find(it->second) == content_types.end()) {
+    logError("CGI: unknown \"Content-Type\" in headers.");
+    client_.status_ = "502";
+    return false;
+  }
+
+  it = additional_headers_.find("Status:");
+  if (it != additional_headers_.end() ) {
+    std::string status = it->second.substr(0, it->second.find(" "));
+    const StringSet& statuses = getStatusSet();
+    if (statuses.find(status) == statuses.end()) {
+      logError("CGI: unknown \"Status code\" in headers.");
+      client_.status_ = "502";
+      return false;
+    }
+  }
+
   if (response_stream.rdbuf()->in_avail() != 0)
     file_ << response_stream.rdbuf();
 
   return true;
+}
+
+
+const std::set<std::string>& CgiConnection::getContentTypeSet() {
+  static const std::set<std::string> cont_type_set  = 
+  {
+    "audio/mpeg",
+    "audio/x-ms-wma",
+    "audio/x-wav",
+
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/tiff",
+    "image/x-icon",
+    "image/vnd.djvu",
+    "image/svg+xml",
+
+    "text/css",
+    "text/csv",
+    "text/html",
+    "text/plain",
+
+    "video/mp4",
+    "video/x-msvideo",
+    "video/x-ms-wmv",
+    "video/x-flv",
+    "video/webm",
+
+    "application/pdf",
+    "application/json",
+    "application/xml",
+    "application/zip",
+    "application/javascript",
+    "application/vnd.oasis.opendocument.text",
+    "application/vnd.oasis.opendocument.spreadsheet",
+    "application/vnd.oasis.opendocument.presentation",
+    "application/vnd.oasis.opendocument.graphics",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.mozilla.xul+xml"
+  };
+  return cont_type_set;
+}
+
+const std::set<std::string>& CgiConnection::getStatusSet() {
+  static const std::set<std::string> status_set  = 
+  {
+    "200",
+    "300",
+    "301",
+    "302",
+    "303",
+    "304",
+    "307",
+    "308",
+    "400",
+    "403",
+    "404",
+    "405",
+    "411",
+    "413",
+    "415",
+    "431",
+    "500",
+    "501",
+    "502",
+    "504",
+    "505",
+  };
+  return status_set;
 }
