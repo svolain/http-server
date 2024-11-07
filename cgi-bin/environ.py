@@ -3,7 +3,7 @@
 import os
 
 def generate_html_response():
-    print("Content-Type: text/html\r\n\r")
+    print("Content-Type:text/html\r\n\r")
     print("<html>")
     print("<head><title>Environment Variables</title></head>")
     print("<body>")
