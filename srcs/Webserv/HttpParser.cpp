@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/07 16:10:27 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/11/08 11:00:38 by vsavolai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,8 +119,8 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
       AppendBody(buffer, bytesIn);
       if (!is_chunked_ &&
           (request_body_.size() > content_length_)) {
-        logError("Error: Request Header Fields Too Large");
-        client_.status_ = "431";
+        logError("Error: Content Too Large");
+        client_.status_ = "413";
         return false;
       }
       return true;
@@ -140,8 +140,8 @@ bool HttpParser::WriteBody(std::vector<char>& buffer, int bytesIn) {
 
 bool HttpParser::IsBodySizeValid() {
   if (request_body_.size() > client_.vhost_->getMaxBodySize()) {
-    logError("Request body is too large");
-    client_.status_ = "431";
+    logError("Content body is too large");
+    client_.status_ = "413";
     return false;
   }
   return true;
