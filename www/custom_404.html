@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #4a90e2, #e94e77);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        h1 {
+            font-size: 8rem;
+            font-weight: bold;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        p {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+        }
+        a {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            color: #e94e77;
+            background: #ffffff;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s, color 0.3s;
+        }
+        a:hover {
+            background: #4a90e2;
+            color: #ffffff;
+        }
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px #e94e77, 0 0 20px #e94e77, 0 0 30px #e94e77, 0 0 40px #e94e77;
+            }
+            to {
+                text-shadow: 0 0 20px #4a90e2, 0 0 30px #4a90e2, 0 0 40px #4a90e2, 0 0 50px #4a90e2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>404</h1>
+        <p>Oops! The page you're looking for can't be found.</p>
+        <a href="/">Go Back Home</a>
+    </div>
+</body>
+</html>

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/08 12:18:39 by klukiano         ###   ########.fr       */
+/*   Updated: 2024/11/08 12:43:09 by dshatilo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -219,7 +219,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   bool        bad_request = false;
   while (std::getline(request_stream, line) && line != "\r") {
     size_t delim = line.find(":");
-    std::cout << line << std::endl;
     if (delim == std::string::npos || line.back() != '\r') {
       bad_request = true;
       continue;
