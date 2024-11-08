@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dshatilo <dshatilo@student.hive.fi>        +#+  +:+       +#+        */
+/*   By:  dshatilo < dshatilo@student.hive.fi >     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/13 15:44:32 by klukiano          #+#    #+#             */
-/*   Updated: 2024/11/07 16:19:56 by dshatilo         ###   ########.fr       */
+/*   Updated: 2024/11/08 08:45:24 by  dshatilo        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ void HttpResponse::PrepareResponse() {
   std::string& status = client_.status_;
   if ((status.starts_with("4") || status.starts_with("5")) &&
       !client_.file_.is_open()) {
+    status = "500";
     client_.additional_headers_.clear();
     client_.additional_headers_["Content-Type:"] = "text/html";
     client_.additional_headers_["Content-Length:"] = "36";
