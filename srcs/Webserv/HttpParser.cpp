@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpParser.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vsavolai <vsavolai@student.hive.fi>        +#+  +:+       +#+        */
+/*   By: klukiano <klukiano@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/09 13:13:54 by vsavolai          #+#    #+#             */
-/*   Updated: 2024/11/08 11:00:38 by vsavolai         ###   ########.fr       */
+/*   Updated: 2024/11/08 12:18:39 by klukiano         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -216,18 +216,32 @@ bool HttpParser::ParseStartLine(std::istringstream& request_stream) {
 
 bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
   std::string line;
+  bool        bad_request = false;
   while (std::getline(request_stream, line) && line != "\r") {
     size_t delim = line.find(":");
+    std::cout << line << std::endl;
     if (delim == std::string::npos || line.back() != '\r') {
-      logError("Wrong header line format");
-      client_.status_ = "400";
-      return false; 
+      bad_request = true;
+      continue;
     }
     line.pop_back();
     std::string header = line.substr(0, delim);
     std::string header_value = line.substr(delim + 1);
     headers_[header] = header_value;
   }
+
+  if (line != "\r") {
+    logError("Request header fields too large");
+    client_.status_ = "431";
+    return false;
+  }
+
+    if (bad_request) {
+      logError("Wrong header line format");
+      client_.status_ = "400";
+      return false; 
+    }
+
   if (!headers_.contains("Host")) {
     logError("Bad request 400");
     client_.status_ = "400";
@@ -239,11 +253,6 @@ bool HttpParser::ParseHeaderFields(std::istringstream& request_stream) {
         ParseCookies(cookie_header);
   }
 
-  if (line != "\r") {
-    logError("Request header fields too large");
-    client_.status_ = "431";
-    return false;
-  }
   return true;
 }
 
