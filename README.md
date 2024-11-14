@@ -1,6 +1,6 @@
 # HTTP - Server
 
-This is a HTTP server project designed to handle HTTP/1.1 requests and responses across modern web browsers. 
+This is a HTTP server designed to handle HTTP/1.1 requests and responses across modern web browsers. 
 Inspired by the architecture and configuration styles of the NGINX server, this project introduces key networking 
 and server management concepts such as socket programming, non-blocking I/O, request parsing, and client-server 
 communication.
@@ -9,7 +9,7 @@ communication.
 
 -Configuration-Driven: Webserv accepts a configuration file that defines server behavior, including host and port settings, error pages, client body size limits, and route-specific rules.
 
--Non-Blocking I/O: The server manages multiple client connections using a single event polling mechanism (poll, epoll, or kqueue), ensuring efficient handling of concurrent requests without blocking.
+-Non-Blocking I/O: The server manages multiple client connections using a single event polling mechanism (poll()) ensuring efficient handling of concurrent requests without blocking.
 
 -HTTP Methods: Supports GET, POST, and DELETE HTTP methods, allowing static file serving, file uploads, and resource deletion.
 
