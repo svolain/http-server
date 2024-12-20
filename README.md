@@ -32,11 +32,14 @@ resource use.
 
 ## Install & Run
 
-Create a tmp file in you var/tmp directory with the name "webserv", it is used as temporary file where the server stores request body during parsing.
+Create a tmp file in your  var/tmp directory with the name "webserv", it is used as temporary file where the server stores request body during parsing.
 
 ```
-sudo mkdir /var/temp/webserv
+sudo mkdir /var/tmp/webserv
 ```
+
+Clone the repository, navigate to the directory and compile the code.
+
 
 ```
 git clone git@github.com:svolain/http-server.git
