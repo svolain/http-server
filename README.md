@@ -47,4 +47,4 @@ cd http-server
 make
 ./webserv [configuration_file]
 ```
-If no configuration file is provided with ./webserv command, the program will use it's default configuration defined in conf directory of this repository.
+Navigate to localhost:8080 after starting the server. If no configuration file is provided with ./webserv command, the program will use it's default configuration defined in conf directory of this repository.
