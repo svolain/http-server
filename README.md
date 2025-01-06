@@ -32,10 +32,10 @@ resource use.
 
 ## Install & Run
 
-Create a temp file in your file structure's root /tmp-directory with the name "webserv", it is used as temporary file where the server stores request body during parsing.
+Create a temp file in your file structure's root tmp-directory with the name "webserv", it is used as temporary file where the server stores request body during parsing.
 
 ```
-sudo mkdir /tmp/webserv
+sudo mkdir tmp/webserv
 ```
 
 Clone the repository, navigate to the directory and compile the code.
