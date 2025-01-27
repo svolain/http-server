@@ -3,7 +3,7 @@
 This is a HTTP server designed to handle HTTP/1.1 requests and responses across modern web browsers. 
 Inspired by the architecture and configuration styles of the NGINX server, this project introduces key networking 
 and server management concepts such as socket programming, non-blocking I/O, request parsing, and client-server 
-communication. This was a Hive Helsinki group project that was done in co-operation with [Kirill Lukianov](https://github.com/kirkram) and [Dmitrii Shatiov](https://github.com/shatilovdr)
+communication. This was a Hive Helsinki group project that I did in co-operation with [Kirill Lukianov](https://github.com/kirkram) and [Dmitrii Shatiov](https://github.com/shatilovdr)
 
 ## Key Features
 
